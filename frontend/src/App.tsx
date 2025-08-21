@@ -8,8 +8,6 @@ import { AboutPage } from './pages/AboutPage'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { DashboardPage } from './pages/DashboardPage'
-import { OAuthCallbackPage } from './pages/OAuthCallbackPage'
-import { ProfilePage } from './pages/ProfilePage'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -36,15 +34,6 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <DashboardPage />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
-              <Route
-                path="/profile"
-                element={
-                  <ProtectedRoute>
-                    <ProfilePage />
                   </ProtectedRoute>
                 }
               />
