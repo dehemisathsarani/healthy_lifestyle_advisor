@@ -12,6 +12,8 @@ from app.core.database import (
     verify_database,
     get_database
 )
+from app.auth.router import router as auth_router
+from app.auth.users import setup_user_collection
 
 # Create FastAPI application with detailed configuration
 app = FastAPI(
@@ -38,6 +40,9 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["*"]
 )
+
+# Include routers
+app.include_router(auth_router)
 
 # Global application state
 app_state = {
@@ -67,6 +72,8 @@ async def startup_event():
     if app_state["db_connected"]:
         print("✅ Application startup completed successfully")
         print("🌐 API Documentation available at: http://localhost:8000/docs")
+        # Setup user collection with indexes
+        await setup_user_collection()
     else:
         print("⚠️  Application started with database connection issues")
         print("📖 Some features may be limited without database connectivity")
