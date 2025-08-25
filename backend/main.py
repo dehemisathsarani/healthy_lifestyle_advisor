@@ -44,6 +44,10 @@ app.add_middleware(
 # Include routers
 app.include_router(auth_router)
 
+# Import and include mental health router
+from app.api.mental_health import router as mental_health_router
+app.include_router(mental_health_router)
+
 # Global application state
 app_state = {
     "db_connected": False,
@@ -74,6 +78,15 @@ async def startup_event():
         print("🌐 API Documentation available at: http://localhost:8000/docs")
         # Setup user collection with indexes
         await setup_user_collection()
+        
+        # Initialize Mental Health Agent
+        print("🧠 Initializing Mental Health Agent...")
+        from app.agents.agent_manager import agent_manager
+        agent_init_success = await agent_manager.initialize_system()
+        if agent_init_success:
+            print("✅ Mental Health Agent initialized successfully")
+        else:
+            print("⚠️  Mental Health Agent initialization failed")
     else:
         print("⚠️  Application started with database connection issues")
         print("📖 Some features may be limited without database connectivity")

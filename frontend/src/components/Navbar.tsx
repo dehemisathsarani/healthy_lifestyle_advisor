@@ -36,6 +36,9 @@ export const Navbar = () => {
           <NavLink to="/" className={({ isActive }) => isActive ? 'text-brand font-medium' : 'text-gray-600 hover:text-gray-900'}>Home</NavLink>
           <NavLink to="/services" className={({ isActive }) => isActive ? 'text-brand font-medium' : 'text-gray-600 hover:text-gray-900'}>Services</NavLink>
           <NavLink to="/about" className={({ isActive }) => isActive ? 'text-brand font-medium' : 'text-gray-600 hover:text-gray-900'}>About</NavLink>
+          {isAuthenticated && (
+            <NavLink to="/mental-health" className={({ isActive }) => isActive ? 'text-brand font-medium' : 'text-gray-600 hover:text-gray-900'}>🧠 Mental Health</NavLink>
+          )}
         </nav>
         <div className="flex items-center gap-3">
           {isAuthenticated ? (

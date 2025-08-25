@@ -10,6 +10,7 @@ import { RegisterPage } from './pages/RegisterPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { OAuthCallbackPage } from './pages/OAuthCallbackPage'
 import { ProfilePage } from './pages/ProfilePage'
+import { MentalHealthPage } from './pages/MentalHealthPage'
 import { AuthProvider, useAuth } from './auth/AuthContext'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -45,6 +46,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <ProfilePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/mental-health"
+                element={
+                  <ProtectedRoute>
+                    <MentalHealthPage />
                   </ProtectedRoute>
                 }
               />
