@@ -12,6 +12,7 @@ from app.core.database import (
     verify_database,
     get_database
 )
+from app.routes.simple_diet_routes import router as diet_router
 
 # Create FastAPI application with detailed configuration
 app = FastAPI(
@@ -38,6 +39,9 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["*"]
 )
+
+# Include Diet Agent routes
+app.include_router(diet_router)
 
 # Global application state
 app_state = {

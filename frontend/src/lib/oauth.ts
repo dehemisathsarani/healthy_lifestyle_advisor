@@ -31,12 +31,12 @@ export async function startGoogleOAuthPopup(): Promise<void> {
       if (event.data?.type === 'oauth-success') {
         window.clearTimeout(timeout)
         window.removeEventListener('message', onMessage)
-        try { popup.close() } catch {}
+        try { popup?.close() } catch (e) { console.warn('Failed to close popup:', e) }
         resolve()
       } else if (event.data?.type === 'oauth-error') {
         window.clearTimeout(timeout)
         window.removeEventListener('message', onMessage)
-        try { popup.close() } catch {}
+        try { popup?.close() } catch (e) { console.warn('Failed to close popup:', e) }
         reject(new Error('OAuth failed'))
       }
     }

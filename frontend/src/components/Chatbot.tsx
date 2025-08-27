@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { FaRobot, FaPaperPlane, FaTimes, FaHeartbeat, FaDumbbell, FaBrain } from 'react-icons/fa'
+import { FaRobot, FaPaperPlane, FaTimes } from 'react-icons/fa'
 
 type Message = {
   id: string
