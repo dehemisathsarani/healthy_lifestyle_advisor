@@ -13,6 +13,7 @@ export const DashboardPage = () => {
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold">Welcome, {userName}</h1>
+      
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {foodSummary.map((m, i) => (
           <div key={i} className="rounded-xl border bg-white p-4 shadow-sm">

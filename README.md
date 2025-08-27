@@ -1,3 +1,21 @@
+# Config your username and email before commit
+go to the repository folder and enter below commands
+
+git config user.name "username"
+
+git config user.email "example@email.com"
+
+git config --global user.name "username"
+
+git config --global user.email "example@email.com"
+
+# After clone the repository, Install dependencies by running:
+npm install
+
+# Run the app using
+npm run dev
+
+
 # Healthy Lifestyle Advisor 🥗🏋️🧠
 
 A web-based AI-powered healthy lifestyle advisor. This system integrates **Diet, Fitness, Mental Health, and Data Security Agents** to provide personalized recommendations for diet, exercise, and mental wellness.

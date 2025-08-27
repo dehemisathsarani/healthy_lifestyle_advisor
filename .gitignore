@@ -1,3 +1,9 @@
+
+# Global ignores
+
+# Environment variables
+.env
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -191,10 +197,25 @@ typings/
 .yarn-integrity
 
 # dotenv environment variables file
+
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+
+.env.production
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.vs/
+*.sublime-*
+
+# OS generated files
+
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -240,6 +261,7 @@ dist
 .pnp.*
 
 # macOS
+
 .DS_Store
 .DS_Store?
 ._*
@@ -247,6 +269,18 @@ dist
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+desktop.ini
+
+# Logs and debugging
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
 
 # IDE files
 .vscode/
@@ -264,9 +298,99 @@ backend_service.log
 # Docker
 .dockerignore
 
+
 # Temporary files
 *.tmp
 *.temp
+
+tmp/
+temp/
+
+# Frontend ignores
+# ===============
+
+# Dependencies
+node_modules/
+jspm_packages/
+.pnp/
+.pnp.js
+web_modules/
+
+# Package locks (as requested)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build outputs
+dist/
+build/
+out/
+.out/
+public/dist/
+.next/
+.nuxt/
+.vuepress/dist/
+.serverless/
+.fusebox/
+.dynamodb/
+.cache/
+.parcel-cache/
+.output/
+.astro/
+storybook-static/
+
+
+coverage/
+.nyc_output/
+.jest/
+.cypress/
+cypress/videos/
+cypress/screenshots/
+
+# Misc frontend
+.eslintcache
+.stylelintcache
+.yarn/
+.yalc/
+yalc.lock
+.turbo/
+.vercel
+.netlify
+
+
+
+
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Database
+
 
 # Local configuration
 config.local.js
@@ -276,10 +400,18 @@ config.local.json
 build/
 dist/
 
-# Database files
+
+
 *.db
 *.sqlite
 *.sqlite3
+
+
+# Certificates and security
+*.pem
+*.key
+*.cert
+*.crt
 
 # API keys and credentials (keep examples)
 google-credentials.json
@@ -291,4 +423,5 @@ frontend/src/pages/SimpleHomePage.tsx
 
 # Legacy Python cache
 .pycache
+
 

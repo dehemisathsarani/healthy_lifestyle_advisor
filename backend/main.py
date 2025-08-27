@@ -11,8 +11,12 @@ from app.core.database import (
     get_db_health, 
     verify_database,
     get_database
-)
+
+from app.auth.router import router as auth_router
+from app.auth.users import setup_user_collection
+
 from app.routes.simple_diet_routes import router as diet_router
+
 
 # Create FastAPI application with detailed configuration
 app = FastAPI(
@@ -40,8 +44,13 @@ app.add_middleware(
     expose_headers=["*"]
 )
 
+
+# Include routers
+app.include_router(auth_router)
+
 # Include Diet Agent routes
 app.include_router(diet_router)
+
 
 # Global application state
 app_state = {
@@ -71,6 +80,8 @@ async def startup_event():
     if app_state["db_connected"]:
         print("✅ Application startup completed successfully")
         print("🌐 API Documentation available at: http://localhost:8000/docs")
+        # Setup user collection with indexes
+        await setup_user_collection()
     else:
         print("⚠️  Application started with database connection issues")
         print("📖 Some features may be limited without database connectivity")
