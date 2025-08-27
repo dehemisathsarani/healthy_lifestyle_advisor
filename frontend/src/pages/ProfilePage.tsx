@@ -1,5 +1,5 @@
 import { useAuth } from '../auth/AuthContext'
-import { FaFire, FaDumbbell, FaRunning, FaAppleAlt, FaHeartbeat, FaBed, FaTint, FaBrain, FaCalendarAlt, FaClock, FaChartLine } from 'react-icons/fa'
+import { FaDumbbell, FaRunning, FaAppleAlt, FaHeartbeat, FaBed, FaTint, FaCalendarAlt, FaClock } from 'react-icons/fa'
 
 export const ProfilePage = () => {
   const { profile, userName } = useAuth()

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend Diagnostic Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #ff6b6b, #4ecdc4);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            text-align: center;
+            background: rgba(0,0,0,0.2);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .status {
+            background: #2ecc71;
+            padding: 10px 20px;
+            border-radius: 10px;
+            margin: 10px 0;
+            display: inline-block;
+        }
+        .timestamp {
+            opacity: 0.8;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 Frontend Diagnostic Test</h1>
+        <div class="status">✅ Plain HTML is loading correctly!</div>
+        <p>Server: <strong>http://localhost:5173</strong></p>
+        <p class="timestamp">Time: <span id="time"></span></p>
+        <p>If you see this colorful page, your browser and server connection are working.</p>
+        <p>The white page issue is likely a React/JavaScript loading problem.</p>
+        
+        <div style="margin-top: 30px;">
+            <h3>🔧 Next Steps:</h3>
+            <p>1. Open browser DevTools (F12)</p>
+            <p>2. Check Console tab for JavaScript errors</p>
+            <p>3. Check Network tab for failed requests</p>
+            <p>4. Try the React app at the main URL</p>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('time').textContent = new Date().toLocaleString();
+        setInterval(() => {
+            document.getElementById('time').textContent = new Date().toLocaleString();
+        }, 1000);
+    </script>
+</body>
+</html>
