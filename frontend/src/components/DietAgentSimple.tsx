@@ -6,6 +6,7 @@ import SessionStatus from './SessionStatus'
 import QuickLogin from './QuickLogin'
 import { dietAgentSessionManager } from '../services/SessionManager'
 import { dietAgentEmailService } from '../services/EmailService'
+import { enhancedFoodAnalysisService, type FoodItem as EnhancedFoodItem } from '../services/enhancedFoodAnalysis'
 
 // Temporary local types and mock API to fix compilation
 type DetectedFood = {
@@ -1843,96 +1844,158 @@ const FoodAnalysis: React.FC<{
     }
   }
 
-  const simulateImageAnalysis = async (_imageFile: File): Promise<FoodAnalysisResult> => {
-    // Simulate processing delay
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
-    // Mock food identification based on image
-    const mockFoods = [
-      { name: "Rice and Curry", quantity: "1 plate", calories: 450, protein: 18, carbs: 70, fat: 12, fiber: 8 },
-      { name: "Chicken Kottu", quantity: "1 serving", calories: 520, protein: 25, carbs: 45, fat: 22, fiber: 5 },
-      { name: "Dhal Curry", quantity: "1 cup", calories: 180, protein: 12, carbs: 25, fat: 4, fiber: 10 }
-    ]
-    
-    // Randomly select 1-3 foods
-    const selectedFoods = mockFoods.slice(0, Math.floor(Math.random() * 3) + 1)
-    
-    const totalCalories = selectedFoods.reduce((sum, food) => sum + food.calories, 0)
-    const totalProtein = selectedFoods.reduce((sum, food) => sum + food.protein, 0)
-    const totalCarbs = selectedFoods.reduce((sum, food) => sum + food.carbs, 0)
-    const totalFat = selectedFoods.reduce((sum, food) => sum + food.fat, 0)
-
-    return {
-      _id: Date.now().toString(),
-      user_id: user?.id || "offline_user",
-      food_items: selectedFoods,
-      total_calories: totalCalories,
-      total_protein: totalProtein,
-      total_carbs: totalCarbs,
-      total_fat: totalFat,
-      analysis_method: 'image',
-      meal_type: 'lunch',
-      created_at: new Date().toISOString(),
-      confidence_score: 0.75,
-      image_url: URL.createObjectURL(_imageFile),
-      text_description: `Meal with ${selectedFoods.length} food items: ${selectedFoods.map(f => f.name).join(', ')}`
+  const simulateImageAnalysis = async (imageFile: File): Promise<FoodAnalysisResult> => {
+    try {
+      // Use enhanced food analysis service for better accuracy
+      const analysisResult = await enhancedFoodAnalysisService.analyzeImage(imageFile, analysisText || undefined)
+      
+      if (analysisResult.success) {
+        const analysis = analysisResult.analysis
+        return {
+          _id: Date.now().toString(),
+          user_id: user?.id || "offline_user",
+          food_items: analysis.foodItems.map((item: EnhancedFoodItem) => ({
+            name: item.name,
+            quantity: item.portion,
+            calories: Math.round(item.calories),
+            protein: Math.round(item.protein * 10) / 10,
+            carbs: Math.round(item.carbs * 10) / 10,
+            fat: Math.round(item.fat * 10) / 10,
+            fiber: Math.round((item.fiber || 0) * 10) / 10
+          })),
+          total_calories: Math.round(analysis.totalNutrition.calories),
+          total_protein: Math.round(analysis.totalNutrition.protein * 10) / 10,
+          total_carbs: Math.round(analysis.totalNutrition.carbs * 10) / 10,
+          total_fat: Math.round(analysis.totalNutrition.fat * 10) / 10,
+          analysis_method: 'image',
+          meal_type: 'lunch',
+          created_at: new Date().toISOString(),
+          confidence_score: analysis.confidence,
+          image_url: URL.createObjectURL(imageFile),
+          text_description: analysis.foodItems.map((f: EnhancedFoodItem) => f.name).join(', ')
+        }
+      } else {
+        throw new Error(analysisResult.error || 'Enhanced analysis failed')
+      }
+    } catch (error) {
+      console.error('Enhanced image analysis failed, using fallback:', error)
+      
+      // Fallback to simple analysis if enhanced service fails
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      const mockFoods = [
+        { name: "Rice and Curry", quantity: "1 plate", calories: 450, protein: 18, carbs: 70, fat: 12, fiber: 8 },
+        { name: "Chicken Kottu", quantity: "1 serving", calories: 520, protein: 25, carbs: 45, fat: 22, fiber: 5 },
+        { name: "Dhal Curry", quantity: "1 cup", calories: 180, protein: 12, carbs: 25, fat: 4, fiber: 10 }
+      ]
+      
+      const selectedFoods = mockFoods.slice(0, Math.floor(Math.random() * 3) + 1)
+      
+      return {
+        _id: Date.now().toString(),
+        user_id: user?.id || "offline_user",
+        food_items: selectedFoods,
+        total_calories: selectedFoods.reduce((sum, food) => sum + food.calories, 0),
+        total_protein: selectedFoods.reduce((sum, food) => sum + food.protein, 0),
+        total_carbs: selectedFoods.reduce((sum, food) => sum + food.carbs, 0),
+        total_fat: selectedFoods.reduce((sum, food) => sum + food.fat, 0),
+        analysis_method: 'image',
+        meal_type: 'lunch',
+        created_at: new Date().toISOString(),
+        confidence_score: 0.60,
+        image_url: URL.createObjectURL(imageFile),
+        text_description: `Fallback analysis: ${selectedFoods.map(f => f.name).join(', ')}`
+      }
     }
   }
 
   const simulateTextAnalysis = async (description: string): Promise<FoodAnalysisResult> => {
-    // Simulate processing delay
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    
-    // Simple keyword-based food recognition
-    const foodKeywords = {
-      'rice': { name: "Rice", quantity: "1 cup", calories: 200, protein: 4, carbs: 45, fat: 0.5, fiber: 1 },
-      'chicken': { name: "Chicken", quantity: "100g", calories: 165, protein: 31, carbs: 0, fat: 3.6, fiber: 0 },
-      'kottu': { name: "Kottu Roti", quantity: "1 serving", calories: 450, protein: 20, carbs: 40, fat: 20, fiber: 3 },
-      'curry': { name: "Vegetable Curry", quantity: "1 cup", calories: 120, protein: 5, carbs: 15, fat: 6, fiber: 4 },
-      'dhal': { name: "Dhal", quantity: "1 cup", calories: 180, protein: 12, carbs: 25, fat: 4, fiber: 10 }
-    }
-    
-    const identifiedFoods = []
-    const lowerDescription = description.toLowerCase()
-    
-    for (const [keyword, food] of Object.entries(foodKeywords)) {
-      if (lowerDescription.includes(keyword)) {
-        identifiedFoods.push(food)
+    try {
+      // Use enhanced food analysis service for better accuracy
+      const analysisResult = await enhancedFoodAnalysisService.analyzeImage(
+        new File(['dummy'], 'text-analysis.txt', { type: 'text/plain' }), 
+        description
+      )
+      
+      if (analysisResult.success) {
+        const analysis = analysisResult.analysis
+        return {
+          _id: Date.now().toString(),
+          user_id: user?.id || "offline_user",
+          food_items: analysis.foodItems.map((item: EnhancedFoodItem) => ({
+            name: item.name,
+            quantity: item.portion,
+            calories: Math.round(item.calories),
+            protein: Math.round(item.protein * 10) / 10,
+            carbs: Math.round(item.carbs * 10) / 10,
+            fat: Math.round(item.fat * 10) / 10,
+            fiber: Math.round((item.fiber || 0) * 10) / 10
+          })),
+          total_calories: Math.round(analysis.totalNutrition.calories),
+          total_protein: Math.round(analysis.totalNutrition.protein * 10) / 10,
+          total_carbs: Math.round(analysis.totalNutrition.carbs * 10) / 10,
+          total_fat: Math.round(analysis.totalNutrition.fat * 10) / 10,
+          analysis_method: 'text',
+          meal_type: 'lunch',
+          created_at: new Date().toISOString(),
+          confidence_score: analysis.confidence,
+          image_url: null,
+          text_description: description
+        }
+      } else {
+        throw new Error(analysisResult.error || 'Enhanced analysis failed')
       }
-    }
-    
-    // If no foods identified, add a generic meal
-    if (identifiedFoods.length === 0) {
-      identifiedFoods.push({
-        name: "Mixed Meal",
-        quantity: "1 serving",
-        calories: 350,
-        protein: 15,
-        carbs: 40,
-        fat: 12,
-        fiber: 5
-      })
-    }
-    
-    const totalCalories = identifiedFoods.reduce((sum, food) => sum + food.calories, 0)
-    const totalProtein = identifiedFoods.reduce((sum, food) => sum + food.protein, 0)
-    const totalCarbs = identifiedFoods.reduce((sum, food) => sum + food.carbs, 0)
-    const totalFat = identifiedFoods.reduce((sum, food) => sum + food.fat, 0)
-
-    return {
-      _id: Date.now().toString(),
-      user_id: user?.id || "offline_user",
-      food_items: identifiedFoods,
-      total_calories: totalCalories,
-      total_protein: totalProtein,
-      total_carbs: totalCarbs,
-      total_fat: totalFat,
-      analysis_method: 'text',
-      meal_type: 'lunch',
-      created_at: new Date().toISOString(),
-      confidence_score: 0.70,
-      image_url: null,
-      text_description: description
+    } catch (error) {
+      console.error('Enhanced text analysis failed, using fallback:', error)
+      
+      // Fallback to simple keyword-based analysis
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      
+      const foodKeywords = {
+        'rice': { name: "Rice", quantity: "1 cup", calories: 200, protein: 4, carbs: 45, fat: 0.5, fiber: 1 },
+        'chicken': { name: "Chicken", quantity: "100g", calories: 165, protein: 31, carbs: 0, fat: 3.6, fiber: 0 },
+        'kottu': { name: "Kottu Roti", quantity: "1 serving", calories: 450, protein: 20, carbs: 40, fat: 20, fiber: 3 },
+        'curry': { name: "Vegetable Curry", quantity: "1 cup", calories: 120, protein: 5, carbs: 15, fat: 6, fiber: 4 },
+        'dhal': { name: "Dhal", quantity: "1 cup", calories: 180, protein: 12, carbs: 25, fat: 4, fiber: 10 }
+      }
+      
+      const identifiedFoods = []
+      const lowerDescription = description.toLowerCase()
+      
+      for (const [keyword, food] of Object.entries(foodKeywords)) {
+        if (lowerDescription.includes(keyword)) {
+          identifiedFoods.push(food)
+        }
+      }
+      
+      // If no foods identified, add a generic meal
+      if (identifiedFoods.length === 0) {
+        identifiedFoods.push({
+          name: "Mixed Meal",
+          quantity: "1 serving",
+          calories: 350,
+          protein: 15,
+          carbs: 40,
+          fat: 12,
+          fiber: 5
+        })
+      }
+      
+      return {
+        _id: Date.now().toString(),
+        user_id: user?.id || "offline_user",
+        food_items: identifiedFoods,
+        total_calories: identifiedFoods.reduce((sum, food) => sum + food.calories, 0),
+        total_protein: identifiedFoods.reduce((sum, food) => sum + food.protein, 0),
+        total_carbs: identifiedFoods.reduce((sum, food) => sum + food.carbs, 0),
+        total_fat: identifiedFoods.reduce((sum, food) => sum + food.fat, 0),
+        analysis_method: 'text',
+        meal_type: 'lunch',
+        created_at: new Date().toISOString(),
+        confidence_score: 0.65,
+        image_url: null,
+        text_description: description
+      }
     }
   }
 
