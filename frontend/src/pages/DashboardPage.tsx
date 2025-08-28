@@ -1,7 +1,15 @@
 import { useAuth } from '../auth/AuthContext'
+import { useNavigate } from 'react-router-dom'
+import { FaSignOutAlt, FaUser } from 'react-icons/fa'
 
 export const DashboardPage = () => {
-  const { userName } = useAuth()
+  const { userName, logout } = useAuth()
+  const navigate = useNavigate()
+
+  const handleLogout = () => {
+    logout()
+    navigate('/login')
+  }
 
   const foodSummary = [
     { label: 'Calories', value: '2,150 kcal', color: 'bg-emerald-500' },
@@ -12,7 +20,23 @@ export const DashboardPage = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Welcome, {userName}</h1>
+      {/* Header with user info and logout */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full flex items-center justify-center">
+            <FaUser className="text-white" />
+          </div>
+          <h1 className="text-3xl font-bold">Welcome, {userName}</h1>
+        </div>
+        
+        <button
+          onClick={handleLogout}
+          className="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-sm"
+        >
+          <FaSignOutAlt className="w-4 h-4 mr-2" />
+          Logout
+        </button>
+      </div>
       
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {foodSummary.map((m, i) => (

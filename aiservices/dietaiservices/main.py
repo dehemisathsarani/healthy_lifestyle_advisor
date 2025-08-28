@@ -114,11 +114,22 @@ async def startup_event():
         # Initialize advanced food analyzer
         advanced_food_analyzer = AdvancedFoodAnalyzer(db_client, settings.DATABASE_NAME)
         
-        # Skip RabbitMQ for now - working without message queue
-        rabbitmq_connection = None
-        rabbitmq_channel = None
+        # Connect to RabbitMQ if configured
+        if hasattr(settings, 'RABBITMQ_URL') and settings.RABBITMQ_URL:
+            try:
+                rabbitmq_connection = await aio_pika.connect_robust(settings.RABBITMQ_URL)
+                rabbitmq_channel = await rabbitmq_connection.channel()
+                logger.info("RabbitMQ connection established successfully")
+            except Exception as e:
+                logger.warning(f"RabbitMQ connection failed, continuing without message queue: {e}")
+                rabbitmq_connection = None
+                rabbitmq_channel = None
+        else:
+            logger.info("RabbitMQ not configured, working without message queue")
+            rabbitmq_connection = None
+            rabbitmq_channel = None
         
-        logger.info("API connections and analyzers established successfully (without RabbitMQ)")
+        logger.info("API connections and analyzers established successfully")
         
     except Exception as e:
         logger.error(f"Failed to establish connections: {e}")

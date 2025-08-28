@@ -11,6 +11,8 @@ from app.core.database import (
     get_db_health, 
     verify_database,
     get_database
+)
+
 
 from app.auth.router import router as auth_router
 from app.auth.users import setup_user_collection

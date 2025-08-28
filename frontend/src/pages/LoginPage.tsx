@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import { FaEnvelope, FaLock, FaArrowRight, FaHome } from 'react-icons/fa'
+import { FaEnvelope, FaLock, FaArrowRight, FaHome, FaUser } from 'react-icons/fa'
 
 export const LoginPage = () => {
   const { login } = useAuth()
   const navigate = useNavigate()
+  const [loginMethod, setLoginMethod] = useState<'email' | 'name'>('email')
   const [email, setEmail] = useState('')
+  const [name, setName] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [oauthInProgress, setOauthInProgress] = useState(false)
@@ -30,7 +32,24 @@ export const LoginPage = () => {
     e.preventDefault()
     setError(null)
     try {
-      await login(email, password)
+      // For name-based login, we'll need to find the user by name first
+      // Since the backend expects email, we'll need to handle this differently
+      if (loginMethod === 'name') {
+        // Check localStorage for saved user profiles to find email by name
+        const savedProfiles = JSON.parse(localStorage.getItem('userProfiles') || '[]')
+        const foundProfile = savedProfiles.find((profile: any) => 
+          profile.name.toLowerCase() === name.toLowerCase()
+        )
+        
+        if (foundProfile) {
+          await login(foundProfile.email, password)
+        } else {
+          setError('User not found. Please use email login or register first.')
+          return
+        }
+      } else {
+        await login(email, password)
+      }
       navigate('/dashboard')
     } catch (err) {
       setError('Invalid credentials')
@@ -80,14 +99,69 @@ export const LoginPage = () => {
           <h1 className="text-3xl font-bold">Welcome back</h1>
           <p className="mt-1 text-sm text-gray-600">Sign in to continue to your dashboard</p>
 
+          {/* Login Method Selector */}
+          <div className="mt-4 flex rounded-lg border p-1 bg-gray-50">
+            <button
+              type="button"
+              onClick={() => setLoginMethod('email')}
+              className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                loginMethod === 'email'
+                  ? 'bg-white text-brand shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <FaEnvelope className="inline w-4 h-4 mr-2" />
+              Email
+            </button>
+            <button
+              type="button"
+              onClick={() => setLoginMethod('name')}
+              className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                loginMethod === 'name'
+                  ? 'bg-white text-brand shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <FaUser className="inline w-4 h-4 mr-2" />
+              Name
+            </button>
+          </div>
+
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            <div>
-              <label className="block text-sm font-medium">Email</label>
-              <div className="mt-1 flex items-center gap-2 rounded-md border px-3 py-2 focus-within:ring-2 focus-within:ring-brand">
-                <FaEnvelope className="text-gray-400" />
-                <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required className="w-full bg-transparent outline-none" placeholder="you@example.com" />
+            {loginMethod === 'email' ? (
+              <div>
+                <label className="block text-sm font-medium">Email</label>
+                <div className="mt-1 flex items-center gap-2 rounded-md border px-3 py-2 focus-within:ring-2 focus-within:ring-brand">
+                  <FaEnvelope className="text-gray-400" />
+                  <input 
+                    value={email} 
+                    onChange={(e) => setEmail(e.target.value)} 
+                    type="email" 
+                    required 
+                    className="w-full bg-transparent outline-none" 
+                    placeholder="you@example.com" 
+                  />
+                </div>
               </div>
-            </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-medium">Name</label>
+                <div className="mt-1 flex items-center gap-2 rounded-md border px-3 py-2 focus-within:ring-2 focus-within:ring-brand">
+                  <FaUser className="text-gray-400" />
+                  <input 
+                    value={name} 
+                    onChange={(e) => setName(e.target.value)} 
+                    type="text" 
+                    required 
+                    className="w-full bg-transparent outline-none" 
+                    placeholder="Your full name" 
+                  />
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Name-based login uses locally saved profiles
+                </p>
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium">Password</label>
               <div className="mt-1 flex items-center gap-2 rounded-md border px-3 py-2 focus-within:ring-2 focus-within:ring-brand">

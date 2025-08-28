@@ -176,6 +176,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUserName(decoded.name || decoded.email || decoded.sub || 'User')
       const u = await getMe()
       setProfile(u)
+      
+      // Save user profile locally for name-based login
+      if (u) {
+        const savedProfiles = JSON.parse(localStorage.getItem('userProfiles') || '[]')
+        const existingProfileIndex = savedProfiles.findIndex((p: any) => p.email === u.email)
+        
+        if (existingProfileIndex >= 0) {
+          savedProfiles[existingProfileIndex] = u
+        } else {
+          savedProfiles.push(u)
+        }
+        
+        localStorage.setItem('userProfiles', JSON.stringify(savedProfiles))
+      }
+      
       // Reset inactivity timeout after successful login
       resetInactivityTimeout()
     }
@@ -190,9 +205,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUserName(decoded.name || decoded.email || decoded.sub || 'User')
       if (directProfile) {
         setProfile(directProfile)
+        
+        // Save user profile locally for name-based login
+        const savedProfiles = JSON.parse(localStorage.getItem('userProfiles') || '[]')
+        const existingProfileIndex = savedProfiles.findIndex((p: any) => p.email === email)
+        
+        if (existingProfileIndex >= 0) {
+          savedProfiles[existingProfileIndex] = directProfile
+        } else {
+          savedProfiles.push(directProfile)
+        }
+        
+        localStorage.setItem('userProfiles', JSON.stringify(savedProfiles))
       } else {
         const u = await getMe()
         setProfile(u)
+        
+        // Save user profile locally
+        if (u) {
+          const savedProfiles = JSON.parse(localStorage.getItem('userProfiles') || '[]')
+          const existingProfileIndex = savedProfiles.findIndex((p: any) => p.email === u.email)
+          
+          if (existingProfileIndex >= 0) {
+            savedProfiles[existingProfileIndex] = u
+          } else {
+            savedProfiles.push(u)
+          }
+          
+          localStorage.setItem('userProfiles', JSON.stringify(savedProfiles))
+        }
       }
       // Reset inactivity timeout after successful registration
       resetInactivityTimeout()
