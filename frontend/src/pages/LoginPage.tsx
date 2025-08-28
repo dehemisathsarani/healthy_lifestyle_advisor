@@ -18,7 +18,14 @@ export const LoginPage = () => {
       if (event.origin !== window.location.origin) return
       if (event.data?.type === 'oauth-success') {
         setOauthInProgress(false)
-        navigate('/dashboard', { replace: true })
+        // Check for redirect after successful OAuth login
+        const redirectTo = sessionStorage.getItem('redirectTo')
+        if (redirectTo) {
+          sessionStorage.removeItem('redirectTo')
+          navigate(redirectTo, { replace: true })
+        } else {
+          navigate('/dashboard', { replace: true })
+        }
       } else if (event.data?.type === 'oauth-error') {
         setOauthInProgress(false)
         setError('OAuth sign-in failed')
@@ -37,7 +44,7 @@ export const LoginPage = () => {
       if (loginMethod === 'name') {
         // Check localStorage for saved user profiles to find email by name
         const savedProfiles = JSON.parse(localStorage.getItem('userProfiles') || '[]')
-        const foundProfile = savedProfiles.find((profile: any) => 
+        const foundProfile = savedProfiles.find((profile: { name: string; email: string }) => 
           profile.name.toLowerCase() === name.toLowerCase()
         )
         
@@ -50,8 +57,16 @@ export const LoginPage = () => {
       } else {
         await login(email, password)
       }
-      navigate('/dashboard')
-    } catch (err) {
+      
+      // Check for redirect after successful login
+      const redirectTo = sessionStorage.getItem('redirectTo')
+      if (redirectTo) {
+        sessionStorage.removeItem('redirectTo')
+        navigate(redirectTo)
+      } else {
+        navigate('/dashboard')
+      }
+    } catch (error) {
       setError('Invalid credentials')
     }
   }

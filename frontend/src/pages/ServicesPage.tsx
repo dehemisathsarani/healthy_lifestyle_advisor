@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useAuth } from '../auth/AuthContext'
 import { Navbar } from '../components/Navbar'
 import { Chatbot } from '../components/Chatbot'
 import { DietAgentSimple as DietAgent } from '../components/DietAgentSimple'
@@ -8,31 +10,56 @@ import { SecurityAgent } from '../components/SecurityAgent'
 
 export const ServicesPage = () => {
   const [activeAgent, setActiveAgent] = useState<'diet' | 'fitness' | 'mental' | 'security' | null>(null)
+  const { isAuthenticated, profile } = useAuth()
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+
+  // Handle auto-launch from URL params
+  useEffect(() => {
+    const launch = searchParams.get('launch')
+    if (launch === 'diet' && isAuthenticated) {
+      setActiveAgent('diet')
+    }
+  }, [searchParams, isAuthenticated])
+
+  // Function to handle Diet Agent launch with authentication check
+  const handleDietAgentLaunch = () => {
+    if (!isAuthenticated) {
+      // Save the intended destination for after login
+      sessionStorage.setItem('redirectTo', '/services?launch=diet')
+      navigate('/login')
+    } else {
+      setActiveAgent('diet')
+    }
+  }
 
   const services = [
     { 
       title: 'Personalized Nutrition', 
       desc: 'AI-driven meal plans and calorie tracking with image analysis. Create profiles, analyze meals, track history.',
-      action: () => setActiveAgent('diet'),
-      buttonText: 'Launch Diet Agent',
+      action: handleDietAgentLaunch,
+      buttonText: isAuthenticated ? 'Launch Diet Agent' : 'Sign In & Launch',
       available: true,
-      category: 'nutrition'
+      category: 'nutrition',
+      requiresAuth: true
     },
     { 
       title: 'Meal Analysis', 
       desc: 'Upload food images or describe your meals for instant nutritional analysis.',
-      action: () => setActiveAgent('diet'),
-      buttonText: 'Analyze Meals',
+      action: handleDietAgentLaunch,
+      buttonText: isAuthenticated ? 'Analyze Meals' : 'Sign In & Analyze',
       available: true,
-      category: 'nutrition'
+      category: 'nutrition',
+      requiresAuth: true
     },
     { 
       title: 'Nutrition Tracking', 
       desc: 'Track your daily nutrition intake with detailed macro and micro nutrient breakdowns.',
-      action: () => setActiveAgent('diet'),
-      buttonText: 'Track Nutrition',
+      action: handleDietAgentLaunch,
+      buttonText: isAuthenticated ? 'Track Nutrition' : 'Sign In & Track',
       available: true,
-      category: 'nutrition'
+      category: 'nutrition',
+      requiresAuth: true
     },
     { 
       title: 'Fitness Planner', 
@@ -40,7 +67,8 @@ export const ServicesPage = () => {
       action: () => setActiveAgent('fitness'),
       buttonText: 'Launch Fitness Planner',
       available: true,
-      category: 'fitness'
+      category: 'fitness',
+      requiresAuth: false
     },
     { 
       title: 'Mental Health Assistant', 
@@ -48,7 +76,8 @@ export const ServicesPage = () => {
       action: () => setActiveAgent('mental'),
       buttonText: 'Launch Mental Health',
       available: true,
-      category: 'mental'
+      category: 'mental',
+      requiresAuth: false
     },
     { 
       title: 'Security & Data Privacy', 
@@ -56,13 +85,14 @@ export const ServicesPage = () => {
       action: () => setActiveAgent('security'),
       buttonText: 'Manage Privacy',
       available: true,
-      category: 'security'
+      category: 'security',
+      requiresAuth: false
     },
   ]
 
   // Render the appropriate agent component
   if (activeAgent === 'diet') {
-    return <DietAgent onBackToServices={() => setActiveAgent(null)} />
+    return <DietAgent onBackToServices={() => setActiveAgent(null)} authenticatedUser={profile} />
   }
   
   if (activeAgent === 'fitness') {
@@ -87,8 +117,16 @@ export const ServicesPage = () => {
               🏥 Health & Wellness Services
             </h1>
             <p className="mt-6 text-xl text-gray-600 max-w-3xl mx-auto">
-              Comprehensive AI-powered health solutions designed to transform your wellness journey
+              {isAuthenticated 
+                ? `Welcome back, ${profile?.name || 'User'}! Ready to continue your wellness journey?`
+                : 'Comprehensive AI-powered health solutions designed to transform your wellness journey'
+              }
             </p>
+            {isAuthenticated && (
+              <p className="mt-2 text-sm text-emerald-600 font-medium">
+                🎉 You're signed in! Enjoy full access to all personalized features.
+              </p>
+            )}
           </div>
           
           {/* Service Categories Grid */}
@@ -102,11 +140,18 @@ export const ServicesPage = () => {
                        service.category === 'fitness' ? '💪' :
                        service.category === 'mental' ? '🧠' : '🔒'}
                     </span>
-                    {service.available && (
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-                        ✅ Available
-                      </span>
-                    )}
+                    <div className="flex gap-2">
+                      {service.requiresAuth && !isAuthenticated && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          🔐 Login Required
+                        </span>
+                      )}
+                      {service.available && (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                          ✅ Available
+                        </span>
+                      )}
+                    </div>
                   </div>
                   
                   <h3 className="text-xl font-semibold text-gray-900 mb-3">
@@ -115,6 +160,11 @@ export const ServicesPage = () => {
                   
                   <p className="text-gray-600 mb-6 leading-relaxed">
                     {service.desc}
+                    {service.requiresAuth && !isAuthenticated && (
+                      <span className="block mt-2 text-sm text-blue-600 font-medium">
+                        🔐 Sign in to unlock personalized features and data sync
+                      </span>
+                    )}
                   </p>
                   
                   <button

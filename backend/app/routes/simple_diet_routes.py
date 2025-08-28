@@ -12,6 +12,18 @@ logger = logging.getLogger(__name__)
 # Create router for Diet Agent endpoints  
 router = APIRouter(prefix="/api/diet", tags=["Diet Agent"])
 
+# Health Check Endpoint
+@router.get("/health")
+async def health_check():
+    """Health check for Diet Agent API"""
+    return {
+        "success": True,
+        "message": "Diet Agent API is healthy",
+        "data": None,
+        "error": None,
+        "timestamp": datetime.utcnow().isoformat()
+    }
+
 # Simple models defined directly in routes for now
 class SimpleUserProfile(BaseModel):
     name: str

@@ -394,9 +394,16 @@ const dietAgentApi = {
 
 interface DietAgentProps {
   onBackToServices: () => void
+  authenticatedUser?: {
+    name: string
+    email: string
+    age?: number
+    country?: string
+    mobile?: string
+  } | null
 }
 
-export const DietAgentSimple: React.FC<DietAgentProps> = ({ onBackToServices }) => {
+export const DietAgentSimple: React.FC<DietAgentProps> = ({ onBackToServices, authenticatedUser }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [user, setUser] = useState<UserDietProfile | null>(null)
   const [activeTab, setActiveTab] = useState<'dashboard' | 'profile' | 'nutrition' | 'analysis' | 'goals' | 'insights'>('dashboard')
@@ -462,6 +469,53 @@ export const DietAgentSimple: React.FC<DietAgentProps> = ({ onBackToServices }) 
           }
         }
       } else {
+        // Check for authenticated user from main app
+        if (authenticatedUser && authenticatedUser.email) {
+          console.log('🔐 Authenticated user detected:', authenticatedUser.name)
+          
+          // Try to find existing Diet Agent profile for this user
+          try {
+            const existingProfile = await dietAgentApi.getProfileByEmail(authenticatedUser.email)
+            if (existingProfile) {
+              // User already has a Diet Agent profile, use it
+              await dietAgentSessionManager.createSession(existingProfile)
+              setUser(existingProfile)
+              setIsAuthenticated(true)
+              setLastUserEmail(existingProfile.email)
+              loadNutritionHistoryLocal()
+              
+              const welcomeDiv = document.createElement('div')
+              welcomeDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
+              welcomeDiv.innerHTML = `
+                <div>🎉 Welcome back, ${existingProfile.name}!</div>
+                <div class="text-xs mt-1">Your Diet Agent profile has been restored</div>
+              `
+              document.body.appendChild(welcomeDiv)
+              setTimeout(() => welcomeDiv.remove(), 4000)
+              
+              console.log('✅ Existing Diet Agent profile loaded for authenticated user')
+              return
+            }
+          } catch (error) {
+            console.warn('Could not check for existing profile:', error)
+          }
+          
+          // No existing Diet Agent profile, but we have authenticated user data
+          // We'll auto-populate the profile creation form
+          setLastUserEmail(authenticatedUser.email)
+          
+          const authDiv = document.createElement('div')
+          authDiv.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
+          authDiv.innerHTML = `
+            <div>🔐 Welcome, ${authenticatedUser.name}!</div>
+            <div class="text-xs mt-1">Please complete your Diet Agent profile setup</div>
+          `
+          document.body.appendChild(authDiv)
+          setTimeout(() => authDiv.remove(), 5000)
+          
+          return
+        }
+        
         // Check if we have a last used email for quick login
         const savedEmail = localStorage.getItem('dietAgentLastEmail')
         if (savedEmail) {
@@ -476,7 +530,7 @@ export const DietAgentSimple: React.FC<DietAgentProps> = ({ onBackToServices }) 
       console.error('Error initializing user:', error)
       setIsOnline(false)
     }
-  }, [sessionInitialized, setLastUserEmail])
+  }, [sessionInitialized, setLastUserEmail, authenticatedUser])
 
   useEffect(() => {
     initializeUser()
@@ -545,13 +599,20 @@ export const DietAgentSimple: React.FC<DietAgentProps> = ({ onBackToServices }) 
   }
 
   const handleCreateProfile = async (data: Omit<UserDietProfile, 'id' | 'bmi' | 'bmr' | 'tdee' | 'daily_calorie_goal'>) => {
+    console.log('🚀 Starting profile creation process...')
+    console.log('📊 Profile data:', data)
+    console.log('🌐 Online status:', isOnline)
+    
     try {
       let newProfile: UserDietProfile
       
       if (isOnline) {
+        console.log('🔄 Creating profile in database...')
         // Create profile in database
         newProfile = await dietAgentApi.createProfile(data)
+        console.log('✅ Profile created in database:', newProfile)
       } else {
+        console.log('📱 Creating profile in offline mode...')
         // Offline mode - create locally
         const metrics = calculateMetrics(data)
         newProfile = {
@@ -561,6 +622,7 @@ export const DietAgentSimple: React.FC<DietAgentProps> = ({ onBackToServices }) 
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }
+        console.log('✅ Profile created locally:', newProfile)
       }
       
       // Create session for the new profile
@@ -617,7 +679,8 @@ export const DietAgentSimple: React.FC<DietAgentProps> = ({ onBackToServices }) 
       }
       
     } catch (error) {
-      console.error('Error creating profile:', error)
+      console.error('❌ Error creating profile:', error)
+      console.log('🔄 Falling back to local profile creation...')
       
       // Fallback to local creation with session
       const metrics = calculateMetrics(data)
@@ -628,6 +691,8 @@ export const DietAgentSimple: React.FC<DietAgentProps> = ({ onBackToServices }) 
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }
+      
+      console.log('📱 Created fallback profile:', profileWithId)
       
       // Create fallback session
       await dietAgentSessionManager.createSession(profileWithId)
@@ -759,7 +824,7 @@ export const DietAgentSimple: React.FC<DietAgentProps> = ({ onBackToServices }) 
           )}
 
           {/* Profile Creation Form */}
-          <ProfileForm onSubmit={handleCreateProfile} />
+          <ProfileForm onSubmit={handleCreateProfile} authenticatedUser={authenticatedUser} />
         </div>
       </div>
     )
@@ -912,11 +977,20 @@ export const DietAgentSimple: React.FC<DietAgentProps> = ({ onBackToServices }) 
 }
 
 // Profile Form Component
-const ProfileForm: React.FC<{ onSubmit: (data: Omit<UserDietProfile, 'id' | 'bmi' | 'bmr' | 'tdee' | 'daily_calorie_goal'>) => void }> = ({ onSubmit }) => {
+const ProfileForm: React.FC<{ 
+  onSubmit: (data: Omit<UserDietProfile, 'id' | 'bmi' | 'bmr' | 'tdee' | 'daily_calorie_goal'>) => void
+  authenticatedUser?: {
+    name: string
+    email: string
+    age?: number
+    country?: string
+    mobile?: string
+  } | null
+}> = ({ onSubmit, authenticatedUser }) => {
   const [formData, setFormData] = useState<Omit<UserDietProfile, 'id' | 'bmi' | 'bmr' | 'tdee' | 'daily_calorie_goal'>>({
-    name: '',
-    email: '',
-    age: 25,
+    name: authenticatedUser?.name || '',
+    email: authenticatedUser?.email || '',
+    age: authenticatedUser?.age || 25,
     weight: 70,
     height: 170,
     gender: 'male',

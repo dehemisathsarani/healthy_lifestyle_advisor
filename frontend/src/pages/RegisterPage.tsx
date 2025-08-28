@@ -86,7 +86,15 @@ export const RegisterPage = () => {
       // captchaToken can be added to your backend payload when you wire the API
       await register(name, email, password, { age: typeof age === 'number' ? age : undefined, country, mobile: fullMobile })
       setSuccess('Successfully registered!')
-      setTimeout(() => navigate('/dashboard'), 800)
+      
+      // Check for redirect after successful registration
+      const redirectTo = sessionStorage.getItem('redirectTo')
+      if (redirectTo) {
+        sessionStorage.removeItem('redirectTo')
+        setTimeout(() => navigate(redirectTo), 800)
+      } else {
+        setTimeout(() => navigate('/dashboard'), 800)
+      }
     } catch {
       setError('Registration failed')
     }
