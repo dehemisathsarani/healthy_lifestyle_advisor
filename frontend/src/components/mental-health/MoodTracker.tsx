@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { apiFetch } from '../../lib/api';
 
 interface MoodTrackerProps {
   onMoodTracked?: (data: any) => void;
@@ -9,17 +10,22 @@ export const MoodTracker: React.FC<MoodTrackerProps> = ({ onMoodTracked }) => {
   const [notes, setNotes] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [showMoreUplift, setShowMoreUplift] = useState<boolean>(false);
+  const [additionalUplift, setAdditionalUplift] = useState<any>(null);
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
 
   const handleTrackMood = async () => {
     try {
       setIsLoading(true);
+      setResult(null); // Clear previous results
+      setAdditionalUplift(null); // Clear any previous additional uplift
+      setShowMoreUplift(false); // Reset the show more state
       
-      // Make API call to mental health endpoint
-      const response = await fetch('/api/mental-health/mood/track', {
+      // Use the apiFetch function which handles authentication and proper API base URL
+      const response = await apiFetch('/api/mental-health/mood/track', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}` // Assuming token is stored in localStorage
         },
         body: JSON.stringify({
           mood_score: moodScore,
@@ -28,11 +34,17 @@ export const MoodTracker: React.FC<MoodTrackerProps> = ({ onMoodTracked }) => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to track mood');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
       setResult(data);
+      
+      // If mood is low and uplift content is returned, enable "more" button
+      if (data.uplift && data.uplift.needed) {
+        setShowMoreUplift(true);
+      }
       
       if (onMoodTracked) {
         onMoodTracked(data);
@@ -43,9 +55,36 @@ export const MoodTracker: React.FC<MoodTrackerProps> = ({ onMoodTracked }) => {
       setMoodScore(5);
     } catch (error) {
       console.error('Error tracking mood:', error);
-      setResult({ error: 'Failed to track mood' });
+      setResult({ 
+        error: error instanceof Error ? error.message : 'Failed to track mood. Please try again.'
+      });
     } finally {
       setIsLoading(false);
+    }
+  };
+  
+  const getMoreUplift = async () => {
+    try {
+      setLoadingMore(true);
+      
+      const response = await apiFetch('/api/mental-health/uplift/more', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setAdditionalUplift(data);
+    } catch (error) {
+      console.error('Error getting more uplift content:', error);
+      setAdditionalUplift({ error: 'Failed to get more uplift content.' });
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -141,6 +180,64 @@ export const MoodTracker: React.FC<MoodTrackerProps> = ({ onMoodTracked }) => {
                   <p className="text-blue-600 italic">
                     "{result.encouragement}"
                   </p>
+                )}
+                
+                {/* Uplift content when mood is low */}
+                {result.uplift && result.uplift.needed && (
+                  <div className="mt-4 space-y-4">
+                    <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                      <p className="font-medium text-yellow-700 mb-2">{result.uplift.message}</p>
+                      
+                      {/* Joke section */}
+                      <div className="mb-3">
+                        <h4 className="text-yellow-800 font-medium text-sm mb-1">😄 Here's a joke to brighten your day:</h4>
+                        <p className="text-yellow-700 p-2 bg-yellow-100 rounded">{result.uplift.joke.joke}</p>
+                      </div>
+                      
+                      {/* Activity suggestion */}
+                      <div>
+                        <h4 className="text-yellow-800 font-medium text-sm mb-1">🎯 Try this quick activity:</h4>
+                        <p className="text-yellow-700 p-2 bg-yellow-100 rounded">{result.uplift.activity.activity}</p>
+                      </div>
+                      
+                      {/* More button */}
+                      <div className="mt-3">
+                        <button
+                          onClick={getMoreUplift}
+                          disabled={loadingMore}
+                          className="w-full py-2 px-3 bg-yellow-500 hover:bg-yellow-600 text-white text-sm rounded-md transition-colors"
+                        >
+                          {loadingMore ? 'Getting more...' : 'Want another one?'}
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* Additional uplift content */}
+                    {additionalUplift && !additionalUplift.error && (
+                      <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                        <p className="font-medium text-green-700 mb-2">{additionalUplift.message}</p>
+                        
+                        {/* Additional joke */}
+                        <div className="mb-3">
+                          <h4 className="text-green-800 font-medium text-sm mb-1">😄 Another joke:</h4>
+                          <p className="text-green-700 p-2 bg-green-100 rounded">{additionalUplift.joke.joke}</p>
+                        </div>
+                        
+                        {/* Additional activity */}
+                        <div>
+                          <h4 className="text-green-800 font-medium text-sm mb-1">🎯 Another activity to try:</h4>
+                          <p className="text-green-700 p-2 bg-green-100 rounded">{additionalUplift.activity.activity}</p>
+                        </div>
+                        
+                        {/* Breathing exercise suggestion */}
+                        <div className="mt-3 p-2 bg-blue-50 rounded border border-blue-100">
+                          <p className="text-blue-700 text-xs">
+                            <strong>Feeling better?</strong> Try a quick breathing exercise: Breathe in for 4 counts, hold for 4, and exhale for 6.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             )}

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { apiFetch } from '../../lib/api';
 
 interface CompanionChatProps {
   onMessageSent?: (data: any) => void;
@@ -6,7 +7,13 @@ interface CompanionChatProps {
 
 export const CompanionChat: React.FC<CompanionChatProps> = ({ onMessageSent }) => {
   const [message, setMessage] = useState<string>('');
-  const [chatHistory, setChatHistory] = useState<Array<{type: 'user' | 'companion', content: string, timestamp: string}>>([]);
+  const [chatHistory, setChatHistory] = useState<Array<{type: 'user' | 'companion', content: string, timestamp: string}>>([
+    {
+      type: 'companion',
+      content: "Hello! I'm your AI companion. I'm here to listen and support you. How are you feeling today?",
+      timestamp: new Date().toLocaleTimeString()
+    }
+  ]);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSendMessage = async () => {
@@ -24,11 +31,10 @@ export const CompanionChat: React.FC<CompanionChatProps> = ({ onMessageSent }) =
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/mental-health/companion/chat', {
+      const response = await apiFetch('/api/mental-health/companion/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
           message: currentMessage
@@ -36,7 +42,8 @@ export const CompanionChat: React.FC<CompanionChatProps> = ({ onMessageSent }) =
       });
 
       if (!response.ok) {
-        throw new Error('Failed to send message');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || 'Failed to send message');
       }
 
       const data = await response.json();

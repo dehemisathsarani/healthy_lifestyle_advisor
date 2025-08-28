@@ -1,21 +1,25 @@
 import React, { useState } from 'react';
 import { MoodTracker } from '../components/mental-health/MoodTracker';
+import { MoodHistory } from '../components/mental-health/MoodHistory';
 import { CompanionChat } from '../components/mental-health/CompanionChat';
+import { WellnessToolkit } from '../components/mental-health/WellnessToolkit';
+import { HealthEducation } from '../components/mental-health/HealthEducation';
+import { apiFetch } from '../lib/api';
 
 export const MentalHealthPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'mood' | 'chat' | 'meditation' | 'report'>('mood');
+  const [activeTab, setActiveTab] = useState<'mood' | 'chat' | 'meditation' | 'wellness' | 'education' | 'report'>('mood');
   const [meditationSuggestion, setMeditationSuggestion] = useState<any>(null);
   const [breathingExercise, setBreathingExercise] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [historyTimeRange, setHistoryTimeRange] = useState<'7' | '30' | '90'>('7');
 
   const getMeditationSuggestion = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/mental-health/meditation/suggest', {
+      const response = await apiFetch('/api/mental-health/meditation/suggest', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({
           duration: 10,
@@ -38,11 +42,8 @@ export const MentalHealthPage: React.FC = () => {
   const getBreathingExercise = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/mental-health/breathing/exercise?difficulty=beginner', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
+      const response = await apiFetch('/api/mental-health/breathing/exercise?difficulty=beginner', {
+        method: 'GET'
       });
 
       if (response.ok) {
@@ -65,7 +66,7 @@ export const MentalHealthPage: React.FC = () => {
             🧠 Mental Health Dashboard
           </h1>
           <p className="text-gray-600">
-            Track your mood, chat with your AI companion, and find wellness resources
+            Track your mood, chat with your AI companion, use wellness tools, and access health resources
           </p>
         </div>
 
@@ -76,6 +77,8 @@ export const MentalHealthPage: React.FC = () => {
               { key: 'mood', label: '📊 Mood Tracker', icon: '📊' },
               { key: 'chat', label: '💬 AI Companion', icon: '💬' },
               { key: 'meditation', label: '🧘 Meditation', icon: '🧘' },
+              { key: 'wellness', label: '🌿 Wellness Toolkit', icon: '🌿' },
+              { key: 'education', label: '📚 Health Education', icon: '📚' },
               { key: 'report', label: '📈 Wellness Report', icon: '📈' }
             ].map((tab) => (
               <button
@@ -98,6 +101,31 @@ export const MentalHealthPage: React.FC = () => {
           {activeTab === 'mood' && (
             <div className="w-full max-w-2xl">
               <MoodTracker onMoodTracked={(data) => console.log('Mood tracked:', data)} />
+              
+              {/* Mood history visualization */}
+              <div className="mt-8 bg-white shadow-lg rounded-lg p-6 border border-gray-200">
+                <div className="mb-4 flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-gray-800">📊 Mood History</h3>
+                  
+                  <div className="flex space-x-2">
+                    {['7', '30', '90'].map((days) => (
+                      <button
+                        key={days}
+                        onClick={() => setHistoryTimeRange(days as '7' | '30' | '90')}
+                        className={`px-3 py-1 text-xs rounded-md ${
+                          historyTimeRange === days
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        {days} days
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                <MoodHistory timeRange={historyTimeRange} />
+              </div>
             </div>
           )}
 
@@ -194,6 +222,18 @@ export const MentalHealthPage: React.FC = () => {
               </div>
             </div>
           )}
+
+          {activeTab === 'wellness' && (
+            <div className="w-full max-w-4xl">
+              <WellnessToolkit />
+            </div>
+          )}
+
+          {activeTab === 'education' && (
+            <div className="w-full max-w-4xl">
+              <HealthEducation />
+            </div>
+          )}
         </div>
 
         {/* Quick Actions */}
@@ -203,21 +243,33 @@ export const MentalHealthPage: React.FC = () => {
               🚀 Quick Mental Health Resources
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <div 
+                className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200 cursor-pointer hover:bg-blue-100"
+                onClick={() => setActiveTab('meditation')}
+              >
                 <div className="text-2xl mb-2">🧘‍♀️</div>
-                <p className="text-xs text-blue-700 font-medium">5-Min Meditation</p>
+                <p className="text-xs text-blue-700 font-medium">Meditation</p>
               </div>
-              <div className="text-center p-3 bg-green-50 rounded-lg border border-green-200">
-                <div className="text-2xl mb-2">🌬️</div>
-                <p className="text-xs text-green-700 font-medium">Breathing Exercise</p>
+              <div 
+                className="text-center p-3 bg-green-50 rounded-lg border border-green-200 cursor-pointer hover:bg-green-100"
+                onClick={() => setActiveTab('wellness')}
+              >
+                <div className="text-2xl mb-2">�</div>
+                <p className="text-xs text-green-700 font-medium">Wellness Toolkit</p>
               </div>
-              <div className="text-center p-3 bg-purple-50 rounded-lg border border-purple-200">
+              <div 
+                className="text-center p-3 bg-purple-50 rounded-lg border border-purple-200 cursor-pointer hover:bg-purple-100"
+                onClick={() => setActiveTab('mood')}
+              >
                 <div className="text-2xl mb-2">📝</div>
-                <p className="text-xs text-purple-700 font-medium">Mood Journal</p>
+                <p className="text-xs text-purple-700 font-medium">Mood Tracker</p>
               </div>
-              <div className="text-center p-3 bg-orange-50 rounded-lg border border-orange-200">
-                <div className="text-2xl mb-2">🤗</div>
-                <p className="text-xs text-orange-700 font-medium">Support Chat</p>
+              <div 
+                className="text-center p-3 bg-orange-50 rounded-lg border border-orange-200 cursor-pointer hover:bg-orange-100"
+                onClick={() => setActiveTab('education')}
+              >
+                <div className="text-2xl mb-2">📚</div>
+                <p className="text-xs text-orange-700 font-medium">Health Resources</p>
               </div>
             </div>
           </div>

@@ -46,24 +46,34 @@ class AgentManager:
             await self.initialize_system()
         
         try:
+            self.logger.info(f"Processing request: {request}")
             request_type = request.get("type", "").lower()
             agent_type = request.get("agent", "").lower()
             
             # Route mental health requests
             mental_health_keywords = [
                 "mood", "stress", "meditation", "breathing", "journal", 
-                "companion", "mental", "anxiety", "wellness", "emotion"
+                "companion", "mental", "anxiety", "wellness", "emotion",
+                "grounding_technique", "gratitude_prompt"
             ]
+            
+            self.logger.info(f"Request type: {request_type}, agent type: {agent_type}")
             
             if (agent_type == "mental_health" or 
                 any(keyword in request_type for keyword in mental_health_keywords)):
                 
+                self.logger.info(f"Routing to mental health agent: {request_type}")
+                
                 if "mental_health" in self.agents:
-                    return await self.agents["mental_health"].process_request(request)
+                    response = await self.agents["mental_health"].process_request(request)
+                    self.logger.info(f"Response from mental health agent: {response}")
+                    return response
                 else:
+                    self.logger.error("Mental Health Agent not available")
                     return {"error": "Mental Health Agent not available"}
             
             # Default response for unrecognized requests
+            self.logger.warning(f"Unrecognized request type: {request_type}")
             return {
                 "error": "Request type not recognized or agent not available",
                 "available_agents": list(self.agents.keys()),
@@ -71,7 +81,7 @@ class AgentManager:
             }
             
         except Exception as e:
-            self.logger.error(f"Error processing request: {str(e)}")
+            self.logger.error(f"Error processing request: {str(e)}", exc_info=True)
             return {"error": f"Failed to process request: {str(e)}"}
     
     async def get_system_status(self) -> Dict[str, Any]:

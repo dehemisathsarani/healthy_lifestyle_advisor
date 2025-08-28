@@ -8,6 +8,9 @@ import asyncio
 import json
 from datetime import datetime, timedelta
 import random
+from ..core.uplift_apis import get_random_joke, get_random_activity
+from ..core.wellness_support import get_box_breathing, get_grounding_technique as fetch_grounding_technique, get_gratitude_prompt as fetch_gratitude_prompt, get_wellness_routine as fetch_wellness_routine
+from ..core.health_education import get_medication_info as fetch_medication_info, get_health_topic_info
 
 class MentalHealthAgent(BaseAgent):
     """Agent responsible for mental health, mood tracking, and wellness recommendations"""
@@ -51,6 +54,8 @@ class MentalHealthAgent(BaseAgent):
             request_type = request.get("type", "").lower()
             user_id = request.get("user_id")
             
+            self.logger.info(f"Processing mental health request: {request_type} for user: {user_id}")
+            
             if request_type == "mood_analysis":
                 return await self.analyze_mood(request.get("mood_data"), user_id)
             elif request_type == "stress_prediction":
@@ -67,11 +72,26 @@ class MentalHealthAgent(BaseAgent):
                 return await self.generate_wellness_report(user_id)
             elif request_type == "mood_tracking":
                 return await self.track_mood(request.get("mood_score"), request.get("notes"), user_id)
+            elif request_type == "mood_history":
+                return await self.get_mood_history(user_id, request.get("days", 7))
+            elif request_type == "grounding_technique":
+                self.logger.info("Handling grounding_technique request")
+                return await self.get_grounding_technique()
+            elif request_type == "gratitude_prompt":
+                self.logger.info("Handling gratitude_prompt request")
+                return await self.get_gratitude_prompt()
+            elif request_type == "wellness_routine":
+                return await self.get_wellness_routine(request.get("area", "general"))
+            elif request_type == "medication_info":
+                return await self.get_medication_info(request.get("medication_name", ""))
+            elif request_type == "health_topic":
+                return await self.get_health_topic(request.get("topic", ""))
             else:
+                self.logger.warning(f"Unknown request type: {request_type}")
                 return {"error": f"Unknown request type for Mental Health Agent: {request_type}"}
                 
         except Exception as e:
-            self.logger.error(f"Error processing request: {str(e)}")
+            self.logger.error(f"Error processing request: {str(e)}", exc_info=True)
             return {"error": f"Mental Health Agent failed to process request: {str(e)}"}
         finally:
             self.set_status("ready")
@@ -380,18 +400,228 @@ class MentalHealthAgent(BaseAgent):
             
             # Calculate weekly average
             weekly_average = await self._calculate_weekly_mood_average(user_id)
+            mood_trend = await self._get_mood_trend(user_id)
             
-            return {
+            response = {
                 "tracked": True,
                 "current_mood": mood_score,
                 "weekly_average": weekly_average,
-                "trend": await self._get_mood_trend(user_id),
+                "trend": mood_trend,
                 "encouragement": self._get_mood_encouragement(mood_score)
             }
+            
+            # If mood is low (below 4 on a 1-10 scale), include uplift content
+            if mood_score < 4:
+                # Get jokes and activities to improve mood
+                joke = await get_random_joke()
+                activity = await get_random_activity()
+                
+                response["uplift"] = {
+                    "needed": True,
+                    "joke": joke,
+                    "activity": activity,
+                    "message": "I noticed you're feeling down. Here's something to brighten your day!"
+                }
+            
+            return response
             
         except Exception as e:
             self.logger.error(f"Mood tracking failed: {str(e)}")
             return {"error": "Failed to track mood"}
+    
+    async def get_mood_history(self, user_id: str, days: int = 7) -> Dict[str, Any]:
+        """Get mood history for the specified number of days"""
+        try:
+            if user_id not in self.mood_history:
+                return {"history": []}
+                
+            # Get current date
+            now = datetime.now()
+            
+            # Calculate the date 'days' days ago
+            start_date = now - timedelta(days=days)
+            
+            # Filter mood entries within the date range
+            filtered_history = []
+            for entry in self.mood_history[user_id]:
+                try:
+                    entry_date = datetime.fromisoformat(entry.get("timestamp", ""))
+                    if entry_date >= start_date:
+                        filtered_history.append({
+                            "date": entry.get("date", entry_date.strftime("%Y-%m-%d")),
+                            "mood_score": entry.get("mood_score", 5),
+                            "notes": entry.get("notes", "")
+                        })
+                except (ValueError, TypeError):
+                    # Skip entries with invalid dates
+                    continue
+                    
+            # Sort by date
+            filtered_history.sort(key=lambda x: x["date"])
+            
+            return {
+                "history": filtered_history,
+                "range": f"{days}-day",
+                "count": len(filtered_history)
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Getting mood history failed: {str(e)}")
+            return {"error": "Failed to retrieve mood history"}
+            
+    async def get_breathing_exercise(self, technique: str = "box", difficulty: str = "beginner") -> Dict[str, Any]:
+        """
+        Get breathing exercise instructions based on the requested technique
+        
+        Currently supports: box breathing (4-4-4-4)
+        """
+        try:
+            if technique.lower() == "box":
+                breathing_exercise = get_box_breathing()
+                return {
+                    "exercise": breathing_exercise,
+                    "type": "box_breathing",
+                    "timestamp": datetime.now().isoformat()
+                }
+            else:
+                # Default to box breathing if the requested technique is not found
+                breathing_exercise = get_box_breathing()
+                return {
+                    "exercise": breathing_exercise,
+                    "type": "box_breathing",
+                    "message": f"Technique '{technique}' not found. Providing box breathing instead.",
+                    "timestamp": datetime.now().isoformat()
+                }
+                
+        except Exception as e:
+            self.logger.error(f"Error getting breathing exercise: {str(e)}")
+            return {"error": "Failed to get breathing exercise"}
+            
+    async def get_grounding_technique(self) -> Dict[str, Any]:
+        """
+        Get 5-4-3-2-1 grounding technique for anxiety and stress
+        """
+        try:
+            # Use the imported function with an alias to avoid recursive calls
+            grounding_data = fetch_grounding_technique()
+            
+            # Return the data with a timestamp
+            return {
+                "technique": grounding_data,
+                "type": "5-4-3-2-1_grounding",
+                "timestamp": datetime.now().isoformat()
+            }
+                
+        except Exception as e:
+            self.logger.error(f"Error getting grounding technique: {str(e)}")
+            return {"error": "Failed to get grounding technique"}
+            
+    async def get_gratitude_prompt(self) -> Dict[str, Any]:
+        """
+        Get a random gratitude prompt for reflection
+        """
+        try:
+            # Use the imported function with an alias to avoid recursive calls
+            gratitude_data = fetch_gratitude_prompt()
+            
+            # Return the data with a timestamp
+            return {
+                "prompt": gratitude_data,
+                "type": "gratitude",
+                "timestamp": datetime.now().isoformat()
+            }
+                
+        except Exception as e:
+            self.logger.error(f"Error getting gratitude prompt: {str(e)}")
+            return {"error": "Failed to get gratitude prompt"}
+            
+    async def get_wellness_routine(self, area: str = "general") -> Dict[str, Any]:
+        """
+        Get wellness routine suggestions for different areas (sleep, nutrition, movement, social)
+        """
+        try:
+            if area.lower() == "general":
+                # Return all areas for a general request
+                return {
+                    "routines": {
+                        "sleep": fetch_wellness_routine("sleep"),
+                        "nutrition": fetch_wellness_routine("nutrition"),
+                        "movement": fetch_wellness_routine("movement"),
+                        "social": fetch_wellness_routine("social")
+                    },
+                    "type": "wellness_routines",
+                    "timestamp": datetime.now().isoformat()
+                }
+            else:
+                # Return specific area
+                routine = fetch_wellness_routine(area)
+                return {
+                    "routine": routine,
+                    "area": area,
+                    "type": "wellness_routine",
+                    "timestamp": datetime.now().isoformat()
+                }
+                
+        except Exception as e:
+            self.logger.error(f"Error getting wellness routine: {str(e)}")
+            return {"error": "Failed to get wellness routine"}
+            
+    async def get_medication_info(self, medication_name: str) -> Dict[str, Any]:
+        """
+        Get evidence-based medication information from trusted sources
+        
+        Note: This is educational only, not medical advice
+        """
+        try:
+            if not medication_name:
+                return {"error": "Medication name is required"}
+                
+            # Get medication information from trusted sources
+            medication_info = await fetch_medication_info(medication_name)
+            
+            # Add disclaimer
+            medication_info["disclaimer"] = (
+                "This information is for educational purposes only and not a substitute for professional medical advice. "
+                "Always consult a healthcare provider about medications, side effects, and treatment options."
+            )
+            
+            medication_info["timestamp"] = datetime.now().isoformat()
+            medication_info["type"] = "medication_info"
+            
+            return medication_info
+                
+        except Exception as e:
+            self.logger.error(f"Error getting medication information: {str(e)}")
+            return {"error": "Failed to get medication information"}
+            
+    async def get_health_topic(self, topic: str) -> Dict[str, Any]:
+        """
+        Get evidence-based health topic information from trusted sources
+        
+        Note: This is educational only, not medical advice
+        """
+        try:
+            if not topic:
+                return {"error": "Health topic is required"}
+                
+            # Get health topic information from trusted sources
+            topic_info = await get_health_topic_info(topic)
+            
+            # Add disclaimer
+            topic_info["disclaimer"] = (
+                "This information is for educational purposes only and not a substitute for professional medical advice. "
+                "Always consult a healthcare provider about your health concerns and treatment options."
+            )
+            
+            topic_info["timestamp"] = datetime.now().isoformat()
+            topic_info["type"] = "health_topic"
+            topic_info["query"] = topic
+            
+            return topic_info
+                
+        except Exception as e:
+            self.logger.error(f"Error getting health topic information: {str(e)}")
+            return {"error": "Failed to get health topic information"}
     
     async def generate_wellness_report(self, user_id: str) -> Dict[str, Any]:
         """Generate comprehensive wellness report for user"""
