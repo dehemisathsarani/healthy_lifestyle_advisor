@@ -11,11 +11,13 @@ from app.core.database import (
     get_db_health, 
     verify_database,
     get_database
+)
 
 from app.auth.router import router as auth_router
 from app.auth.users import setup_user_collection
 
 from app.routes.simple_diet_routes import router as diet_router
+from app.api.mental_health import router as mental_health_router
 
 
 # Create FastAPI application with detailed configuration
@@ -47,16 +49,8 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth_router)
-
-<<<<<<< HEAD
-# Import and include mental health router
-from app.api.mental_health import router as mental_health_router
 app.include_router(mental_health_router)
-=======
-# Include Diet Agent routes
 app.include_router(diet_router)
-
->>>>>>> f3ef684793c6562f9a43e4c50d3e392e7d11e5ec
 
 # Global application state
 app_state = {
