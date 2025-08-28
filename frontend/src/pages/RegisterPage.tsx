@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import { FaUser, FaAt, FaLock, FaGlobe, FaPhone, FaHashtag, FaCheckCircle, FaTimesCircle, FaEye, FaEyeSlash, FaLinkedin, FaTwitter, FaInstagram, FaFacebook, FaYoutube, FaGithub } from 'react-icons/fa'
+import { FaUser, FaAt, FaLock, FaGlobe, FaPhone, FaHashtag, FaCheckCircle, FaTimesCircle, FaEye, FaEyeSlash, FaLinkedin, FaTwitter, FaInstagram, FaFacebook, FaYoutube, FaGithub, FaHome } from 'react-icons/fa'
 import { SORTED_COUNTRIES } from '../data/countries'
-import { getRecaptchaToken } from '../lib/recaptcha'
+// import { getRecaptchaToken } from '../lib/recaptcha'
 
 export const RegisterPage = () => {
   const { register } = useAuth()
@@ -81,13 +81,13 @@ export const RegisterPage = () => {
     e.preventDefault()
     setError(null)
     try {
-      const captchaToken = await getRecaptchaToken('register')
+      // const captchaToken = await getRecaptchaToken('register')
       const fullMobile = dialCode && mobile ? `${dialCode} ${mobile}` : mobile
       // captchaToken can be added to your backend payload when you wire the API
       await register(name, email, password, { age: typeof age === 'number' ? age : undefined, country, mobile: fullMobile })
       setSuccess('Successfully registered!')
       setTimeout(() => navigate('/dashboard'), 800)
-    } catch (err) {
+    } catch {
       setError('Registration failed')
     }
   }
@@ -97,9 +97,30 @@ export const RegisterPage = () => {
       <div className="relative overflow-hidden rounded-2xl border bg-white/70 p-6 shadow-lg backdrop-blur">
         <div className="pointer-events-none absolute -top-24 -right-24 h-72 w-72 rounded-full bg-brand/20 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-20 -left-20 h-72 w-72 rounded-full bg-emerald-400/20 blur-3xl" />
+        
+        {/* Floating Home Button */}
+        <button
+          onClick={() => navigate('/')}
+          className="absolute top-4 right-4 z-20 group flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg transition-all duration-300 hover:bg-emerald-600 hover:scale-110 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+          title="Back to Home"
+        >
+          <FaHome className="text-lg transition-transform duration-300 group-hover:scale-110" />
+        </button>
+        
         <div className="relative">
           <h1 className="text-3xl font-bold">Create your account</h1>
           <p className="mt-1 text-sm text-gray-600">Join and get your personalized fitness and nutrition guidance</p>
+          
+          {/* Login redirect */}
+          <p className="mt-2 text-sm text-center text-gray-600">
+            Already have an account?{' '}
+            <button
+              onClick={() => navigate('/login')}
+              className="text-emerald-600 hover:text-emerald-700 font-medium underline transition-colors duration-200"
+            >
+              Sign in
+            </button>
+          </p>
           
           {/* Social Media Links */}
           <div className="mt-4 flex items-center justify-center gap-4">
@@ -264,6 +285,13 @@ export const RegisterPage = () => {
                 <a href="#" className="text-gray-500 hover:text-brand transition-colors">Help Center</a>
                 <a href="#" className="text-gray-500 hover:text-brand transition-colors">Contact Support</a>
                 <a href="#" className="text-gray-500 hover:text-brand transition-colors">About Us</a>
+                <button
+                  onClick={() => navigate('/')}
+                  className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 transition-colors duration-200 font-medium"
+                >
+                  <FaHome className="text-sm" />
+                  Back to Home
+                </button>
               </div>
             </div>
           </div>

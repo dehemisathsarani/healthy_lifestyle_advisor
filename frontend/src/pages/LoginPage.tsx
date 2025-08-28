@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import { FaEnvelope, FaLock, FaArrowRight } from 'react-icons/fa'
+import { FaEnvelope, FaLock, FaArrowRight, FaHome } from 'react-icons/fa'
 
 export const LoginPage = () => {
   const { login } = useAuth()
@@ -64,6 +64,18 @@ export const LoginPage = () => {
       <div className="relative overflow-hidden rounded-2xl border bg-white/70 p-6 shadow-lg backdrop-blur">
         <div className="pointer-events-none absolute -top-20 -right-20 h-56 w-56 rounded-full bg-brand/20 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-16 -left-16 h-56 w-56 rounded-full bg-emerald-400/20 blur-3xl" />
+        
+        {/* Home Button */}
+        <div className="absolute top-4 right-4">
+          <button
+            onClick={() => navigate('/')}
+            className="group flex items-center justify-center w-10 h-10 rounded-full bg-white/80 hover:bg-white border border-gray-200 hover:border-emerald-300 shadow-sm hover:shadow-md transition-all duration-200"
+            title="Go to Homepage"
+          >
+            <FaHome className="text-gray-600 hover:text-emerald-600 transition-colors duration-200 group-hover:scale-110" />
+          </button>
+        </div>
+        
         <div className="relative">
           <h1 className="text-3xl font-bold">Welcome back</h1>
           <p className="mt-1 text-sm text-gray-600">Sign in to continue to your dashboard</p>
@@ -94,6 +106,25 @@ export const LoginPage = () => {
 
           <div className="mt-6 grid grid-cols-1 gap-3">
             <button onClick={() => handleOAuth('google')} disabled={oauthInProgress} className="rounded-md border px-4 py-2 hover:bg-gray-50 disabled:opacity-70 disabled:cursor-not-allowed">Continue with Google</button>
+          </div>
+
+          {/* Additional Navigation */}
+          <div className="mt-6 pt-4 border-t border-gray-200">
+            <div className="flex items-center justify-between text-sm">
+              <button
+                onClick={() => navigate('/register')}
+                className="text-emerald-600 hover:text-emerald-700 font-medium transition-colors duration-200"
+              >
+                Don't have an account? Sign up
+              </button>
+              <button
+                onClick={() => navigate('/')}
+                className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 font-medium transition-colors duration-200 group"
+              >
+                <FaHome className="group-hover:scale-110 transition-transform duration-200" />
+                Back to Home
+              </button>
+            </div>
           </div>
         </div>
       </div>
