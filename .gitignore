@@ -425,3 +425,6 @@ frontend/src/pages/SimpleHomePage.tsx
 .pycache
 
 
+test_complete_flow.py
+test_diet_agent_storage.py
+verify_diet_storage.py
