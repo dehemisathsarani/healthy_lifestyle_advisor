@@ -1,4 +1,4 @@
-import { useAuth } from '../auth/AuthContext'
+import { useAuth } from "../auth/AuthContext"
 import { useNavigate } from 'react-router-dom'
 import { FaSignOutAlt, FaUser, FaAppleAlt, FaFire, FaHeart, FaCalendarAlt, FaChartLine, FaDumbbell, FaBrain } from 'react-icons/fa'
 import { useState, useEffect } from 'react'
