@@ -311,10 +311,13 @@ async def analyze_text_meal(
 @app.get("/meal-plan")
 async def get_meal_plan(
     date: Optional[str] = None,
+    goal_type: Optional[str] = None,
     current_user: dict = Depends(get_current_user)
 ):
     """Get personalized meal plan for the day."""
     try:
+        from nutrition_service import nutrition_service
+        
         if not date:
             date = datetime.now().strftime('%Y-%m-%d')
         
@@ -328,30 +331,32 @@ async def get_meal_plan(
         }).to_list(None)
         
         # Get user profile
-        user_profile = await db.user_profiles.find_one({"user_id": current_user['user_id']})
+        user_profile_data = await db.user_profiles.find_one({"user_id": current_user['user_id']})
         
-        # Request meal plan from AI service
-        ai_request = {
-            "user_profile": user_profile,
-            "current_intake": [entry.get('analysis_result', {}) for entry in current_intake]
-        }
+        if not user_profile_data:
+            raise HTTPException(status_code=404, detail="User profile not found")
         
-        response = await ai_service_client.post("/meal-plan", json=ai_request)
+        # Convert to Pydantic model
+        user_profile = UserProfile(**user_profile_data)
         
-        if response.status_code != 200:
-            raise HTTPException(status_code=500, detail="Meal plan generation failed")
+        # Update goal if provided
+        if goal_type and goal_type in ["lose_weight", "gain_weight", "maintain"]:
+            user_profile.goal = goal_type
+            # Update in DB
+            await db.user_profiles.update_one(
+                {"user_id": current_user['user_id']},
+                {"$set": {"goal": goal_type}}
+            )
         
-        meal_plan = response.json()
+        # Generate meal plan
+        meal_plan = await nutrition_service.generate_meal_plan(user_profile, date)
         
-        # Store meal plan
-        await db.meal_plans.insert_one({
-            "user_id": current_user['user_id'],
-            "date": date,
-            "meal_plan": meal_plan,
-            "created_at": datetime.now()
-        })
+        # Store meal plan in DB
+        meal_plan_dict = meal_plan.dict()
+        result = await db.meal_plans.insert_one(meal_plan_dict)
+        meal_plan_dict["plan_id"] = str(result.inserted_id)
         
-        return meal_plan
+        return meal_plan_dict
         
     except HTTPException:
         raise

@@ -67,26 +67,14 @@ async def startup_event():
     print("🚀 Starting Health Agent API...")
     app_state["startup_time"] = datetime.now()
     
-    # Connect to MongoDB with retry logic
-    max_retries = 3
-    for attempt in range(max_retries):
-        print(f"📡 Database connection attempt {attempt + 1}/{max_retries}")
-        app_state["db_connected"] = await connect_to_mongo()
+    # For demo purposes, we'll skip the database connection completely
+    app_state["db_connected"] = False
+    print("⚠️ Running in DEMO MODE - No database connection")
         
-        if app_state["db_connected"]:
-            break
-        elif attempt < max_retries - 1:
-            print(f"⏳ Retrying in 5 seconds...")
-            await asyncio.sleep(5)
-    
-    if app_state["db_connected"]:
-        print("✅ Application startup completed successfully")
-        print("🌐 API Documentation available at: http://localhost:8000/docs")
-        # Setup user collection with indexes
-        await setup_user_collection()
-    else:
-        print("⚠️  Application started with database connection issues")
-        print("📖 Some features may be limited without database connectivity")
+    # Continue without database connection
+    print("✅ Application startup completed successfully")
+    print("🌐 API Documentation available at: http://localhost:8000/docs")
+    print("📖 Some features may be limited in demo mode")
 
 @app.on_event("shutdown")
 async def shutdown_event():
