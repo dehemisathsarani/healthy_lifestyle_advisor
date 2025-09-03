@@ -428,3 +428,6 @@ frontend/src/pages/SimpleHomePage.tsx
 test_complete_flow.py
 test_diet_agent_storage.py
 verify_diet_storage.py
+test_fallback_simple.py
+test_fallback_system.py
+test_rag_conversation_storage.py

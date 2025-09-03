@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { ArrowLeft, User, Target, Camera, Apple, Calculator, Heart, Activity } from 'lucide-react'
+import { FaRobot } from 'react-icons/fa'
 import SimpleProfessionalCalendar from './SimpleProfessionalCalendar'
 import NLPNutritionInsights from './NLPNutritionInsights'
 import SessionStatus from './SessionStatus'
 import QuickLogin from './QuickLogin'
+import NutritionChatbot from './NutritionChatbotEnhanced'
 import { dietAgentSessionManager } from '../services/SessionManager'
 import { dietAgentEmailService } from '../services/EmailService'
 import { enhancedFoodAnalysisService, type FoodItem as EnhancedFoodItem } from '../services/enhancedFoodAnalysis'
@@ -41,6 +43,7 @@ export const DietAgentSimple: React.FC<DietAgentProps> = ({ onBackToServices, au
   const [sessionInitialized, setSessionInitialized] = useState(false)
   const [showQuickLogin, setShowQuickLogin] = useState(false)
   const [lastUserEmail, setLastUserEmail] = useState('')
+  const [isChatbotOpen, setIsChatbotOpen] = useState(false)
 
   // Initialize session manager and user
   const initializeUser = useCallback(async () => {
@@ -455,6 +458,29 @@ export const DietAgentSimple: React.FC<DietAgentProps> = ({ onBackToServices, au
           {/* Profile Creation Form */}
           <ProfileForm onSubmit={handleCreateProfile} authenticatedUser={authenticatedUser} />
         </div>
+
+        {/* RAG Nutrition Chatbot - Always Available */}
+        {/* Floating Chatbot Toggle Button */}
+        {!isChatbotOpen && (
+          <button
+            onClick={() => setIsChatbotOpen(true)}
+            className="fixed bottom-6 right-6 z-40 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
+            title="Open AI Nutrition Assistant"
+          >
+            <FaRobot className="text-2xl" />
+          </button>
+        )}
+        
+        <NutritionChatbot 
+          user={{
+            id: 'guest',
+            email: authenticatedUser?.email || 'guest@example.com',
+            name: authenticatedUser?.name || 'Guest',
+            goal: 'general_health'
+          }}
+          isOpen={isChatbotOpen}
+          onToggle={() => setIsChatbotOpen(!isChatbotOpen)}
+        />
       </div>
     )
   }
@@ -601,6 +627,32 @@ export const DietAgentSimple: React.FC<DietAgentProps> = ({ onBackToServices, au
           )}
         </div>
       </div>
+
+      {/* RAG Nutrition Chatbot */}
+      {/* Floating Chatbot Toggle Button */}
+      {!isChatbotOpen && (
+        <button
+          onClick={() => setIsChatbotOpen(true)}
+          className="fixed bottom-6 right-6 z-40 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
+          title="Open AI Nutrition Assistant"
+        >
+          <FaRobot className="text-2xl" />
+        </button>
+      )}
+      
+      <NutritionChatbot 
+        user={{
+          id: user?.id || lastUserEmail || 'anonymous',
+          email: user?.email || lastUserEmail || authenticatedUser?.email || '',
+          name: user?.name || authenticatedUser?.name || 'Guest',
+          goal: user?.goal || 'general_health',
+          dietary_restrictions: user?.dietary_restrictions || [],
+          current_weight: user?.weight,
+          target_weight: undefined // This will need to be added to the user profile later if needed
+        }}
+        isOpen={isChatbotOpen}
+        onToggle={() => setIsChatbotOpen(!isChatbotOpen)}
+      />
     </div>
   )
 }

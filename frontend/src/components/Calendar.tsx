@@ -219,7 +219,7 @@ export const Calendar: React.FC<CalendarProps> = ({
             <DayPicker
               mode="single"
               selected={selected}
-              onSelect={(date: Date | undefined) => date && handleDayClick(date)}
+              onSelect={(date) => date && handleDayClick(date)}
               showOutsideDays
               className="rdp-full"
               components={{
