@@ -1,11 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
-
-import Dashboard from "./pages/Dashboard";
 import WeeklyReport from "./pages/WeeklyReport";
 import RightToForget from "./pages/RightToForget";
 import Backup from "./pages/Backup";
 import EncryptDecrypt from "./pages/EncryptDecrypt";
+import Dashboard from "./pages/Dashboard";
+import { AuthProvider } from "./context/AuthContext"; // adjust path
 
 function App() {
   return (

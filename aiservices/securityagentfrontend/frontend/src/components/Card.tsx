@@ -1,16 +1,18 @@
 import React from "react";
 
 interface CardProps {
-  title: string;
-  value: string | number;
+  title: string | number | React.ReactNode; // allow JSX
+  value: string | number | React.ReactNode; // also allow JSX if needed
   icon?: React.ReactNode;
-  color?: string; // fallback background
-  colorGradient?: string; // gradient background
-  progress?: number; // optional progress bar
+  color?: string;
+  colorGradient?: string;
+  progress?: number;
   rounded?: boolean;
   shadow?: boolean;
   hoverEffect?: boolean;
+  children?: React.ReactNode;
 }
+
 
 export default function Card({
   title,
@@ -22,21 +24,18 @@ export default function Card({
   rounded = false,
   shadow = false,
   hoverEffect = false,
+  children,
 }: CardProps) {
   return (
     <div
       className={`
-        relative flex items-center p-5 ${rounded ? "rounded-xl" : "rounded-lg"} 
+        relative flex flex-col p-5 ${rounded ? "rounded-xl" : "rounded-lg"}
         ${shadow ? "shadow-lg" : ""} ${hoverEffect ? "hover:scale-105 transform transition-all duration-300" : ""}
         ${colorGradient ? colorGradient : color}
       `}
     >
       {/* Icon */}
-      {icon && (
-        <div className="flex-shrink-0 mr-4 text-2xl">
-          {icon}
-        </div>
-      )}
+      {icon && <div className="flex-shrink-0 mr-4 text-2xl">{icon}</div>}
 
       {/* Text */}
       <div className="flex-1">
@@ -46,15 +45,13 @@ export default function Card({
         {/* Optional progress bar */}
         {progress > 0 && (
           <div className="w-full h-2 bg-gray-300 rounded-full mt-2 overflow-hidden">
-            <div
-              className="h-full bg-white"
-              style={{ width: `${Math.min(progress, 100)}%` }}
-            />
+            <div className="h-full bg-white" style={{ width: `${Math.min(progress, 100)}%` }} />
           </div>
         )}
+
+        {/* Children content */}
+        {children && <div className="mt-3">{children}</div>}
       </div>
     </div>
   );
 }
-
-
