@@ -1,0 +1,15 @@
+{
+  "overall_success_rate": 0.0,
+  "grade": "F",
+  "passed_tests": 0,
+  "total_tests": 6,
+  "detailed_results": {
+    "Health Endpoint": false,
+    "Enhanced Chat Endpoint": false,
+    "Recommendations Endpoint": false,
+    "Fallback System": false,
+    "Conversation Storage": false,
+    "Personalization": false
+  },
+  "timestamp": "2025-09-03T00:17:49.747867"
+}
