@@ -193,7 +193,66 @@ async def setup_user_collection():
     db = get_database()
     
     # Create unique index on email field
-    await db.users.create_index("email", unique=True)
+    try:
+        await db.users.create_index("email", unique=True)
+        print("📋 Email index created")
+    except Exception as e:
+        print(f"⚠️ Index creation warning: {e}")
+    
+    # Check if any users exist
+    user_count = await db.users.count_documents({})
+    print(f"📋 Current user count: {user_count}")
+    
+    # Create a test user if no users exist
+    if user_count == 0:
+        print("🔄 No users found, creating test users...")
+        test_users = [
+            UserCreate(
+                name="Dehemi",
+                email="dehemi@example.com", 
+                password="dehemi12345",
+                age=24,
+                country="Sri Lanka"
+            ),
+            UserCreate(
+                name="John",
+                email="john@example.com",
+                password="john12345",
+                age=28,
+                country="United States"
+            ),
+            UserCreate(
+                name="Leo",
+                email="leo@example.com",
+                password="leo12345",
+                age=26,
+                country="Canada"
+            )
+        ]
+        
+        created_count = 0
+        for test_user in test_users:
+            try:
+                # Create the test user
+                user_dict = test_user.model_dump()
+                user_dict["password"] = get_password_hash(test_user.password)
+                user_dict["created_at"] = datetime.utcnow()
+                user_dict["refresh_tokens"] = []
+                
+                result = await db.users.insert_one(user_dict)
+                if result.inserted_id:
+                    created_count += 1
+                    print(f"✅ Test user created successfully: {test_user.email} (ID: {result.inserted_id})")
+                else:
+                    print(f"❌ Failed to create test user: {test_user.email}")
+            except Exception as e:
+                print(f"❌ Error creating test user {test_user.email}: {e}")
+        
+        print(f"✅ {created_count} test users created successfully")
+        print("🔐 You can login with:")
+        print("   - dehemi@example.com / dehemi12345")
+        print("   - john@example.com / john12345") 
+        print("   - leo@example.com / leo12345")
     
     # Confirm the collection exists
     collections = await db.list_collection_names()

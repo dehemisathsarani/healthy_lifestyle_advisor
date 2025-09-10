@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Test - Dehemi, John, Leo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            text-align: center;
+            color: #4a5568;
+            margin-bottom: 30px;
+        }
+        .user-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            background: #f7fafc;
+            transition: all 0.3s ease;
+        }
+        .user-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        .user-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #4299e1, #3182ce);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            margin-right: 15px;
+        }
+        .test-btn {
+            background: linear-gradient(45deg, #4299e1, #3182ce);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+        .test-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(66, 153, 225, 0.4);
+        }
+        .test-btn:disabled {
+            background: #a0aec0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+        .success {
+            background: #f0fff4;
+            color: #22543d;
+            border-left-color: #38a169;
+        }
+        .error {
+            background: #fef5e7;
+            color: #744210;
+            border-left-color: #ed8936;
+        }
+        .loading {
+            background: #fffbeb;
+            color: #975a16;
+            border-left-color: #f6e05e;
+        }
+        .summary {
+            background: linear-gradient(45deg, #e6fffa, #b2f5ea);
+            border: 1px solid #81e6d9;
+            padding: 25px;
+            border-radius: 12px;
+            margin-top: 30px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .stat-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3182ce;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #718096;
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+        pre {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 12px;
+            border: 1px solid #e2e8f0;
+        }
+        .batch-controls {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .batch-controls .test-btn {
+            background: linear-gradient(45deg, #48bb78, #38a169);
+            margin: 0 10px;
+        }
+        .emoji {
+            font-size: 1.2em;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Login System Test</h1>
+        <p style="text-align: center; color: #718096; margin-bottom: 30px;">
+            Testing authentication for Dehemi, John, and Leo
+        </p>
+        
+        <div class="user-card">
+            <div class="user-header">
+                <div class="user-avatar">D</div>
+                <div>
+                    <h3 style="margin: 0; color: #2d3748;">Dehemi</h3>
+                    <p style="margin: 5px 0; color: #718096;">Sri Lanka • Age 24</p>
+                </div>
+            </div>
+            <p><strong>Email:</strong> dehemi@example.com</p>
+            <p><strong>Password:</strong> dehemi12345</p>
+            <button class="test-btn" onclick="testLogin('dehemi@example.com', 'dehemi12345', 'dehemi-result')">
+                <span class="emoji">🔑</span>Test Login
+            </button>
+            <div id="dehemi-result" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="user-card">
+            <div class="user-header">
+                <div class="user-avatar">J</div>
+                <div>
+                    <h3 style="margin: 0; color: #2d3748;">John</h3>
+                    <p style="margin: 5px 0; color: #718096;">United States • Age 28</p>
+                </div>
+            </div>
+            <p><strong>Email:</strong> john@example.com</p>
+            <p><strong>Password:</strong> john12345</p>
+            <button class="test-btn" onclick="testLogin('john@example.com', 'john12345', 'john-result')">
+                <span class="emoji">🔑</span>Test Login
+            </button>
+            <div id="john-result" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="user-card">
+            <div class="user-header">
+                <div class="user-avatar">L</div>
+                <div>
+                    <h3 style="margin: 0; color: #2d3748;">Leo</h3>
+                    <p style="margin: 5px 0; color: #718096;">Canada • Age 26</p>
+                </div>
+            </div>
+            <p><strong>Email:</strong> leo@example.com</p>
+            <p><strong>Password:</strong> leo12345</p>
+            <button class="test-btn" onclick="testLogin('leo@example.com', 'leo12345', 'leo-result')">
+                <span class="emoji">🔑</span>Test Login
+            </button>
+            <div id="leo-result" class="result" style="display:none;"></div>
+        </div>
+
+        <div class="batch-controls">
+            <button class="test-btn" onclick="testAllUsers()">
+                <span class="emoji">🚀</span>Test All Users
+            </button>
+            <button class="test-btn" onclick="checkUsers()">
+                <span class="emoji">👥</span>Check Database
+            </button>
+            <button class="test-btn" onclick="clearResults()">
+                <span class="emoji">🗑️</span>Clear Results
+            </button>
+        </div>
+
+        <div id="summary" class="summary" style="display:none;">
+            <h3 style="margin-top: 0;"><span class="emoji">📊</span>Test Summary</h3>
+            <div id="summary-content"></div>
+            <div class="stats" id="stats-grid"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000';
+        let testResults = [];
+
+        async function testLogin(email, password, resultId) {
+            const resultDiv = document.getElementById(resultId);
+            const button = event.target;
+            
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result loading';
+            resultDiv.innerHTML = '<span class="emoji">⏳</span>Testing login...';
+            button.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <div style="margin-bottom: 10px;">
+                            <strong><span class="emoji">✅</span>Login Successful!</strong>
+                        </div>
+                        <div><strong>User:</strong> ${data.user.name}</div>
+                        <div><strong>Email:</strong> ${data.user.email}</div>
+                        <div><strong>Country:</strong> ${data.user.country || 'Not specified'}</div>
+                        <div><strong>Age:</strong> ${data.user.age || 'Not specified'}</div>
+                        <div style="margin-top: 10px;"><strong>Token:</strong> ${data.accessToken.substring(0, 50)}...</div>
+                        <details style="margin-top: 10px;">
+                            <summary style="cursor: pointer; color: #3182ce;">View Full Response</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    `;
+                    
+                    // Test the /auth/me endpoint with the token
+                    await testProtectedEndpoint(data.accessToken, resultId);
+                    
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `
+                        <div style="margin-bottom: 10px;">
+                            <strong><span class="emoji">❌</span>Login Failed!</strong>
+                        </div>
+                        <div><strong>Status:</strong> ${response.status}</div>
+                        <div><strong>Error:</strong> ${data.detail || 'Unknown error'}</div>
+                        <details style="margin-top: 10px;">
+                            <summary style="cursor: pointer;">View Response</summary>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </details>
+                    `;
+                }
+                
+                updateTestResults(email, response.ok, data);
+                
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = `
+                    <div><strong><span class="emoji">❌</span>Network Error!</strong></div>
+                    <div><strong>Error:</strong> ${error.message}</div>
+                `;
+                updateTestResults(email, false, { error: error.message });
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        async function testProtectedEndpoint(token, resultId) {
+            try {
+                const response = await fetch(`${API_BASE}/auth/me`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+                const resultDiv = document.getElementById(resultId);
+                
+                if (response.ok) {
+                    resultDiv.innerHTML += `
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
+                            <strong><span class="emoji">✅</span>Protected Endpoint Test:</strong> Success<br>
+                            <strong>Verified Profile:</strong> ${data.name} (${data.email})
+                        </div>`;
+                } else {
+                    resultDiv.innerHTML += `
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
+                            <strong><span class="emoji">❌</span>Protected Endpoint Test:</strong> Failed<br>
+                            <strong>Error:</strong> ${data.detail || 'Unknown error'}
+                        </div>`;
+                }
+            } catch (error) {
+                const resultDiv = document.getElementById(resultId);
+                resultDiv.innerHTML += `
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
+                        <strong><span class="emoji">❌</span>Protected Endpoint Error:</strong> ${error.message}
+                    </div>`;
+            }
+        }
+
+        function updateTestResults(email, success, data) {
+            const existingIndex = testResults.findIndex(r => r.email === email);
+            const result = { email, success, data, timestamp: new Date() };
+            
+            if (existingIndex >= 0) {
+                testResults[existingIndex] = result;
+            } else {
+                testResults.push(result);
+            }
+            
+            updateSummary();
+        }
+
+        function updateSummary() {
+            if (testResults.length === 0) return;
+            
+            const summaryDiv = document.getElementById('summary');
+            const summaryContent = document.getElementById('summary-content');
+            const statsGrid = document.getElementById('stats-grid');
+            
+            const successCount = testResults.filter(r => r.success).length;
+            const totalCount = testResults.length;
+            const successRate = ((successCount / totalCount) * 100).toFixed(1);
+            
+            summaryContent.innerHTML = `
+                <p style="margin: 0;">
+                    ${successCount === totalCount ? 
+                        '<span style="color: #38a169; font-weight: bold;">🎉 ALL TESTS PASSED!</span>' : 
+                        '<span style="color: #ed8936; font-weight: bold;">⚠️ Some tests failed</span>'
+                    }
+                </p>
+                <p style="margin: 10px 0 0 0; color: #718096;">
+                    Last updated: ${new Date().toLocaleTimeString()}
+                </p>
+            `;
+            
+            statsGrid.innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-number">${totalCount}</div>
+                    <div class="stat-label">Total Tests</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" style="color: #38a169;">${successCount}</div>
+                    <div class="stat-label">Successful</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" style="color: #e53e3e;">${totalCount - successCount}</div>
+                    <div class="stat-label">Failed</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" style="color: #3182ce;">${successRate}%</div>
+                    <div class="stat-label">Success Rate</div>
+                </div>
+            `;
+            
+            summaryDiv.style.display = 'block';
+        }
+
+        async function testAllUsers() {
+            const users = [
+                { email: 'dehemi@example.com', password: 'dehemi12345', id: 'dehemi-result' },
+                { email: 'john@example.com', password: 'john12345', id: 'john-result' },
+                { email: 'leo@example.com', password: 'leo12345', id: 'leo-result' }
+            ];
+            
+            for (const user of users) {
+                await testLogin(user.email, user.password, user.id);
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Small delay between tests
+            }
+        }
+
+        async function checkUsers() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/debug/users`);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert(`Database contains ${data.count} users:\n${data.users.map(u => `- ${u.name} (${u.email})`).join('\n')}`);
+                } else {
+                    alert(`Failed to fetch users: ${data.detail || 'Unknown error'}`);
+                }
+            } catch (error) {
+                alert(`Network error: ${error.message}`);
+            }
+        }
+
+        function clearResults() {
+            const resultIds = ['dehemi-result', 'john-result', 'leo-result'];
+            resultIds.forEach(id => {
+                const div = document.getElementById(id);
+                div.style.display = 'none';
+            });
+            
+            testResults = [];
+            document.getElementById('summary').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

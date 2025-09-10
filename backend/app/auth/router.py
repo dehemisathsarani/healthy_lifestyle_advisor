@@ -29,6 +29,23 @@ from app.auth.dependencies import get_current_user
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
+@router.get("/debug/users")
+async def debug_users():
+    """Debug endpoint to check what users exist in the database"""
+    from app.core.database import get_database
+    db = get_database()
+    users = []
+    async for user in db.users.find({}):
+        user_data = {
+            "_id": str(user["_id"]),
+            "email": user["email"],
+            "name": user["name"],
+            "created_at": user.get("created_at")
+        }
+        users.append(user_data)
+    return {"users": users, "count": len(users)}
+
+
 @router.post("/register", response_model=Dict[str, Any], status_code=status.HTTP_201_CREATED)
 async def register_user(user_data: UserCreate):
     """
