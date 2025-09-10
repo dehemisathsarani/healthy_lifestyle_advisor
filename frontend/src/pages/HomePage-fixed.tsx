@@ -1,5 +1,4 @@
 import { useNavigate } from 'react-router-dom'
-import { Navbar } from '../components/Navbar'
 import { Chatbot } from '../components/Chatbot'
 
 export const HomePage = () => {
@@ -15,8 +14,6 @@ export const HomePage = () => {
 
   return (
     <>
-      <Navbar />
-      
       {/* Hero Section */}
       <div className="bg-gradient-to-br from-emerald-500 to-cyan-600">
         <div className="relative px-6 lg:px-8">

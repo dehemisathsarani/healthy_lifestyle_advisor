@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Navbar } from '../components/Navbar'
 import { Chatbot } from '../components/Chatbot'
 import SimpleProfessionalCalendar from '../components/SimpleProfessionalCalendar'
 
@@ -16,7 +15,6 @@ const CalendarPage = () => {
 
   return (
     <>
-      <Navbar />
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="container mx-auto px-4 py-8">
           <div className="text-center mb-12">

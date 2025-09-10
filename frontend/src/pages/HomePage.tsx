@@ -1,12 +1,17 @@
 import { useNavigate } from 'react-router-dom'
-import { Navbar } from '../components/Navbar'
 import { Chatbot } from '../components/Chatbot'
+import { useAuth } from '../auth/AuthContext'
 
 const HomePage = () => {
   const navigate = useNavigate()
+  const { isAuthenticated } = useAuth()
   
   const handleGetStarted = () => {
-    navigate('/services')
+    if (isAuthenticated) {
+      navigate('/services')
+    } else {
+      navigate('/login')
+    }
   }
 
   const handleLearnMore = () => {
@@ -15,8 +20,6 @@ const HomePage = () => {
 
   return (
     <>
-      <Navbar />
-      
       {/* Hero Section */}
       <div className="relative bg-gradient-to-br from-emerald-500 via-cyan-600 to-blue-700 overflow-hidden">
         {/* Animated Background Elements */}
@@ -82,7 +85,11 @@ const HomePage = () => {
                   className="group relative rounded-xl bg-white px-8 py-4 text-lg font-semibold text-emerald-600 shadow-lg hover:bg-emerald-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white transition-all duration-200 hover:scale-105 hover:shadow-xl"
                 >
                   <span className="flex items-center">
-                    🚀 Start Your Journey Free
+                    {isAuthenticated ? (
+                      <>🚀 Go to Services</>
+                    ) : (
+                      <>🔐 Login to Get Started</>
+                    )}
                     <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
                   </span>
                 </button>
@@ -321,8 +328,16 @@ const HomePage = () => {
                 </div>
                 
                 <div className="grid grid-cols-7 gap-1 text-center text-sm mb-3">
-                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
-                    <div key={day} className="font-semibold text-gray-500 py-2">{day}</div>
+                  {[
+                    { day: 'S', fullName: 'Sun' }, 
+                    { day: 'M', fullName: 'Mon' }, 
+                    { day: 'T', fullName: 'Tue' }, 
+                    { day: 'W', fullName: 'Wed' }, 
+                    { day: 'T', fullName: 'Thu' }, 
+                    { day: 'F', fullName: 'Fri' }, 
+                    { day: 'S', fullName: 'Sat' }
+                  ].map((dayObj) => (
+                    <div key={dayObj.fullName} className="font-semibold text-gray-500 py-2">{dayObj.day}</div>
                   ))}
                 </div>
                 
@@ -489,7 +504,7 @@ const HomePage = () => {
                   onClick={handleGetStarted}
                   className="w-full bg-emerald-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-emerald-700 transition-colors duration-200"
                 >
-                  Start Your Journey Today
+                  {isAuthenticated ? 'Access Your Services' : 'Login to Start Your Journey'}
                 </button>
               </div>
             </div>

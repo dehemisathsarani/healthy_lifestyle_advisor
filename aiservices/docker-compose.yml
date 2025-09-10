@@ -116,6 +116,28 @@ services:
     environment:
       - VITE_API_URL=http://backend:8000
       - VITE_AI_API_URL=http://ai_service:8001
+      
+  # Mental Health AI Service
+  mental_health_service:
+    build: ./mentalhealthaiservices
+    container_name: mental-health-ai
+    ports: 
+      - "8002:8001"
+    volumes:
+      - ./logs:/app/logs
+    environment:
+      - PORT=8001
+      
+  # Mental Health Frontend
+  mental_health_frontend:
+    build: ./Mentalhealthfrontend
+    container_name: mental-health-frontend
+    depends_on:
+      - mental_health_service
+    ports: 
+      - "5175:5175"
+    environment:
+      - PORT=5175
 
 volumes:
   mongo_data:

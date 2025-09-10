@@ -1,13 +1,14 @@
 import { useState } from 'react'
-import { Navbar } from '../components/Navbar'
 import { Chatbot } from '../components/Chatbot'
 import { DietAgentSimple as DietAgent } from '../components/DietAgentSimple'
 import { FitnessAgent } from '../components/FitnessAgent'
-import { MentalHealthAgent } from '../components/MentalHealthAgent'
+import { MentalHealthPage } from './MentalHealthPage'
 import { SecurityAgent } from '../components/SecurityAgent'
+import { useAuth } from '../auth/AuthContext'
 
 export const ServicesPage = () => {
   const [activeAgent, setActiveAgent] = useState<'diet' | 'fitness' | 'mental' | 'security' | null>(null)
+  const { userName, profile } = useAuth()
 
   const services = [
     { 
@@ -42,8 +43,8 @@ export const ServicesPage = () => {
       available: true,
       category: 'fitness'
     },
-    { 
-      title: 'Mental Health Assistant', 
+    {
+      title: 'Mental Health Assistant',
       desc: 'Mood tracking, meditation guidance, and mental wellness activities.',
       action: () => setActiveAgent('mental'),
       buttonText: 'Launch Mental Health',
@@ -70,7 +71,19 @@ export const ServicesPage = () => {
   }
   
   if (activeAgent === 'mental') {
-    return <MentalHealthAgent onBackToServices={() => setActiveAgent(null)} />
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <button 
+            onClick={() => setActiveAgent(null)}
+            className="mb-6 flex items-center gap-2 text-gray-600 hover:text-gray-900"
+          >
+            ← Back to Services
+          </button>
+          <MentalHealthPage />
+        </div>
+      </div>
+    )
   }
   
   if (activeAgent === 'security') {
@@ -79,10 +92,14 @@ export const ServicesPage = () => {
 
   return (
     <>
-      <Navbar />
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="text-center mb-12">
+          {/* Welcome Message */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center px-4 py-2 rounded-full bg-emerald-100 text-emerald-800 text-sm font-medium mb-4">
+              <span className="w-2 h-2 bg-emerald-400 rounded-full mr-2"></span>
+              Welcome back, {userName || profile?.name || 'User'}!
+            </div>
             <h1 className="text-4xl font-bold text-gray-900 sm:text-5xl">
               🏥 Health & Wellness Services
             </h1>

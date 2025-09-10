@@ -1,11 +1,10 @@
-from langchain.llms import OpenAI
-from langchain.chat_models import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate, PromptTemplate
+from langchain_openai import OpenAI, ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 from langchain.chains import LLMChain, SequentialChain
 from langchain.memory import ConversationBufferMemory
-from langchain.tools import Tool
+from langchain_community.tools import Tool
 from langchain.agents import initialize_agent, AgentType
-from langchain.schema import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage
 from typing import Dict, List, Optional, Any
 from pydantic import BaseModel
 import json
