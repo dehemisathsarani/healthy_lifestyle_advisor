@@ -20,7 +20,7 @@ interface MedalSystemProps {
   };
 }
 
-const MedalSystem: React.FC<MedalSystemProps> = ({ medals, userProfile }) => {
+const MedalSystem: React.FC<MedalSystemProps> = ({ medals }) => {
   const [filter, setFilter] = useState<'all' | string>('all');
   const [tierFilter, setTierFilter] = useState<'all' | 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond'>('all');
   const [activeModal, setActiveModal] = useState<Medal | null>(null);

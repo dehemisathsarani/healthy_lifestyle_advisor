@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Achievement, UserProfile, LevelReward } from '../api';
+import { Achievement, UserProfile } from '../api';
 
 interface LevelSystemProps {
   userProfile: UserProfile;
   achievements: Achievement[];
 }
 
-const LevelSystem: React.FC<LevelSystemProps> = ({ userProfile, achievements }) => {
+const LevelSystem: React.FC<LevelSystemProps> = ({ userProfile }) => {
   const [activeTab, setActiveTab] = useState<'rewards' | 'progress'>('rewards');
   const { level, experiencePoints, levelRewards } = userProfile;
   
@@ -22,7 +22,7 @@ const LevelSystem: React.FC<LevelSystemProps> = ({ userProfile, achievements }) 
   const progressPercentage = Math.min(100, Math.round((xpProgress / xpNeeded) * 100));
   
   // Get claimed and available rewards
-  const claimedRewards = levelRewards.filter(reward => reward.claimed);
+  // const claimedRewards = levelRewards.filter(reward => reward.claimed);
   const availableRewards = levelRewards.filter(reward => !reward.claimed && reward.levelRequired <= level);
   const upcomingRewards = levelRewards.filter(reward => reward.levelRequired > level);
 
@@ -140,7 +140,7 @@ const LevelSystem: React.FC<LevelSystemProps> = ({ userProfile, achievements }) 
                   const levelNum = idx + 1;
                   const isCurrentLevel = levelNum === level;
                   const isPastLevel = levelNum < level;
-                  const isFutureLevel = levelNum > level;
+                  // const isFutureLevel = levelNum > level;
                   
                   return (
                     <div key={levelNum} className={`flex items-center mb-4 ${isPastLevel ? 'opacity-70' : ''}`}>

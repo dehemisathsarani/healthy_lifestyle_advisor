@@ -6,7 +6,7 @@ from fastapi.encoders import jsonable_encoder
 
 from auth import get_current_user
 from settings import settings
-from database import get_database
+from database import get_database, COLLECTIONS
 from health_models import (
     HeartRateMetric, 
     StepMetric, 
@@ -31,18 +31,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-# Database collections
-COLLECTIONS = {
-    "heart_rate": "heart_rate_metrics",
-    "steps": "step_metrics",
-    "sleep": "sleep_metrics",
-    "calories": "calorie_metrics",
-    "blood_pressure": "blood_pressure_metrics",
-    "oxygen": "oxygen_saturation_metrics",
-    "devices": "connected_devices",
-    "insights": "health_insights",
-    "recovery": "recovery_advice"
-}
+# Note: Using HEALTH_COLLECTIONS from database.py for collection names
 
 
 # Heart rate endpoints

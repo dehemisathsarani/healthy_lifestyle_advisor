@@ -6,7 +6,7 @@ from typing import List
 
 from auth import create_access_token, get_current_user
 from settings import settings
-from routers import users, workouts, dashboard, health
+from routers import users, workouts, dashboard, health, workout_planner
 
 # Create FastAPI app
 app = FastAPI(
@@ -29,6 +29,7 @@ app.include_router(users.router)
 app.include_router(workouts.router)
 app.include_router(dashboard.router)
 app.include_router(health.router)
+app.include_router(workout_planner.router)  # New workout planner router
 
 
 @app.get("/")

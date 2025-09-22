@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { apiClient, demoMode, type WorkoutPlan, type WorkoutSession, type WorkoutExercise } from '../api';
+import { apiClient, demoMode, type WorkoutPlan } from '../api';
 import { ExerciseDetail } from '../components/ExerciseCard';
 
 // Helper function to determine the emoji based on workout focus

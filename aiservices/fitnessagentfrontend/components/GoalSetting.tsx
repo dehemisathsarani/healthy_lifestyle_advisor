@@ -76,7 +76,7 @@ const GoalSetting: React.FC<GoalSettingProps> = ({
       ...newGoal,
       id: `goal-${Date.now()}`,
       user_id: 'demo-user',
-      status: 'active',
+      status: 'active' as 'active', // Ensure correct type for status
       progress: 0,
       start_date: new Date().toISOString(),
       created_at: new Date().toISOString(),

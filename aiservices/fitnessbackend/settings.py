@@ -3,9 +3,10 @@ from typing import Optional, List
 
 
 class Settings(BaseSettings):
-    # MongoDB settings
+    # Database settings
     MONGODB_URL: str = "mongodb://localhost:27017"
     DB_NAME: str = "fitness_db"
+    USE_FILE_DATABASE: bool = False  # Use file-based database for testing
     
     # JWT settings
     JWT_SECRET_KEY: str = "your_secret_key"  # Replace in production
