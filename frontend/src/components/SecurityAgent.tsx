@@ -1,148 +1,134 @@
 import { useState, useEffect } from 'react'
-import { ArrowLeft, Shield, Lock, Eye, EyeOff, Download, Trash2, Settings, Database, FileText } from 'lucide-react'
+import { ArrowLeft, Shield, Lock, Eye, EyeOff, Download, Trash2, Settings, Database, FileText, AlertCircle, CheckCircle, Loader } from 'lucide-react'
+import { securityApi, type UserSecurityProfile, type DataEntry, handleApiError } from '../services/securityApi'
+import { useAuth } from '../auth/AuthContext'
 
 // Types
-interface UserSecurityProfile {
-  id?: string
-  name: string
-  email: string
-  privacy_level: 'basic' | 'standard' | 'strict'
-  data_sharing: {
-    analytics: boolean
-    marketing: boolean
-    research: boolean
-    third_party: boolean
-  }
-  backup_preferences: {
-    frequency: 'daily' | 'weekly' | 'monthly'
-    location: 'cloud' | 'local' | 'both'
-    encryption: boolean
-  }
-  notification_preferences: {
-    security_alerts: boolean
-    privacy_updates: boolean
-    data_reports: boolean
-  }
-}
-
-interface DataEntry {
-  id: string
-  type: 'profile' | 'meal' | 'workout' | 'mood' | 'health'
-  timestamp: string
-  size: string
-  encrypted: boolean
-}
-
 interface SecurityAgentProps {
   onBackToServices: () => void
 }
 
 export const SecurityAgent: React.FC<SecurityAgentProps> = ({ onBackToServices }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const { isAuthenticated: authIsAuthenticated, profile: authProfile } = useAuth()
   const [user, setUser] = useState<UserSecurityProfile | null>(null)
   const [activeTab, setActiveTab] = useState<'dashboard' | 'privacy' | 'data' | 'security' | 'profile'>('dashboard')
   const [dataEntries, setDataEntries] = useState<DataEntry[]>([])
   const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [profileExists, setProfileExists] = useState<boolean | null>(null)
 
-  // Check for existing user data on mount
+  // Check for existing security profile on mount
   useEffect(() => {
-    const savedUser = localStorage.getItem('securityAgentUser')
-    if (savedUser) {
-      try {
-        const userData = JSON.parse(savedUser)
-        setUser(userData)
-        setIsAuthenticated(true)
-        loadDataEntries()
-      } catch (error) {
-        console.error('Error parsing saved user data:', error)
-        localStorage.removeItem('securityAgentUser')
+    if (authIsAuthenticated && authProfile) {
+      checkAndLoadSecurityProfile()
+    } else {
+      setProfileExists(false)
+    }
+  }, [authIsAuthenticated, authProfile])
+
+  const checkAndLoadSecurityProfile = async () => {
+    try {
+      setLoading(true)
+      // Try to get existing profile
+      const profile = await securityApi.getProfile()
+      setUser(profile)
+      setProfileExists(true)
+      await loadDataEntries()
+    } catch (error) {
+      // Profile doesn't exist, that's okay
+      console.log('No security profile found, user needs to create one')
+      setProfileExists(false)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadUserProfile = async () => {
+    try {
+      setLoading(true)
+      const profile = await securityApi.getProfile()
+      setUser(profile)
+    } catch (error) {
+      console.error('Error loading user profile:', error)
+      setError('Failed to load security profile')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadDataEntries = async () => {
+    try {
+      setLoading(true)
+      const entries = await securityApi.getDataEntries()
+      setDataEntries(entries)
+    } catch (error) {
+      console.error('Error loading data entries:', error)
+      setError('Failed to load data entries')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCreateProfile = async (data: Omit<UserSecurityProfile, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
+    try {
+      setLoading(true)
+      const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}')
+      const userId = currentUser._id || currentUser.id || authProfile?.email
+
+      if (!userId) {
+        throw new Error('User ID not found')
       }
-    }
-  }, [])
 
-  const loadDataEntries = () => {
-    // Mock data entries
-    const mockEntries: DataEntry[] = [
-      {
-        id: '1',
-        type: 'profile',
-        timestamp: new Date().toISOString(),
-        size: '2.3 KB',
-        encrypted: true
-      },
-      {
-        id: '2',
-        type: 'meal',
-        timestamp: new Date(Date.now() - 86400000).toISOString(),
-        size: '15.2 KB',
-        encrypted: true
-      },
-      {
-        id: '3',
-        type: 'workout',
-        timestamp: new Date(Date.now() - 172800000).toISOString(),
-        size: '8.7 KB',
-        encrypted: true
+      const profileData = {
+        ...data,
+        user_id: userId,
       }
-    ]
-    setDataEntries(mockEntries)
-  }
-
-  const handleCreateProfile = (data: UserSecurityProfile) => {
-    const profileWithId = {
-      ...data,
-      id: Date.now().toString()
+      const profile = await securityApi.createProfile(profileData)
+      setUser(profile)
+      setProfileExists(true)
+      setActiveTab('dashboard')
+      alert('Security & Privacy profile created successfully!')
+    } catch (error) {
+      console.error('Error creating profile:', error)
+      setError('Failed to create security profile')
+    } finally {
+      setLoading(false)
     }
-    
-    setUser(profileWithId)
-    setIsAuthenticated(true)
-    localStorage.setItem('securityAgentUser', JSON.stringify(profileWithId))
-    setActiveTab('dashboard')
-    
-    alert('Security & Privacy profile created successfully!')
   }
 
-  const exportData = () => {
-    const allData = {
-      profile: user,
-      dataEntries,
-      exportDate: new Date().toISOString()
+  const exportData = async () => {
+    try {
+      setLoading(true)
+      await securityApi.exportAllData()
+      alert('Data exported successfully!')
+    } catch (error) {
+      console.error('Error exporting data:', error)
+      setError('Failed to export data')
+    } finally {
+      setLoading(false)
     }
-    
-    const dataStr = JSON.stringify(allData, null, 2)
-    const dataBlob = new Blob([dataStr], { type: 'application/json' })
-    const url = URL.createObjectURL(dataBlob)
-    
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `health-data-export-${Date.now()}.json`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-    
-    alert('Data exported successfully!')
   }
 
-  const deleteAllData = () => {
+  const deleteAllData = async () => {
     if (confirm('Are you sure you want to delete all your data? This action cannot be undone.')) {
-      localStorage.removeItem('securityAgentUser')
-      localStorage.removeItem('dietAgentUser')
-      localStorage.removeItem('fitnessAgentUser')
-      localStorage.removeItem('mentalHealthAgentUser')
-      localStorage.removeItem('dietAgentHistory')
-      localStorage.removeItem('fitnessAgentWorkouts')
-      localStorage.removeItem('mentalHealthMoodEntries')
-      
-      setUser(null)
-      setIsAuthenticated(false)
-      setDataEntries([])
-      
-      alert('All data has been deleted successfully.')
+      try {
+        setLoading(true)
+        await securityApi.deleteAllData()
+        setUser(null)
+        setProfileExists(false)
+        setDataEntries([])
+        alert('All data has been deleted successfully.')
+      } catch (error) {
+        console.error('Error deleting data:', error)
+        setError('Failed to delete data')
+      } finally {
+        setLoading(false)
+      }
     }
   }
 
-  if (!isAuthenticated) {
+  if (!authIsAuthenticated) {
     return (
       <div className="space-y-6">
         {/* Header */}
@@ -182,7 +168,7 @@ export const SecurityAgent: React.FC<SecurityAgentProps> = ({ onBackToServices }
           <h1 className="text-xl font-semibold text-gray-900">Security & Data Personalization</h1>
         </div>
         <div className="text-sm text-gray-500">
-          Welcome back, {user?.name}!
+          Welcome back!
         </div>
       </div>
 
@@ -239,10 +225,8 @@ export const SecurityAgent: React.FC<SecurityAgentProps> = ({ onBackToServices }
 }
 
 // Profile Form Component
-const ProfileForm: React.FC<{ onSubmit: (data: UserSecurityProfile) => void }> = ({ onSubmit }) => {
-  const [formData, setFormData] = useState<UserSecurityProfile>({
-    name: '',
-    email: '',
+const ProfileForm: React.FC<{ onSubmit: (data: Omit<UserSecurityProfile, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => void }> = ({ onSubmit }) => {
+  const [formData, setFormData] = useState<Omit<UserSecurityProfile, 'id' | 'user_id' | 'created_at' | 'updated_at'>>({
     privacy_level: 'standard',
     data_sharing: {
       analytics: false,
@@ -272,29 +256,7 @@ const ProfileForm: React.FC<{ onSubmit: (data: UserSecurityProfile) => void }> =
       <h2 className="text-lg font-semibold text-gray-900 mb-4">Create Your Security & Privacy Profile</h2>
       
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent"
-              required
-            />
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent"
-              required
-            />
-          </div>
-        </div>
+
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Privacy Level</label>
@@ -417,7 +379,7 @@ const Dashboard: React.FC<{
   onDeleteData: () => void
 }> = ({ user, dataEntries, onExportData, onDeleteData }) => {
   const totalDataSize = dataEntries.reduce((total, entry) => {
-    const size = parseFloat(entry.size.replace(/[^\d.]/g, ''))
+    const size = entry.size ? parseFloat(entry.size.replace(/[^\d.]/g, '')) : 0
     return total + size
   }, 0)
 
@@ -554,17 +516,17 @@ const Dashboard: React.FC<{
             <div key={entry.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <div className="flex items-center space-x-3">
                 <div className={`p-2 rounded-lg ${
-                  entry.type === 'profile' ? 'bg-blue-100' :
-                  entry.type === 'meal' ? 'bg-green-100' :
-                  entry.type === 'workout' ? 'bg-purple-100' :
-                  entry.type === 'mood' ? 'bg-orange-100' :
+                  entry.data_type === 'profile' ? 'bg-blue-100' :
+                  entry.data_type === 'meal' ? 'bg-green-100' :
+                  entry.data_type === 'workout' ? 'bg-purple-100' :
+                  entry.data_type === 'mood' ? 'bg-orange-100' :
                   'bg-gray-100'
                 }`}>
                   <FileText className="w-4 h-4" />
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900 capitalize">{entry.type} Data</p>
-                  <p className="text-sm text-gray-600">{new Date(entry.timestamp).toLocaleDateString()}</p>
+                  <p className="font-medium text-gray-900 capitalize">{entry.data_type} Data</p>
+                  <p className="text-sm text-gray-600">{new Date(entry.created_at).toLocaleDateString()}</p>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
@@ -710,18 +672,18 @@ const DataManagement: React.FC<{
             <div key={entry.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center space-x-3">
                 <div className={`p-2 rounded-lg ${
-                  entry.type === 'profile' ? 'bg-blue-100' :
-                  entry.type === 'meal' ? 'bg-green-100' :
-                  entry.type === 'workout' ? 'bg-purple-100' :
-                  entry.type === 'mood' ? 'bg-orange-100' :
+                  entry.data_type === 'profile' ? 'bg-blue-100' :
+                  entry.data_type === 'meal' ? 'bg-green-100' :
+                  entry.data_type === 'workout' ? 'bg-purple-100' :
+                  entry.data_type === 'mood' ? 'bg-orange-100' :
                   'bg-gray-100'
                 }`}>
                   <FileText className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="font-medium text-gray-900 capitalize">{entry.type} Data</h4>
+                  <h4 className="font-medium text-gray-900 capitalize">{entry.data_type} Data</h4>
                   <p className="text-sm text-gray-600">
-                    Created: {new Date(entry.timestamp).toLocaleDateString()}
+                    Created: {new Date(entry.created_at).toLocaleDateString()}
                   </p>
                 </div>
               </div>
@@ -854,14 +816,6 @@ const ProfileSettings: React.FC<{
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Name</label>
-              <p className="text-gray-900">{user.name}</p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Email</label>
-              <p className="text-gray-900">{user.email}</p>
-            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Privacy Level</label>
               <p className="text-gray-900 capitalize">{user.privacy_level}</p>
