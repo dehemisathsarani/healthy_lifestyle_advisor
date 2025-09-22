@@ -18,6 +18,7 @@ from app.auth.router import router as auth_router
 from app.auth.users import setup_user_collection
 
 from app.routes.simple_diet_routes import router as diet_router
+from app.security.router import router as security_router
 
 
 # Create FastAPI application with detailed configuration
@@ -52,6 +53,9 @@ app.include_router(auth_router)
 
 # Include Diet Agent routes
 app.include_router(diet_router)
+
+# Include Security Agent routes
+app.include_router(security_router)
 
 
 # Global application state
@@ -119,7 +123,10 @@ async def root():
             "🏃‍♂️ Health metrics calculation",
             "💧 Water intake monitoring",
             "🤖 AI-powered nutrition recommendations",
-            "📊 Comprehensive health analytics"
+            "📊 Comprehensive health analytics",
+            "🔒 Security & Privacy management",
+            "🛡️ Data encryption and backup",
+            "📋 GDPR compliance tools"
         ]
     }
 
