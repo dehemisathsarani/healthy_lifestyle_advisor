@@ -309,4 +309,3 @@ export const RegisterPage = () => {
   )
 }
 
-
