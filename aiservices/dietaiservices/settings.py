@@ -4,19 +4,19 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # API Keys
-    OPENAI_API_KEY: Optional[str] = None
+    OPENAI_API_KEY: Optional[str] = "demo-key-for-testing"
     GOOGLE_API_KEY: Optional[str] = None
     GOOGLE_APPLICATION_CREDENTIALS: Optional[str] = None
     
     # Database
-    MONGODB_URL: str = "mongodb://mongo:27017"
+    MONGODB_URL: str = "mongodb://localhost:27017"
     DATABASE_NAME: str = "healthy_lifestyle"
     
     # Redis
-    REDIS_URL: str = "redis://redis:6379"
+    REDIS_URL: str = "redis://localhost:6379"
     
     # RabbitMQ
-    RABBITMQ_URL: str = "amqp://guest:guest@rabbitmq:5672/"
+    RABBITMQ_URL: str = "amqp://guest:guest@localhost:5672/"
     DIET_QUEUE: str = "diet_processing"
     NUTRITION_QUEUE: str = "nutrition_analysis"
     IMAGE_QUEUE: str = "image_processing"
@@ -33,6 +33,12 @@ class Settings(BaseSettings):
     # Application Settings
     DEBUG: bool = False
     LOG_LEVEL: str = "INFO"
+    
+    # Feature Toggles (for local development)
+    DISABLE_GOOGLE_VISION: bool = False
+    DISABLE_RABBITMQ: bool = False
+    USE_MOCK_GOOGLE_VISION: bool = False
+    USE_SIMPLE_MQ: bool = False
     
     class Config:
         env_file = "../.env"

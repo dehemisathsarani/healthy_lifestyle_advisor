@@ -6,6 +6,7 @@ from PIL import Image
 import numpy as np
 from pydantic import BaseModel
 import logging
+from settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -17,23 +18,36 @@ class DetectedFood(BaseModel):
 
 class FoodVisionAnalyzer:
     def __init__(self):
-        try:
-            self.client = vision.ImageAnnotatorClient()
-            self.food_keywords = {
-                'fruits': ['apple', 'banana', 'orange', 'grape', 'strawberry', 'mango', 'pineapple'],
-                'vegetables': ['carrot', 'broccoli', 'spinach', 'tomato', 'lettuce', 'cucumber'],
-                'proteins': ['chicken', 'beef', 'fish', 'egg', 'tofu', 'beans', 'salmon'],
-                'grains': ['rice', 'bread', 'pasta', 'quinoa', 'oatmeal', 'cereal'],
-                'dairy': ['milk', 'cheese', 'yogurt', 'butter'],
-                'snacks': ['chips', 'cookie', 'cake', 'chocolate', 'nuts']
-            }
-        except Exception as e:
-            logger.error(f"Failed to initialize Vision client: {e}")
+        if settings.DISABLE_GOOGLE_VISION:
+            logger.info("Google Vision API disabled for local development")
             self.client = None
+            self.vision_available = False
+        elif settings.USE_MOCK_GOOGLE_VISION:
+            logger.info("Using mock Google Vision API for local development")
+            self.client = None
+            self.vision_available = True  # We'll use fallback methods
+        else:
+            try:
+                self.client = vision.ImageAnnotatorClient()
+                self.vision_available = True
+                logger.info("Google Vision API initialized successfully")
+            except Exception as e:
+                logger.warning(f"Google Vision API not available, using mock service: {e}")
+                self.client = None
+                self.vision_available = True  # Use fallback
+        
+        self.food_keywords = {
+            'fruits': ['apple', 'banana', 'orange', 'grape', 'strawberry', 'mango', 'pineapple'],
+            'vegetables': ['carrot', 'broccoli', 'spinach', 'tomato', 'lettuce', 'cucumber'],
+            'proteins': ['chicken', 'beef', 'fish', 'egg', 'tofu', 'beans', 'salmon'],
+            'grains': ['rice', 'bread', 'pasta', 'quinoa', 'oatmeal', 'cereal'],
+            'dairy': ['milk', 'cheese', 'yogurt', 'butter'],
+            'snacks': ['chips', 'cookie', 'cake', 'chocolate', 'nuts']
+        }
     
     async def analyze_food_image(self, image_data: bytes) -> List[DetectedFood]:
         """Analyze food image and detect food items."""
-        if not self.client:
+        if not self.client or not self.vision_available:
             return await self._fallback_analysis(image_data)
         
         try:

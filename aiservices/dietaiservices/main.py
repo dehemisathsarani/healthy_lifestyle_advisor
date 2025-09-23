@@ -14,6 +14,7 @@ from bson import ObjectId
 import numpy as np
 
 from settings import settings
+from simple_mq import simple_mq
 from worker import DietWorker
 from chain import UserProfile, DietAdvice
 from nutrition import BMICalculator, TDEECalculator
@@ -138,20 +139,44 @@ async def startup_event():
         # Initialize advanced food analyzer
         advanced_food_analyzer = AdvancedFoodAnalyzer(db_client, settings.DATABASE_NAME)
         
-        # Connect to RabbitMQ if configured
-        if hasattr(settings, 'RABBITMQ_URL') and settings.RABBITMQ_URL:
+        # Connect to RabbitMQ if configured and enabled
+        if settings.DISABLE_RABBITMQ:
+            logger.info("RabbitMQ disabled for local development")
+            rabbitmq_connection = None
+            rabbitmq_channel = None
+        elif hasattr(settings, 'USE_SIMPLE_MQ') and settings.USE_SIMPLE_MQ:
+            logger.info("Using simple in-memory message queue for local development")
+            # Initialize simple message queue
+            from simple_mq import simple_mq
+            await simple_mq.declare_queue(settings.DIET_QUEUE)
+            await simple_mq.declare_queue(settings.NUTRITION_QUEUE)
+            await simple_mq.declare_queue(settings.IMAGE_QUEUE)
+            logger.info("Simple message queue initialized successfully")
+            rabbitmq_connection = "simple_mq"
+            rabbitmq_channel = "simple_mq"
+        elif hasattr(settings, 'RABBITMQ_URL') and settings.RABBITMQ_URL:
             try:
                 rabbitmq_connection = await aio_pika.connect_robust(settings.RABBITMQ_URL)
                 rabbitmq_channel = await rabbitmq_connection.channel()
                 logger.info("RabbitMQ connection established successfully")
             except Exception as e:
-                logger.warning(f"RabbitMQ connection failed, continuing without message queue: {e}")
-                rabbitmq_connection = None
-                rabbitmq_channel = None
+                logger.warning(f"RabbitMQ connection failed, using simple message queue: {e}")
+                # Fallback to simple MQ
+                from simple_mq import simple_mq
+                await simple_mq.declare_queue(settings.DIET_QUEUE)
+                await simple_mq.declare_queue(settings.NUTRITION_QUEUE)
+                await simple_mq.declare_queue(settings.IMAGE_QUEUE)
+                logger.info("Fallback to simple message queue")
+                rabbitmq_connection = "simple_mq"
+                rabbitmq_channel = "simple_mq"
         else:
-            logger.info("RabbitMQ not configured, working without message queue")
-            rabbitmq_connection = None
-            rabbitmq_channel = None
+            logger.info("RabbitMQ not configured, using simple message queue")
+            from simple_mq import simple_mq
+            await simple_mq.declare_queue(settings.DIET_QUEUE)
+            await simple_mq.declare_queue(settings.NUTRITION_QUEUE)
+            await simple_mq.declare_queue(settings.IMAGE_QUEUE)
+            rabbitmq_connection = "simple_mq"
+            rabbitmq_channel = "simple_mq"
         
         logger.info("API connections and analyzers established successfully")
         
@@ -164,29 +189,39 @@ async def shutdown_event():
     """Close connections on shutdown."""
     global rabbitmq_connection, db_client
     
-    if rabbitmq_connection:
+    if rabbitmq_connection and rabbitmq_connection != "simple_mq":
         await rabbitmq_connection.close()
+    elif rabbitmq_connection == "simple_mq":
+        from simple_mq import simple_mq
+        await simple_mq.stop_consuming()
+    
     if db_client:
         db_client.close()
 
 # Helper functions
 async def send_to_queue(queue_name: str, message_data: Dict[str, Any]) -> str:
-    """Send message to RabbitMQ queue and return request ID."""
+    """Send message to queue and return request ID."""
     request_id = str(uuid.uuid4())
     message_data['request_id'] = request_id
     message_data['timestamp'] = datetime.now().isoformat()
     
-    queue = await rabbitmq_channel.declare_queue(queue_name, durable=True)
-    
-    message = aio_pika.Message(
-        json.dumps(message_data).encode(),
-        delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
-    )
-    
-    await rabbitmq_channel.default_exchange.publish(
-        message,
-        routing_key=queue_name
-    )
+    if rabbitmq_connection == "simple_mq":
+        # Use simple message queue
+        from simple_mq import simple_mq
+        await simple_mq.publish(queue_name, message_data)
+    else:
+        # Use RabbitMQ
+        queue = await rabbitmq_channel.declare_queue(queue_name, durable=True)
+        
+        message = aio_pika.Message(
+            json.dumps(message_data).encode(),
+            delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
+        )
+        
+        await rabbitmq_channel.default_exchange.publish(
+            message,
+            routing_key=queue_name
+        )
     
     return request_id
 
@@ -205,18 +240,34 @@ async def root():
 async def health_check():
     """Detailed health check."""
     try:
-        # Check RabbitMQ connection
-        rabbitmq_status = "connected" if rabbitmq_connection and not rabbitmq_connection.is_closed else "disconnected"
+        # Check message queue status
+        if rabbitmq_connection == "simple_mq":
+            from simple_mq import simple_mq
+            mq_status = "simple_mq_connected"
+            mq_info = simple_mq.get_queue_info()
+        elif rabbitmq_connection and not rabbitmq_connection.is_closed:
+            mq_status = "rabbitmq_connected"
+            mq_info = {"type": "rabbitmq"}
+        else:
+            mq_status = "disconnected"
+            mq_info = {}
         
         # Check MongoDB connection
         await db.command('ping')
         mongodb_status = "connected"
         
+        # Check Google Vision API status
+        vision_status = "mock_enabled" if settings.USE_MOCK_GOOGLE_VISION else (
+            "disabled" if settings.DISABLE_GOOGLE_VISION else "available"
+        )
+        
         return {
             "status": "healthy",
             "services": {
-                "rabbitmq": rabbitmq_status,
-                "mongodb": mongodb_status
+                "message_queue": mq_status,
+                "mongodb": mongodb_status,
+                "google_vision": vision_status,
+                "queue_info": mq_info
             },
             "timestamp": datetime.now().isoformat()
         }
@@ -533,7 +584,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "main:app", 
         host="0.0.0.0", 
-        port=8000, 
+        port=8001, 
         reload=True,
         log_level="info"
     )
