@@ -74,7 +74,7 @@ export const ServicesPage = () => {
       title: 'Mental Health Assistant', 
       desc: 'Mood tracking, meditation guidance, and mental wellness activities.',
       action: () => setActiveAgent('mental'),
-      buttonText: 'Launch Mental Health',
+      buttonText: 'Sign In & Launch Mental Health',
       available: true,
       category: 'mental',
       requiresAuth: false
@@ -100,7 +100,7 @@ export const ServicesPage = () => {
   }
   
   if (activeAgent === 'mental') {
-    return <MentalHealthAgent onBackToServices={() => setActiveAgent(null)} />
+    return <MentalHealthAgent onBackToServices={() => setActiveAgent(null)} authenticatedUser={profile} />
   }
   
   if (activeAgent === 'security') {
