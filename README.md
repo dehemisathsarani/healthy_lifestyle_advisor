@@ -75,46 +75,46 @@ The system uses **specialized AI agents** that communicate asynchronously throug
 ```mermaid
 flowchart TD
     subgraph FE[Frontend - React + TypeScript]
-        UI[🧑‍💻 User Interface]
-        UI -->|Inputs: meals, images, biometrics, mood| FEAPI[📡 API Calls]
+        UI[User Interface]
+        UI -->|Inputs: meals, images, biometrics, mood| FEAPI[API Calls]
     end
 
     subgraph BE[Backend - FastAPI + LangChain + RabbitMQ]
-        FEAPI --> API[⚡ FastAPI Endpoints]
-        API --> MQ[(RabbitMQ Broker 📨)]
+        FEAPI --> API[FastAPI Endpoints]
+        API --> MQ[RabbitMQ Broker]
 
-        subgraph DA[🥗 Diet Agent]
-            BMI[📊 Biometric Processor]
-            NLP[📝 NLP Parser]
-            YOLO[🤖 YOLOv8 Image Analysis]
+        subgraph DA[Diet Agent]
+            BMI[Biometric Processor]
+            NLP[NLP Parser]
+            YOLO[YOLOv8 Image Analysis]
             RAG[RAG Chatbot]
-            DSUM[📅 Weekly Summary]
+            DSUM[Weekly Summary]
             BMI --> DSUM
             NLP --> DSUM
             YOLO --> DSUM
             RAG --> DSUM
         end
 
-        subgraph FA[🏋️ Fitness Agent]
-            FREC[⬅️ Receives Diet Summary]
-            ACH[🎯 Track Goals]
-            BADGE[🏅 Award Badges]
-            FREP[📑 Fitness Report]
+        subgraph FA[Fitness Agent]
+            FREC[Receives Diet Summary]
+            ACH[Track Goals]
+            BADGE[Award Badges]
+            FREP[Fitness Report]
             FREC --> ACH --> BADGE --> FREP
         end
 
-        subgraph MA[🧘 Mental Health Agent]
-            MOOD[🙂 Mood Input]
-            JOKE[😂 Suggestions]
-            MSUM[🧾 Wellness Summary]
+        subgraph MA[Mental Health Agent]
+            MOOD[Mood Input]
+            JOKE[Suggestions]
+            MSUM[Mental Summary]
             MOOD --> JOKE --> MSUM
         end
 
-        subgraph SA[🔐 Security Agent]
-            ENC[🔑 Encrypt Data]
-            AUTH[🔏 OAuth2/JWT]
-            PRIV[⚙️ Privacy Settings]
-            STORE[💾 Store in MongoDB]
+        subgraph SA[Data & Security Agent]
+            ENC[Encrypt Data]
+            AUTH[Auth OAuth2/JWT]
+            PRIV[Privacy Settings]
+            STORE[Store in MongoDB]
             ENC --> STORE
             AUTH --> STORE
             PRIV --> STORE
@@ -130,13 +130,13 @@ flowchart TD
         MA --> SA
     end
 
-    subgraph DB[(MongoDB Database)]
-        UCOL[(👤 users)]
-        DCOL[(🥗 diet_logs)]
-        FCOL[(🏋️ fitness_reports)]
-        MCOL[(🧘 mental_health)]
-        SCOL[(🔐 security_prefs)]
-        RCOL[(💬 rag_history)]
+    subgraph DB[MongoDB Database]
+        UCOL[users]
+        DCOL[diet_logs]
+        FCOL[fitness_reports]
+        MCOL[mental_health]
+        SCOL[security_prefs]
+        RCOL[rag_history]
     end
 
     SA --> UCOL
@@ -146,9 +146,9 @@ flowchart TD
     SA --> SCOL
     SA --> RCOL
 
-    subgraph OUT[📤 Outputs]
-        WREP[📊 Weekly Reports]
-        BADGES[🏆 Badges & Achievements]
+    subgraph OUT[Outputs]
+        WREP[Weekly Reports]
+        BADGES[Badges & Achievements]
     end
 
     FA --> WREP
