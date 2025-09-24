@@ -24,67 +24,38 @@ This project solves that by creating **a single ecosystem of agents** that talk 
 
 ---
 
-## 🧩 Agent Responsibilities (Explained Like a Story)
+## 🧩 Agent Responsibilities
 
-### 🥗 Diet Agent (Nutrition Scientist)
-- **Inputs:** Biometric data, text meal logs, food images.  
-- **Processing:**  
-  - NLP extracts calories/macros from text.  
-  - YOLOv8 detects foods in images.  
-  - BMI, BMR, TDEE calculations for calorie needs.  
-- **Outputs:** Weekly nutrition profile + RAG chatbot for diet Q&A.  
-➡️ Feeds summary to the **Fitness Agent**.  
+- **🥗 Diet Agent (Nutrition Scientist)**  
+  Inputs: biometrics, text meals, food images.  
+  Processing: NLP, YOLOv8, calorie needs.  
+  Outputs: weekly nutrition summary + RAG chatbot.  
 
----
+- **🏋️ Fitness Agent (Coach & Motivator)**  
+  Inputs: diet summaries.  
+  Processing: goal tracking, calorie burn vs intake.  
+  Outputs: fitness reports + motivational badges.  
 
-### 🏋️ Fitness Agent (Coach & Cheerleader)
-- **Inputs:** Diet Agent summaries.  
-- **Processing:** Tracks calorie balance vs burn, monitors goals.  
-- **Outputs:** Weekly fitness report + motivational badges.  
+- **🧘 Mental Health Agent (Supportive Friend)**  
+  Inputs: mood logs.  
+  Processing: jokes, cartoons, meditation.  
+  Outputs: wellness summaries + mood history.  
 
----
-
-### 🧘 Mental Health Agent (Supportive Friend)
-- **Inputs:** Mood entries from users.  
-- **Processing:** Provides jokes, cartoons, meditation tips when mood is low.  
-- **Outputs:** Emotional wellness summary + mood history trends.  
+- **🔐 Data & Security Agent (Guardian)**  
+  Inputs: all agent data.  
+  Processing: AES/RSA encryption, OAuth2/JWT, privacy manager.  
+  Outputs: secure storage in MongoDB + weekly consolidated reports.  
 
 ---
 
-### 🔐 Data & Security Agent (Guardian)
-- **Inputs:** Data from all other agents.  
-- **Processing:**  
-  - Encrypts sensitive data (AES/RSA).  
-  - Authenticates/authorizes with OAuth2/JWT.  
-  - Manages privacy settings.  
-- **Outputs:** Weekly consolidated health report, securely stored in **MongoDB**.  
+## 🛠️ System Flow
 
----
-
-## 🛠️ System Flow (Step by Step)
-
-1. **Frontend (React + TS)**  
-   Users log meals, biometrics, moods, and upload images.  
-
-2. **Backend (FastAPI)**  
-   Exposes endpoints like `/api/diet`, `/api/fitness`, `/api/mental`, `/api/security`, `/api/rag/chat`.  
-
-3. **RabbitMQ Broker**  
-   Acts as a postman 📨 — delivering messages to the right agent.  
-
-4. **Agents (LangChain + LangGraph)**  
-   - Diet Agent → food & nutrition analysis.  
-   - Fitness Agent → goals & badges.  
-   - Mental Agent → jokes & meditation.  
-   - Security Agent → encryption & secure storage.  
-
-5. **MongoDB**  
-   Stores all logs, summaries, preferences, chatbot history.  
-
-6. **Outputs to User**  
-   - Weekly report 📊.  
-   - Gamified badges 🏆.  
-   - Mental wellness insights 🧘.  
+1. User logs meals, uploads images, or enters mood in the **React frontend**.  
+2. Data is sent to **FastAPI** endpoints (`/api/diet`, `/api/fitness`, `/api/mental`, `/api/security`, `/api/rag/chat`).  
+3. Messages are routed via **RabbitMQ** to the correct agent.  
+4. Agents process data using **LangChain + LangGraph**.  
+5. All data is securely stored in **MongoDB**.  
+6. Users get **weekly reports + badges + wellness insights**.  
 
 ---
 
@@ -93,24 +64,23 @@ This project solves that by creating **a single ecosystem of agents** that talk 
 ```mermaid
 flowchart TD
     %% FRONTEND
-    subgraph FE[💻 Frontend - React + TypeScript]
-        UI[🧑 User Interface\n- Meal Logging\n- Upload Food Images\n- Mood Input\n- Biometric Data Entry\n- Chat with RAG Bot]
-        UI --> FEAPI[📡 API Requests to FastAPI]
+    subgraph FE[💻 Frontend - React and TypeScript]
+        UI[🧑 User Interface: meals uploads mood biometrics chat]
+        UI --> FEAPI[📡 API Calls to FastAPI]
     end
 
     %% BACKEND
     subgraph BE[⚡ Backend - FastAPI + LangChain + RabbitMQ]
-        FEAPI --> API[🌐 FastAPI Endpoints\n(/api/diet, /api/fitness,\n/api/mental, /api/security, /api/rag/chat)]
-        API --> MQ[📬 RabbitMQ Broker\nDecoupled message passing]
+        FEAPI --> API[🌐 FastAPI Endpoints: api-diet api-fitness api-mental api-security api-rag-chat]
+        API --> MQ[📬 RabbitMQ Broker: message passing]
 
         %% Diet Agent
-        subgraph DA[🥗 Diet Agent (Nutrition Scientist)]
-            BMI[📊 Biometric Processor\n- BMI, BMR, TDEE Calculation]
-            NLP[📝 NLP Parser\n- Analyze meal text input]
-            YOLO[🤖 YOLOv8 Image Model\n- Detect food & calories from images]
-            RAG[RAG Chatbot\n- Answer diet queries]
-            DSUM[📅 Weekly Diet Summary\n- Calorie + Macro Report]
-
+        subgraph DA[🥗 Diet Agent - Nutrition Scientist]
+            BMI[📊 Biometric Processor: BMI BMR TDEE]
+            NLP[📝 NLP Parser: meal text]
+            YOLO[🤖 YOLOv8: food image analysis]
+            RAG[RAG Chatbot: diet questions]
+            DSUM[📅 Weekly Diet Summary: calories macros]
             BMI --> DSUM
             NLP --> DSUM
             YOLO --> DSUM
@@ -118,31 +88,28 @@ flowchart TD
         end
 
         %% Fitness Agent
-        subgraph FA[🏋️ Fitness Agent (Coach & Motivator)]
+        subgraph FA[🏋️ Fitness Agent - Coach]
             FREC[⬅️ Receives Diet Summary]
             ACH[🎯 Goal Tracker]
             BADGE[🏅 Badge System]
             FREP[📑 Fitness Report]
-
             FREC --> ACH --> BADGE --> FREP
         end
 
         %% Mental Health Agent
-        subgraph MA[🧘 Mental Health Agent (Supportive Friend)]
+        subgraph MA[🧘 Mental Health Agent - Friend]
             MOOD[🙂 Mood Input]
-            JOKE[😂 Mood Booster\n(Jokes, Cartoons, Meditation)]
+            JOKE[😂 Mood Booster: jokes meditation]
             MSUM[🧾 Mental Wellness Summary]
-
             MOOD --> JOKE --> MSUM
         end
 
         %% Security Agent
-        subgraph SA[🔐 Data & Security Agent (Guardian)]
-            ENC[🔑 Encrypt Data (AES/RSA)]
-            AUTH[🔏 Authentication & Authorization\n(OAuth2 / JWT)]
+        subgraph SA[🔐 Data and Security Agent - Guardian]
+            ENC[🔑 Encrypt Data AES RSA]
+            AUTH[🔏 Auth OAuth2 JWT]
             PRIV[⚙️ Privacy Manager]
-            STORE[💾 Store Securely in MongoDB]
-
+            STORE[💾 Store in MongoDB]
             ENC --> STORE
             AUTH --> STORE
             PRIV --> STORE
@@ -161,12 +128,12 @@ flowchart TD
 
     %% DATABASE
     subgraph DB[🗄️ MongoDB Database]
-        UCOL[(👤 users)]
-        DCOL[(🥗 diet_logs)]
-        FCOL[(🏋️ fitness_reports)]
-        MCOL[(🧘 mental_health)]
-        SCOL[(🔐 security_prefs)]
-        RCOL[(💬 rag_history)]
+        UCOL[(users)]
+        DCOL[(diet_logs)]
+        FCOL[(fitness_reports)]
+        MCOL[(mental_health)]
+        SCOL[(security_prefs)]
+        RCOL[(rag_history)]
     end
 
     SA --> UCOL
@@ -178,8 +145,8 @@ flowchart TD
 
     %% OUTPUT
     subgraph OUT[📤 Outputs to User]
-        WREP[📊 Weekly Consolidated Report\n(Diet + Fitness + Mental)]
-        BADGES[🏆 Badges & Achievements\n(Gamified Motivation)]
+        WREP[📊 Weekly Report: diet fitness mental]
+        BADGES[🏆 Badges and Achievements]
     end
 
     FA --> WREP
