@@ -1,187 +1,156 @@
-# Healthy Lifestyle Advisor 🥗🏋️🧠
+# 🧑‍⚕️ Healthy Lifestyle Advisor (Agentic AI Project)
 
-A web-based AI-powered healthy lifestyle advisor. This system integrates **Diet, Fitness, Mental Health, and Data Security Agents** to provide personalized recommendations for diet, exercise, and mental wellness.
+An **AI-powered multi-agent system** for promoting healthy living through **diet analysis, fitness tracking, and mental well-being support**, built with **LangChain + LangGraph**, **FastAPI**, **React + TypeScript**, **RabbitMQ**, and **MongoDB**.  
 
----
-
-## 🎯 Key Features
-
-- **Diet Agent:** Food recognition, BMI/TDEE calculation, calorie tracking, macro breakdown, hydration reminders.
-- **Fitness Agent:** Smart workout planner, activity tracking, fitness trend predictions, gamification.
-- **Mental Health Agent:** Mood analysis, stress/fatigue prediction, meditation/breathing suggestions, journaling, AI companion chat.
-- **Data & Security Agent:** AES/RSA encryption, JWT/OAuth2 authentication, GDPR-compliant data management, secure backups.
+The system uses **specialized AI agents** that communicate asynchronously through RabbitMQ and store structured insights securely.  
 
 ---
 
-## 🖥️ Frontend
+## 🚀 Tech Stack
 
-- **Stack:** React + Vite + Tailwind CSS  
-- **Progressive Web App:** Mobile-first, cross-platform  
-- **Real-time updates:** WebSocket integration for alerts and notifications
+### Frontend
+- **React + TypeScript**
+- Tailwind CSS / Shadcn UI
+- Axios for API communication
 
----
+### Backend
+- **FastAPI** (REST API)
+- **LangChain + LangGraph** (agent workflows & RAG chatbot)
+- **RabbitMQ** (message broker for async agent communication)
+- **MongoDB** (persistent storage)
 
-## 🏗️ Backend
+### AI / ML
+- **YOLOv8** (food image recognition)
+- **NLP techniques** for text-based food analysis
+- **RAG Chatbot** for health-related queries
 
-- **Architecture:** Microservices (each AI agent as a separate service)  
-- **APIs:** REST API for communication, optionally gRPC for performance  
-- **Message Broker:** RabbitMQ or Kafka for asynchronous agent communication  
-- **Load Balancer & API Gateway:** Centralized routing, authentication, and rate-limiting  
-
----
-
-## 🔐 Security & Privacy
-
-- Multi-layered security:
-  - AES/RSA encryption for sensitive data  
-  - OAuth2/JWT authentication  
-  - Role-based access control (RBAC)  
-- GDPR-like features: Right to forget, data privacy preferences  
-- Secure backups: Cloud + Local storage
+### Security
+- **AES / RSA Encryption**
+- **OAuth2 + JWT authentication**
+- Privacy preference management
 
 ---
 
-## 🌐 Integrations
+## 🧩 Agents Overview
 
-- **AI Services:** Google Vision API, nutrition datasets  
-- **Wearables:** Fitbit, Apple Health, Google Fit  
-- **External APIs:** Weather, nutrition info  
-- **Real-time:** WebSocket for instant alerts  
-- **Caching:** Redis
+- **🥗 Diet Agent**
+  - Analyzes biometric data (weight, height, BMI, BMR, TDEE).
+  - Processes meals via NLP (text input) and YOLOv8 (images).
+  - Provides **weekly calorie/macronutrient summaries**.
+  - Has its own **RAG chatbot** for diet questions.
 
----
+- **🏋️ Fitness Agent**
+  - Receives weekly diet summaries.
+  - Tracks goals, calories burned, workouts.
+  - Awards badges 🏅 and achievements.
+  - Generates fitness reports.
 
-## 🗄️ Databases
+- **🧘 Mental Health Agent**
+  - Accepts user mood inputs (happy, sad, stressed, etc.).
+  - Suggests jokes 😂, cartoons 🖼️, meditation 🧘, or exercises.
+  - Summarizes emotional wellness.
 
-- **PostgreSQL:** Transactional data  
-- **MongoDB:** Analytics & user logs  
-- **InfluxDB:** Time-series health metrics  
-- **Object storage:** Media files, ML model outputs  
-
----
-
-## 🤖 ML / AI Components
-
-- **Diet Agent:** CNN-based food recognition, calorie & nutrient calculations  
-- **Fitness Agent:** Predictive models for workouts & fitness trends  
-- **Mental Health Agent:** Mood analysis, NLP for AI companion, stress prediction  
-- **Pipeline:** TensorFlow / PyTorch for training, online inference via APIs
-
----
-
-## 📨 Communication Between Agents
-
-- **Middleware:** RabbitMQ / Kafka  
-- **Protocols:** REST APIs / gRPC / WebSockets  
-- **Data Format:** JSON (or Protocol Buffers for gRPC)  
+- **🔐 Data & Security Agent**
+  - Encrypts and stores all data securely.
+  - Handles authentication & authorization.
+  - Manages user privacy settings.
+  - Generates consolidated weekly reports.
 
 ---
 
-## 🏗️ System Architecture Diagram
+## 🗂️ API Endpoints
+
+| Endpoint             | Description                                |
+|----------------------|--------------------------------------------|
+| `/api/diet/`         | Log meals, biometrics, and analyze inputs |
+| `/api/fitness/`      | Track workouts, goals, achievements       |
+| `/api/mental/`       | Log moods, provide mental health support  |
+| `/api/security/`     | Manage auth, encryption, and preferences  |
+| `/api/rag/chat/`     | Query RAG chatbot for knowledge insights  |
+
+---
+
+## 🛠️ Project Architecture
 
 ```mermaid
-graph TD
-    %% Frontend Layer
-    FE1["React + Vite + Tailwind CSS"]
-    FE2["PWA Mobile App"]
-    FE3["React Native Mobile App"]
+flowchart TD
+    subgraph FE[Frontend - React + TypeScript]
+        UI[🧑‍💻 User Interface]
+        UI -->|Inputs: meals, images, biometrics, mood| FEAPI[📡 API Calls]
+    end
 
-    %% Backend Layer
-    BE1["API Gateway"]
-    BE2["Load Balancer"]
-    Diet["Diet Agent"]
-    Fitness["Fitness Agent"]
-    Mental["Mental Health Agent"]
-    Security["Data & Security Agent"]
-    MB["Message Broker (RabbitMQ/Kafka)"]
+    subgraph BE[Backend - FastAPI + LangChain + RabbitMQ]
+        FEAPI --> API[⚡ FastAPI Endpoints]
+        API --> MQ[(RabbitMQ Broker 📨)]
 
-    %% ML / AI Pipeline
-    CNN["Food Recognition CNN"]
-    BMR["BMI & Calorie Calculator"]
-    MacroCalc["Macro Nutrient Tracker"]
-    FitnessModel["Fitness Prediction Model"]
-    NLP["Mental Health NLP Model"]
+        subgraph DA[🥗 Diet Agent]
+            BMI[📊 Biometric Processor]
+            NLP[📝 NLP Parser]
+            YOLO[🤖 YOLOv8 Image Analysis]
+            RAG[RAG Chatbot]
+            DSUM[📅 Weekly Summary]
+            BMI --> DSUM
+            NLP --> DSUM
+            YOLO --> DSUM
+            RAG --> DSUM
+        end
 
-    %% Integrations & External Services
-    GoogleVision["Google Vision API"]
-    NutritionDB["Nutrition Database"]
-    Wearables["Fitbit / Apple Health / Google Fit"]
-    WeatherAPI["Weather API"]
+        subgraph FA[🏋️ Fitness Agent]
+            FREC[⬅️ Receives Diet Summary]
+            ACH[🎯 Track Goals]
+            BADGE[🏅 Award Badges]
+            FREP[📑 Fitness Report]
+            FREC --> ACH --> BADGE --> FREP
+        end
 
-    %% Gamification / UX Features
-    Achievements["Achievement Badges"]
-    Notifications["Real-time Alerts"]
-    MotivationalQuotes["Daily Motivational Quotes"]
-    Journaling["Mood / Journal Tracking"]
+        subgraph MA[🧘 Mental Health Agent]
+            MOOD[🙂 Mood Input]
+            JOKE[😂 Suggestions]
+            MSUM[🧾 Wellness Summary]
+            MOOD --> JOKE --> MSUM
+        end
 
-    %% Databases
-    PG["PostgreSQL"]
-    MG["MongoDB"]
-    IF["InfluxDB"]
-    FS["Object Storage"]
-    Redis["Redis - caching"]
+        subgraph SA[🔐 Security Agent]
+            ENC[🔑 Encrypt Data]
+            AUTH[🔏 OAuth2/JWT]
+            PRIV[⚙️ Privacy Settings]
+            STORE[💾 Store in MongoDB]
+            ENC --> STORE
+            AUTH --> STORE
+            PRIV --> STORE
+        end
 
-    %% DevOps / Docker Setup
-    Docker["Docker Containers"]
-    Kubernetes["Kubernetes Orchestration"]
-    CI_CD["CI/CD Pipelines"]
-    Monitoring["Prometheus + Grafana"]
+        MQ --> DA
+        DA --> MQ
+        MQ --> FA
+        FA --> MQ
+        MQ --> MA
+        DA --> SA
+        FA --> SA
+        MA --> SA
+    end
 
-    %% Frontend -> Backend
-    FE1 --> BE1
-    FE2 --> BE1
-    FE3 --> BE1
+    subgraph DB[(MongoDB Database)]
+        UCOL[(👤 users)]
+        DCOL[(🥗 diet_logs)]
+        FCOL[(🏋️ fitness_reports)]
+        MCOL[(🧘 mental_health)]
+        SCOL[(🔐 security_prefs)]
+        RCOL[(💬 rag_history)]
+    end
 
-    %% Backend routing to agents
-    BE1 --> BE2
-    BE2 --> Diet
-    BE2 --> Fitness
-    BE2 --> Mental
-    BE2 --> Security
+    SA --> UCOL
+    SA --> DCOL
+    SA --> FCOL
+    SA --> MCOL
+    SA --> SCOL
+    SA --> RCOL
 
-    %% Agents -> Message Broker (async)
-    Diet --> MB
-    Fitness --> MB
-    Mental --> MB
-    Security --> MB
-    MB --> Diet
-    MB --> Fitness
-    MB --> Mental
-    MB --> Security
+    subgraph OUT[📤 Outputs]
+        WREP[📊 Weekly Reports]
+        BADGES[🏆 Badges & Achievements]
+    end
 
-    %% Agents -> ML / AI
-    Diet --> CNN
-    Diet --> BMR
-    Diet --> MacroCalc
-    Fitness --> FitnessModel
-    Mental --> NLP
-
-    %% Agents -> Integrations
-    Diet --> GoogleVision
-    Diet --> NutritionDB
-    Diet --> Wearables
-    Fitness --> Wearables
-    Fitness --> WeatherAPI
-
-    %% Mental Health -> Gamification
-    Mental --> Achievements
-    Mental --> Notifications
-    Mental --> MotivationalQuotes
-    Mental --> Journaling
-
-    %% Security Agent -> Databases
-    Security --> PG
-    Security --> MG
-    Security --> IF
-    Security --> FS
-    Security --> Redis
-
-    %% DevOps / Docker -> Backend & Databases
-    Docker --> BE2
-    Kubernetes --> Docker
-    CI_CD --> BE2
-    Monitoring --> BE2
-    Monitoring --> PG
-    Monitoring --> MG
-    Monitoring --> IF
-    Monitoring --> FS
+    FA --> WREP
+    MA --> WREP
+    FA --> BADGES
