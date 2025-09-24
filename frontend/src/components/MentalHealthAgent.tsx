@@ -448,6 +448,78 @@ export const MentalHealthAgent: React.FC<MentalHealthAgentProps> = ({ onBackToSe
     }
   }
 
+  // Music Playlist Management Function
+  const setMusicPlaylist = useCallback((playlistName: string, tracks: Array<{ title: string, artist: string, youtube_id: string, duration?: string, mood_type?: string, spotify_id?: string }>) => {
+    try {
+      // Normalize tracks to match expected format
+      const normalizedTracks = tracks.map(track => ({
+        title: track.title,
+        artist: track.artist,
+        mood_type: track.mood_type || 'custom',
+        duration: track.duration || '3:30',
+        youtube_id: track.youtube_id,
+        spotify_id: track.spotify_id || 'N/A'
+      }))
+
+      // Save custom playlist to localStorage
+      const savedPlaylists = JSON.parse(localStorage.getItem('mentalHealthCustomPlaylists') || '{}')
+      savedPlaylists[playlistName] = {
+        name: playlistName,
+        tracks: normalizedTracks,
+        created: new Date().toISOString(),
+        lastModified: new Date().toISOString()
+      }
+      localStorage.setItem('mentalHealthCustomPlaylists', JSON.stringify(savedPlaylists))
+      
+      console.log('✅ Music playlist set successfully:', playlistName)
+      
+      // Show success notification
+      const successDiv = document.createElement('div')
+      successDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
+      successDiv.innerHTML = `
+        <div class="flex items-center space-x-3">
+          <div class="text-2xl">🎵</div>
+          <div>
+            <div class="font-bold">Playlist "${playlistName}" saved!</div>
+            <div class="text-sm">${tracks.length} tracks added successfully</div>
+          </div>
+        </div>
+      `
+      document.body.appendChild(successDiv)
+      setTimeout(() => successDiv.remove(), 4000)
+      
+      return true
+    } catch (error) {
+      console.error('Error setting music playlist:', error)
+      return false
+    }
+  }, [])
+
+  // Make setMusicPlaylist available globally for external access
+  useEffect(() => {
+    (window as any).setMusicPlaylist = setMusicPlaylist
+    return () => {
+      delete (window as any).setMusicPlaylist
+    }
+  }, [setMusicPlaylist])
+
+  // Load saved custom playlists
+  const loadCustomPlaylists = useCallback(() => {
+    try {
+      const savedPlaylists = JSON.parse(localStorage.getItem('mentalHealthCustomPlaylists') || '{}')
+      if (Object.keys(savedPlaylists).length > 0) {
+        console.log('✅ Loaded custom playlists:', Object.keys(savedPlaylists))
+      }
+    } catch (error) {
+      console.error('Error loading custom playlists:', error)
+    }
+  }, [])
+
+  // Load custom playlists on component mount
+  useEffect(() => {
+    loadCustomPlaylists()
+  }, [loadCustomPlaylists])
+
   const logMoodEntry = async (entry: Omit<MoodEntry, 'id' | 'date'>) => {
     console.log('🎯 Logging mood entry:', entry)
     const newEntry: MoodEntry = {
@@ -684,6 +756,11 @@ export const MentalHealthAgent: React.FC<MentalHealthAgentProps> = ({ onBackToSe
         { title: "Stressed Out", artist: "Twenty One Pilots", mood_type: "anger_management", duration: "3:22", youtube_id: "pXRviuL6vMY", spotify_id: "3CRDbSG3x5paQHKzJidYSa" },
         { title: "Lose Yourself", artist: "Eminem", mood_type: "anger_management", duration: "5:26", youtube_id: "_Yhyp-_hX2s", spotify_id: "7w9bgPAmPTqHkKoIBfvOJN" },
         { title: "Welcome to the Machine", artist: "Pink Floyd", mood_type: "anger_management", duration: "7:31", youtube_id: "fn4jIlFwuLU", spotify_id: "7FrCUTtnjhDFOdm9XltD8r" }
+      ],
+      custom_playlist: [
+        { title: "My Favorite Song", artist: "Custom Artist", mood_type: "custom", duration: "3:30", youtube_id: "dQw4w9WgXcQ", spotify_id: "N/A" },
+        { title: "Personal Anthem", artist: "User Choice", mood_type: "custom", duration: "4:00", youtube_id: "dQw4w9WgXcQ", spotify_id: "N/A" },
+        { title: "Mood Booster", artist: "Selected Track", mood_type: "custom", duration: "3:45", youtube_id: "dQw4w9WgXcQ", spotify_id: "N/A" }
       ]
     }
 
@@ -736,6 +813,19 @@ export const MentalHealthAgent: React.FC<MentalHealthAgentProps> = ({ onBackToSe
             ...musicSuggestions.soothing.slice(0, 1)
           )
       }
+    }
+
+    // Add custom playlist tracks if available
+    try {
+      const savedPlaylists = JSON.parse(localStorage.getItem('mentalHealthCustomPlaylists') || '{}')
+      Object.values(savedPlaylists).forEach((playlist: any) => {
+        if (playlist.tracks && playlist.tracks.length > 0) {
+          // Add 1-2 tracks from custom playlists
+          interventions.music_tracks.push(...playlist.tracks.slice(0, 2))
+        }
+      })
+    } catch (error) {
+      console.error('Error loading custom playlists for interventions:', error)
     }
 
     // Try to get additional content from APIs (keeping existing API calls)
@@ -838,39 +928,6 @@ export const MentalHealthAgent: React.FC<MentalHealthAgentProps> = ({ onBackToSe
           </div>
           
           <div class="space-y-4">
-            ${interventions.music_tracks && interventions.music_tracks.length > 0 ? `
-              <div class="bg-green-50 p-4 rounded-xl border border-green-200 ring-2 ring-green-300 ring-opacity-50">
-                <h4 class="font-semibold text-green-800 mb-3 text-lg">🎵 Music to lift your spirits:</h4>
-                <div class="space-y-2">
-                  ${interventions.music_tracks.slice(0, 3).map((track: any) => `
-                    <div class="flex items-center justify-between bg-white p-3 rounded-lg border border-green-100">
-                      <div>
-                        <p class="font-medium text-green-800">${track.title}</p>
-                        <p class="text-sm text-green-600">by ${track.artist} • ${track.duration || 'Unknown'}</p>
-                        <p class="text-xs text-green-500">${track.mood_type} music</p>
-                      </div>
-                      <div class="flex gap-2">
-                        <button onclick="window.moodModal.playMusic('${track.title}', '${track.artist}')" class="px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium transition-colors">
-                          ▶️ Play
-                        </button>
-                        <button onclick="window.globalStopMusic()" class="px-2 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-colors">
-                          ⏹️
-                        </button>
-                      </div>
-                    </div>
-                  `).join('')}
-                </div>
-                <div class="mt-4 flex gap-2 justify-center">
-                  <button onclick="window.moodModal.askMusicPreference()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors">
-                    🎯 Change Music Type
-                  </button>
-                  <button onclick="window.globalStopMusic()" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium transition-colors">
-                    ⏹️ Stop All Music
-                  </button>
-                </div>
-              </div>
-            ` : ''}
-            
             ${interventions.jokes.length > 0 ? `
               <div class="bg-yellow-50 p-4 rounded-xl border border-yellow-200">
                 <h4 class="font-semibold text-yellow-800 mb-3 flex items-center">
@@ -922,9 +979,30 @@ export const MentalHealthAgent: React.FC<MentalHealthAgentProps> = ({ onBackToSe
               </div>
             ` : ''}
             
+            ${interventions.games && interventions.games.length > 0 ? `
+              <div class="bg-pink-50 p-4 rounded-xl border border-pink-200">
+                <h4 class="font-semibold text-pink-800 mb-3">🎮 Fun games to try:</h4>
+                ${interventions.games.slice(currentGameIndex, currentGameIndex + 1).map((game: any) => `
+                  <div class="bg-white p-4 rounded-lg border border-pink-100">
+                    <h5 class="font-bold text-pink-800 mb-2">${game.name}</h5>
+                    <p class="text-pink-700 mb-3">${game.description}</p>
+                    <p class="text-sm text-pink-600 mb-3"><strong>Instructions:</strong> ${game.instructions}</p>
+                    <button onclick="window.moodModal.startGame('${game.name}')" class="px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-lg text-sm font-medium transition-colors">
+                      Start Game! 🎯
+                    </button>
+                  </div>
+                `).join('')}
+                ${interventions.games.length > 1 ? `
+                  <button onclick="window.moodModal.nextGame()" class="mt-3 px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-lg text-sm font-medium transition-colors">
+                    Try a different game! 🎲
+                  </button>
+                ` : ''}
+              </div>
+            ` : ''}
+            
             ${interventions.music_tracks && interventions.music_tracks.length > 0 ? `
-              <div class="bg-green-50 p-4 rounded-xl border border-green-200">
-                <h4 class="font-semibold text-green-800 mb-3">� Music to lift your spirits:</h4>
+              <div class="bg-green-50 p-4 rounded-xl border border-green-200 ring-2 ring-green-300 ring-opacity-50">
+                <h4 class="font-semibold text-green-800 mb-3 text-lg">� Music to lift your spirits:</h4>
                 <div class="space-y-2">
                   ${interventions.music_tracks.slice(0, 3).map((track: any) => `
                     <div class="flex items-center justify-between bg-white p-3 rounded-lg border border-green-100">
@@ -952,27 +1030,6 @@ export const MentalHealthAgent: React.FC<MentalHealthAgentProps> = ({ onBackToSe
                     ⏹️ Stop All Music
                   </button>
                 </div>
-              </div>
-            ` : ''}
-            
-            ${interventions.games && interventions.games.length > 0 ? `
-              <div class="bg-pink-50 p-4 rounded-xl border border-pink-200">
-                <h4 class="font-semibold text-pink-800 mb-3">🎮 Fun games to try:</h4>
-                ${interventions.games.slice(currentGameIndex, currentGameIndex + 1).map((game: any) => `
-                  <div class="bg-white p-4 rounded-lg border border-pink-100">
-                    <h5 class="font-bold text-pink-800 mb-2">${game.name}</h5>
-                    <p class="text-pink-700 mb-3">${game.description}</p>
-                    <p class="text-sm text-pink-600 mb-3"><strong>Instructions:</strong> ${game.instructions}</p>
-                    <button onclick="window.moodModal.startGame('${game.name}')" class="px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-lg text-sm font-medium transition-colors">
-                      Start Game! 🎯
-                    </button>
-                  </div>
-                `).join('')}
-                ${interventions.games.length > 1 ? `
-                  <button onclick="window.moodModal.nextGame()" class="mt-3 px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-lg text-sm font-medium transition-colors">
-                    Try a different game! 🎲
-                  </button>
-                ` : ''}
               </div>
             ` : ''}
             
