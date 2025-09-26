@@ -18,6 +18,7 @@ from app.auth.router import router as auth_router
 from app.auth.users import setup_user_collection
 
 from app.routes.simple_diet_routes import router as diet_router
+from app.routes.mental_health_routes import router as mental_health_router
 
 
 # Create FastAPI application with detailed configuration
@@ -52,6 +53,9 @@ app.include_router(auth_router)
 
 # Include Diet Agent routes
 app.include_router(diet_router)
+
+# Include Mental Health Agent routes
+app.include_router(mental_health_router)
 
 
 # Global application state
@@ -318,4 +322,4 @@ async def log_requests(request, call_next):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8004)
