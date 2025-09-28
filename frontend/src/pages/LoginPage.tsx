@@ -66,7 +66,7 @@ export const LoginPage = () => {
       } else {
         navigate('/dashboard')
       }
-    } catch (error) {
+    } catch {
       setError('Invalid credentials')
     }
   }

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nutrition Hub Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-button {
+            background: #10b981;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .test-button:hover {
+            background: #059669;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            background: #f0f9ff;
+            border: 1px solid #0ea5e9;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Advanced Nutrition Hub - Integration Test</h1>
+    
+    <div class="status">
+        <h3>Testing Frontend Integration</h3>
+        <p>This page tests if the Advanced Nutrition Hub can be accessed directly.</p>
+    </div>
+
+    <div>
+        <h3>Quick Access Links:</h3>
+        <a href="http://localhost:5176/services" class="test-button">🔗 Go to Services Page</a>
+        <a href="http://localhost:5176/login" class="test-button">🔐 Go to Login Page</a>
+        <a href="http://localhost:5176/register" class="test-button">📝 Go to Register Page</a>
+    </div>
+
+    <div>
+        <h3>Test Instructions:</h3>
+        <ol>
+            <li>Open the Services Page</li>
+            <li>If not authenticated, click "Sign In & Start" on Advanced Nutrition Hub</li>
+            <li>Complete login/registration</li>
+            <li>Return to services and click "Launch Nutrition Hub"</li>
+            <li>Verify the Advanced Nutrition Hub loads with all tabs working</li>
+        </ol>
+    </div>
+
+    <div>
+        <h3>Expected Features in Advanced Nutrition Hub:</h3>
+        <ul>
+            <li>✅ Food Analysis Tab (Text/Image input)</li>
+            <li>✅ AI Insights Tab (Recommendations)</li>
+            <li>✅ Nutrition Logs Tab (Meal tracking)</li>
+            <li>✅ Weekly Reports Tab (NLP summaries)</li>
+            <li>✅ Sri Lankan food database integration</li>
+            <li>✅ Authentication required</li>
+        </ul>
+    </div>
+
+    <script>
+        console.log('🧪 Test page loaded');
+        console.log('📍 Current URL:', window.location.href);
+        console.log('🕐 Test started at:', new Date().toLocaleString());
+    </script>
+</body>
+</html>

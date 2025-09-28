@@ -28,9 +28,3 @@ celery==5.3.4
 python-dotenv==1.0.0
 httpx==0.25.2
 asyncio==3.4.3
-
-# RAG Chatbot dependencies
-faiss-cpu==1.7.4
-transformers==4.36.0
-sentence-transformers==2.2.2
-tiktoken==0.5.2

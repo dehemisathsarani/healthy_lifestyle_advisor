@@ -10,7 +10,7 @@ load_dotenv()
 
 # MongoDB configuration
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-DB_NAME = os.getenv("MONGO_DB_NAME", "HealthAgent")
+DB_NAME = os.getenv("DATABASE_NAME", os.getenv("MONGO_DB_NAME", "HealthAgent"))
 
 # Global variables for database connection
 client: Optional[motor.motor_asyncio.AsyncIOMotorClient] = None

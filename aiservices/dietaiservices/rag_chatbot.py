@@ -9,14 +9,14 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional, Tuple
 import asyncio
 import numpy as np
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.vectorstores import FAISS
+from langchain_community.embeddings import OpenAIEmbeddings
+from langchain_community.vectorstores import FAISS
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.document_loaders import JSONLoader
+from langchain_community.document_loaders import JSONLoader
 from langchain.schema import Document
-from langchain.chat_models import ChatOpenAI
+from langchain_community.chat_models import ChatOpenAI
 from langchain.chains import ConversationalRetrievalChain
-from langchain.memory import ConversationBufferWindowMemory
+from langchain_community.memory import ConversationBufferWindowMemory
 from langchain.prompts import PromptTemplate
 from pydantic import BaseModel
 import motor.motor_asyncio
