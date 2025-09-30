@@ -554,6 +554,31 @@
   animation: glow 3s ease-in-out infinite;
 }
 
+/* Modern animations for Services Page */
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(59, 130, 246, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.8), 0 0 30px rgba(59, 130, 246, 0.6);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s ease-out forwards;
+}
+
 /* Gradient text utilities */
 .bg-gradient-text {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #667eea 100%);

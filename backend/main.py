@@ -20,6 +20,8 @@ from app.auth.users import setup_user_collection
 from app.routes.simple_diet_routes import router as diet_router
 from app.routes.nutrition_routes import router as nutrition_router
 from app.routes.biometric_routes import router as biometric_router
+from app.etl.router import router as etl_router
+from app.etl.integrated_food_vision_router import router as integrated_food_vision_router
 
 
 # Create FastAPI application with detailed configuration
@@ -60,6 +62,12 @@ app.include_router(nutrition_router)
 
 # Include Biometric Management routes
 app.include_router(biometric_router, prefix="/api")
+
+# Include ETL Management routes
+app.include_router(etl_router, prefix="/api")
+
+# Include Integrated Food Vision ETL routes
+app.include_router(integrated_food_vision_router, prefix="/api")
 
 
 # Global application state
