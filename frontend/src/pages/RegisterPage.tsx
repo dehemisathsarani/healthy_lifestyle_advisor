@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import { FaUser, FaAt, FaLock, FaGlobe, FaPhone, FaHashtag, FaCheckCircle, FaTimesCircle, FaEye, FaEyeSlash, FaLinkedin, FaTwitter, FaInstagram, FaFacebook, FaYoutube, FaGithub, FaHome } from 'react-icons/fa'
+import { HiUser, HiAtSymbol, HiLockClosed, HiGlobeAlt, HiPhone, HiHashtag, HiCheckCircle, HiXCircle, HiEye, HiEyeSlash, HiLink, HiHome } from 'react-icons/hi2'
 import { SORTED_COUNTRIES } from '../data/countries'
 // import { getRecaptchaToken } from '../lib/recaptcha'
 
@@ -112,7 +112,7 @@ export const RegisterPage = () => {
           className="absolute top-4 right-4 z-20 group flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg transition-all duration-300 hover:bg-emerald-600 hover:scale-110 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
           title="Back to Home"
         >
-          <FaHome className="text-lg transition-transform duration-300 group-hover:scale-110" />
+          <HiHome className="text-lg transition-transform duration-300 group-hover:scale-110" />
         </button>
         
         <div className="relative">
@@ -133,22 +133,22 @@ export const RegisterPage = () => {
           {/* Social Media Links */}
           <div className="mt-4 flex items-center justify-center gap-4">
             <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white transition-all hover:scale-110 hover:shadow-lg">
-              <FaLinkedin className="text-lg" />
+              <HiLink className="text-lg" />
             </a>
             <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-500 text-white transition-all hover:scale-110 hover:shadow-lg">
-              <FaTwitter className="text-lg" />
+              <HiLink className="text-lg" />
             </a>
             <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white transition-all hover:scale-110 hover:shadow-lg">
-              <FaInstagram className="text-lg" />
+              <HiLink className="text-lg" />
             </a>
             <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-700 text-white transition-all hover:scale-110 hover:shadow-lg">
-              <FaFacebook className="text-lg" />
+              <HiLink className="text-lg" />
             </a>
             <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="flex h-10 w-10 items-center justify-center rounded-full bg-red-600 text-white transition-all hover:scale-110 hover:shadow-lg">
-              <FaYoutube className="text-lg" />
+              <HiLink className="text-lg" />
             </a>
             <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-800 text-white transition-all hover:scale-110 hover:shadow-lg">
-              <FaGithub className="text-lg" />
+              <HiLink className="text-lg" />
             </a>
           </div>
 
@@ -156,7 +156,7 @@ export const RegisterPage = () => {
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium">Name</label>
               <div className="mt-1 flex items-center gap-2 rounded-md border px-3 py-2 focus-within:ring-2 focus-within:ring-brand">
-                <FaUser className="text-gray-400" />
+                <HiUser className="text-gray-400" />
                 <input value={name} onChange={(e) => setName(sanitizeName(e.target.value))} type="text" required aria-invalid={!isName(name)} className="w-full bg-transparent outline-none" placeholder="John Doe" maxLength={60} />
               </div>
               {!isName(name) && <p className="mt-1 text-xs text-red-600">Enter a valid name (letters, spaces, . ' - ).</p>}
@@ -165,7 +165,7 @@ export const RegisterPage = () => {
             <div>
               <label className="block text-sm font-medium">Age</label>
               <div className="mt-1 flex items-center gap-2 rounded-md border px-3 py-2 focus-within:ring-2 focus-within:ring-brand">
-                <FaHashtag className="text-gray-400" />
+                <HiHashtag className="text-gray-400" />
                 <input value={age} onChange={(e) => {
                   const s = sanitizeAge(e.target.value)
                   setAge(s === '' ? '' : Number(s))
@@ -176,7 +176,7 @@ export const RegisterPage = () => {
             <div>
               <label className="block text-sm font-medium">Country</label>
               <div className="mt-1 flex items-center gap-2 rounded-md border px-2 py-2 focus-within:ring-2 focus-within:ring-brand">
-                <FaGlobe className="ml-1 text-gray-400" />
+                <HiGlobeAlt className="ml-1 text-gray-400" />
                 <select value={country ? SORTED_COUNTRIES.find(c=>c.name===country)?.code ?? '' : ''} onChange={(e) => {
                   const selected = SORTED_COUNTRIES.find(c => c.code === e.target.value)
                   setCountry(selected?.name || '')
@@ -202,7 +202,7 @@ export const RegisterPage = () => {
                   </select>
                 </div>
                 <div className="flex items-center gap-2 rounded-md border px-3 py-2 focus-within:ring-2 focus-within:ring-brand">
-                  <FaPhone className="text-gray-400" />
+                  <HiPhone className="text-gray-400" />
                   <input value={mobile} onChange={(e) => setMobile(sanitizeMobile(e.target.value))} type="tel" inputMode="numeric" pattern="[0-9]*" aria-invalid={!isMobile(mobile)} className="w-full bg-transparent outline-none" placeholder="712345678" maxLength={15} />
                 </div>
               </div>
@@ -212,7 +212,7 @@ export const RegisterPage = () => {
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium">Email</label>
               <div className="mt-1 flex items-center gap-2 rounded-md border px-3 py-2 focus-within:ring-2 focus-within:ring-brand">
-                <FaAt className="text-gray-400" />
+                <HiAtSymbol className="text-gray-400" />
                 <input value={email} onChange={(e) => setEmail(sanitizeEmail(e.target.value))} type="email" inputMode="email" autoComplete="email" required aria-invalid={!isEmail(email)} className="w-full bg-transparent outline-none" placeholder="you@example.com" maxLength={254} />
               </div>
               {!isEmail(email) && <p className="mt-1 text-xs text-red-600">Enter a valid email address.</p>}
@@ -220,10 +220,10 @@ export const RegisterPage = () => {
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium">Password</label>
               <div className="mt-1 flex items-center gap-2 rounded-md border px-3 py-2 focus-within:ring-2 focus-within:ring-brand">
-                <FaLock className="text-gray-400" />
+                <HiLockClosed className="text-gray-400" />
                 <input value={password} onChange={(e) => setPassword(e.target.value)} type={showPassword ? 'text' : 'password'} required aria-invalid={!passwordRequiredOk} className="w-full bg-transparent outline-none" placeholder="••••••••" />
                 <button type="button" onClick={() => setShowPassword((v) => !v)} className="text-gray-500 hover:text-gray-700">
-                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                  {showPassword ? <HiEyeSlash /> : <HiEye />}
                 </button>
               </div>
               <div className="mt-2">
@@ -245,7 +245,7 @@ export const RegisterPage = () => {
                     { ok: passwordChecks.special, label: 'symbol (optional)' },
                   ].map((c) => (
                     <li key={c.label} className={`inline-flex items-center gap-1 ${c.ok ? 'text-emerald-600' : 'text-gray-500'}`}>
-                      {c.ok ? <FaCheckCircle /> : <FaTimesCircle />} {c.label}
+                      {c.ok ? <HiCheckCircle /> : <HiXCircle />} {c.label}
                     </li>
                   ))}
                 </ul>
@@ -254,10 +254,10 @@ export const RegisterPage = () => {
             <div className="sm:col-span-2">
               <label className="block text-sm font-medium">Confirm Password</label>
               <div className="mt-1 flex items-center gap-2 rounded-md border px-3 py-2 focus-within:ring-2 focus-within:ring-brand">
-                <FaLock className="text-gray-400" />
+                <HiLockClosed className="text-gray-400" />
                 <input value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} type={showConfirm ? 'text' : 'password'} required aria-invalid={!confirmOk} className="w-full bg-transparent outline-none" placeholder="••••••••" />
                 <button type="button" onClick={() => setShowConfirm((v) => !v)} className="text-gray-500 hover:text-gray-700">
-                  {showConfirm ? <FaEyeSlash /> : <FaEye />}
+                  {showConfirm ? <HiEyeSlash /> : <HiEye />}
                 </button>
               </div>
               {!confirmOk && <p className="mt-1 text-xs text-red-600">Passwords do not match.</p>}
@@ -297,7 +297,7 @@ export const RegisterPage = () => {
                   onClick={() => navigate('/')}
                   className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 transition-colors duration-200 font-medium"
                 >
-                  <FaHome className="text-sm" />
+                  <HiHome className="text-sm" />
                   Back to Home
                 </button>
               </div>

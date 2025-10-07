@@ -20,6 +20,7 @@ from app.auth.users import setup_user_collection
 from app.routes.simple_diet_routes import router as diet_router
 from app.routes.nutrition_routes import router as nutrition_router
 from app.routes.biometric_routes import router as biometric_router
+from app.routes.enhanced_nutrition_routes import router as enhanced_nutrition_router
 from app.etl.router import router as etl_router
 from app.etl.integrated_food_vision_router import router as integrated_food_vision_router
 
@@ -59,6 +60,9 @@ app.include_router(diet_router)
 
 # Include Advanced Nutrition Hub routes
 app.include_router(nutrition_router)
+
+# Include Enhanced Nutrition Analysis routes
+app.include_router(enhanced_nutrition_router)
 
 # Include Biometric Management routes
 app.include_router(biometric_router, prefix="/api")

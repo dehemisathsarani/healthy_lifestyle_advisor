@@ -43,6 +43,7 @@ class FoodAnalysisResponse(BaseModel):
     
     # Food Vision Results
     detected_foods: List[Dict[str, Any]]
+    detected_foods_count: int  # <-- Added for accurate count
     nutrition_summary: Dict[str, Any]
     confidence_metrics: Dict[str, Any]
     
@@ -162,9 +163,6 @@ async def analyze_food_image_integrated(
         insights = result.get('nutrition_insights', {})
         performance = result.get('performance_metrics', {})
         
-        # Accurate food count
-        food_count = len(food_analysis.get('detected_foods', []))
-        
         # Schedule background analytics update if ETL processing was successful
         if etl_processing.get('status') == 'success':
             background_tasks.add_task(
@@ -180,6 +178,7 @@ async def analyze_food_image_integrated(
             processing_time_seconds=performance.get('total_processing_time_seconds', 0),
             
             detected_foods=food_analysis.get('detected_foods', []),
+            detected_foods_count=len(food_analysis.get('detected_foods', [])),  # <-- Accurate count
             nutrition_summary=food_analysis.get('nutrition_summary', {}),
             confidence_metrics=food_analysis.get('confidence_metrics', {}),
             
@@ -191,12 +190,8 @@ async def analyze_food_image_integrated(
             meal_quality_assessment=insights.get('meal_quality', {})
         )
         
-        logger.info(f"✅ Integrated food analysis completed for user {user_id} | Foods detected: {food_count}")
-        
-        # Add food_count to response for frontend/analytics
-        response_dict = response.dict()
-        response_dict['food_count'] = food_count
-        return JSONResponse(content=response_dict)
+        logger.info(f"✅ Integrated food analysis completed for user {user_id}")
+        return response
         
     except HTTPException:
         raise
@@ -268,11 +263,22 @@ async def get_user_nutrition_analytics(
                 detail="No nutrition data found for the specified user and date range"
             )
         
+        # Add detected_foods_count statistics to summary_statistics
+        records = analytics.get('records', [])
+        detected_counts = [len(r.get('detected_foods', [])) for r in records] if records else []
+        summary_statistics = analytics.get('summary_statistics', {})
+        summary_statistics['detected_foods'] = {
+            'average': sum(detected_counts) / len(detected_counts) if detected_counts else 0,
+            'min': min(detected_counts) if detected_counts else 0,
+            'max': max(detected_counts) if detected_counts else 0,
+            'total': sum(detected_counts)
+        }
+        
         # Convert to response model
         report = UserNutritionReport(
             user_id=analytics.get('user_id'),
             date_range=analytics.get('date_range', {}),
-            summary_statistics=analytics.get('summary_statistics', {}),
+            summary_statistics=summary_statistics,
             nutrition_trends=analytics.get('nutrition_trends', {}),
             meal_patterns=analytics.get('meal_patterns', {}),
             health_indicators=analytics.get('health_indicators', {}),
@@ -337,6 +343,10 @@ async def get_user_food_history(
         if meal_type:
             records = [r for r in records if r.get('meal_type') == meal_type]
         
+        # Add detected_foods_count to each record
+        for r in records:
+            r['detected_foods_count'] = len(r.get('detected_foods', []))
+        
         # Apply pagination
         total_records = len(records)
         paginated_records = records[offset:offset + limit]
@@ -364,8 +374,11 @@ async def get_user_food_history(
                     'latest': max(r.get('created_at', '') for r in records) if records else None
                 },
                 'meal_type_distribution': _calculate_meal_distribution(records),
-                'total_foods_analyzed': sum(len(r.get('detected_foods', [])) for r in records),
-                'average_confidence': sum(r.get('confidence_score', 0) for r in records) / len(records) if records else 0
+                'total_foods_analyzed': sum(r.get('detected_foods_count', 0) for r in records),
+                'average_confidence': sum(r.get('confidence_score', 0) for r in records) / len(records) if records else 0,
+                'average_detected_foods': sum(r.get('detected_foods_count', 0) for r in records) / len(records) if records else 0,
+                'max_detected_foods': max((r.get('detected_foods_count', 0) for r in records), default=0),
+                'min_detected_foods': min((r.get('detected_foods_count', 0) for r in records), default=0)
             }
         }
         

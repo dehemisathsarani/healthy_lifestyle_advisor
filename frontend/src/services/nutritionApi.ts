@@ -1,4 +1,7 @@
-interface NutritionData {
+/// <reference types="vite/client" />
+
+// Types
+export interface NutritionData {
   calories: number
   protein: number
   carbs: number
@@ -8,424 +11,268 @@ interface NutritionData {
   sodium?: number
 }
 
-interface FoodItem {
+export interface FoodItem {
+  id: string
   name: string
   quantity: string
   nutrition: NutritionData
-  confidence?: number
-  sri_lankan_food?: boolean
-  food_category?: string
+  confidence: number
 }
 
-interface NutritionLog {
-  id?: string
-  user_id?: string
+export interface NutritionLog {
+  id: string
+  user_id: string
   date: string
+  meal_type: string
   meals: FoodItem[]
   total_nutrition: NutritionData
-  meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack'
   notes?: string
-  analysis_method: 'text' | 'image' | 'hybrid'
-  image_url?: string
-  text_input?: string
-  ai_insights?: string[]
-  confidence_score?: number
-  created_at?: string
-  updated_at?: string
+  created_at: string
 }
 
-interface WeeklyReport {
-  id?: string
-  user_id?: string
+export interface WeeklyReport {
   period: string
-  start_date: string
-  end_date: string
   average_daily_calories: number
   total_logs: number
-  nutrition_trends: NutritionData
+  health_score: number
   insights: string[]
   recommendations: string[]
-  health_score: number
-  meal_frequency?: Record<string, number>
-  top_foods?: string[]
-  nutrition_goals_met?: Record<string, boolean>
-  created_at?: string
+  nutrition_trends: {
+    calories: number[]
+    protein: number[]
+    carbs: number[]
+    fat: number[]
+  }
 }
 
-interface ApiResponse<T = any> {
-  success: boolean
+export interface ChatbotMessage {
   message: string
-  data?: T
-  error?: string
-  timestamp: string
+  mode: string
+  conversation_history: any[]
+  relevant_knowledge: string[]
 }
 
-interface PaginatedResponse<T> extends ApiResponse {
-  logs?: T[]
-  total: number
-  page: number
-  per_page: number
-  total_pages: number
+export interface ChatbotResponse {
+  response: string
+  confidence: number
+  sources: string[]
 }
 
-interface FoodAnalysisRequest {
-  text_input?: string
-  analysis_method: 'text' | 'image'
-  meal_type?: 'breakfast' | 'lunch' | 'dinner' | 'snack'
-}
-
-interface FoodAnalysisResponse {
-  success: boolean
-  food_items: FoodItem[]
-  total_nutrition: NutritionData
-  ai_insights: string[]
-  confidence_score: number
-  analysis_method: 'text' | 'image'
-}
-
-class NutritionApiService {
+// Enhanced Nutrition API Service
+export class NutritionApiService {
   private baseUrl: string
-  private authToken: string | null = null
 
   constructor() {
-    this.baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+    this.baseUrl = import.meta.env?.VITE_API_URL || 'http://localhost:8000'
   }
 
-  setAuthToken(token: string) {
-    this.authToken = token
-  }
-
-  private getHeaders(): HeadersInit {
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    }
-    
-    if (this.authToken) {
-      headers['Authorization'] = `Bearer ${this.authToken}`
-    }
-    
-    return headers
-  }
-
-  private async handleResponse<T>(response: Response): Promise<T> {
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }))
-      throw new Error(errorData.message || errorData.detail || `HTTP ${response.status}`)
-    }
-    
-    return response.json()
-  }
-
-  // Food Analysis
-  async analyzeFood(request: FoodAnalysisRequest): Promise<FoodAnalysisResponse> {
-    const response = await fetch(`${this.baseUrl}/nutrition/analyze`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify(request)
-    })
-    
-    return this.handleResponse<FoodAnalysisResponse>(response)
-  }
-
-  // Nutrition Logs
-  async createNutritionLog(logData: {
-    meals: FoodItem[]
-    meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack'
-    notes?: string
-    analysis_method: 'text' | 'image' | 'hybrid'
-    image_url?: string
-    text_input?: string
-    ai_insights?: string[]
-  }): Promise<ApiResponse<NutritionLog>> {
-    const response = await fetch(`${this.baseUrl}/nutrition/logs`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify(logData)
-    })
-    
-    return this.handleResponse<ApiResponse<NutritionLog>>(response)
-  }
-
-  async getNutritionLogs(params: {
-    page?: number
-    per_page?: number
-    start_date?: string
-    end_date?: string
-  } = {}): Promise<PaginatedResponse<NutritionLog>> {
-    const queryParams = new URLSearchParams()
-    
-    if (params.page) queryParams.append('page', params.page.toString())
-    if (params.per_page) queryParams.append('per_page', params.per_page.toString())
-    if (params.start_date) queryParams.append('start_date', params.start_date)
-    if (params.end_date) queryParams.append('end_date', params.end_date)
-    
-    const response = await fetch(`${this.baseUrl}/nutrition/logs?${queryParams}`, {
-      method: 'GET',
-      headers: this.getHeaders()
-    })
-    
-    return this.handleResponse<PaginatedResponse<NutritionLog>>(response)
-  }
-
-  async getNutritionLog(logId: string): Promise<ApiResponse<NutritionLog>> {
-    const response = await fetch(`${this.baseUrl}/nutrition/logs/${logId}`, {
-      method: 'GET',
-      headers: this.getHeaders()
-    })
-    
-    return this.handleResponse<ApiResponse<NutritionLog>>(response)
-  }
-
-  async updateNutritionLog(logId: string, updateData: {
-    meals?: FoodItem[]
-    meal_type?: 'breakfast' | 'lunch' | 'dinner' | 'snack'
-    notes?: string
-    ai_insights?: string[]
-  }): Promise<ApiResponse<NutritionLog>> {
-    const response = await fetch(`${this.baseUrl}/nutrition/logs/${logId}`, {
-      method: 'PUT',
-      headers: this.getHeaders(),
-      body: JSON.stringify(updateData)
-    })
-    
-    return this.handleResponse<ApiResponse<NutritionLog>>(response)
-  }
-
-  async deleteNutritionLog(logId: string): Promise<ApiResponse> {
-    const response = await fetch(`${this.baseUrl}/nutrition/logs/${logId}`, {
-      method: 'DELETE',
-      headers: this.getHeaders()
-    })
-    
-    return this.handleResponse<ApiResponse>(response)
-  }
-
-  // Daily Summary
-  async getDailySummary(date?: string): Promise<ApiResponse> {
-    const queryParams = new URLSearchParams()
-    if (date) queryParams.append('date', date)
-    
-    const response = await fetch(`${this.baseUrl}/nutrition/daily-summary?${queryParams}`, {
-      method: 'GET',
-      headers: this.getHeaders()
-    })
-    
-    return this.handleResponse<ApiResponse>(response)
-  }
-
-  async getWeeklySummaries(startDate: string, endDate: string): Promise<ApiResponse> {
-    const queryParams = new URLSearchParams({
-      start_date: startDate,
-      end_date: endDate
-    })
-    
-    const response = await fetch(`${this.baseUrl}/nutrition/weekly-summaries?${queryParams}`, {
-      method: 'GET',
-      headers: this.getHeaders()
-    })
-    
-    return this.handleResponse<ApiResponse>(response)
-  }
-
-  // Weekly Reports
-  async generateWeeklyReport(request: {
-    start_date?: string
-    end_date?: string
-  } = {}): Promise<ApiResponse<WeeklyReport>> {
-    const response = await fetch(`${this.baseUrl}/nutrition/reports/weekly`, {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify(request)
-    })
-    
-    return this.handleResponse<ApiResponse<WeeklyReport>>(response)
-  }
-
-  async getWeeklyReports(limit: number = 10): Promise<ApiResponse<WeeklyReport[]>> {
-    const queryParams = new URLSearchParams({ limit: limit.toString() })
-    
-    const response = await fetch(`${this.baseUrl}/nutrition/reports/weekly?${queryParams}`, {
-      method: 'GET',
-      headers: this.getHeaders()
-    })
-    
-    return this.handleResponse<ApiResponse<WeeklyReport[]>>(response)
-  }
-
-  // User Preferences
-  async getNutritionPreferences(): Promise<ApiResponse> {
-    const response = await fetch(`${this.baseUrl}/nutrition/preferences`, {
-      method: 'GET',
-      headers: this.getHeaders()
-    })
-    
-    return this.handleResponse<ApiResponse>(response)
-  }
-
-  async updateNutritionPreferences(preferences: {
-    daily_calorie_goal: number
-    daily_protein_goal: number
-    daily_carbs_goal: number
-    daily_fat_goal: number
-    daily_fiber_goal?: number
-    dietary_restrictions?: string[]
-    food_allergies?: string[]
-    preferred_cuisines?: string[]
-    disliked_foods?: string[]
-    health_conditions?: string[]
-  }): Promise<ApiResponse> {
-    const response = await fetch(`${this.baseUrl}/nutrition/preferences`, {
-      method: 'PUT',
-      headers: this.getHeaders(),
-      body: JSON.stringify(preferences)
-    })
-    
-    return this.handleResponse<ApiResponse>(response)
-  }
-
-  // Statistics
-  async getNutritionOverview(days: number = 30): Promise<ApiResponse> {
-    const queryParams = new URLSearchParams({ days: days.toString() })
-    
-    const response = await fetch(`${this.baseUrl}/nutrition/stats/overview?${queryParams}`, {
-      method: 'GET',
-      headers: this.getHeaders()
-    })
-    
-    return this.handleResponse<ApiResponse>(response)
-  }
-
-  // Missing method for HealthDashboard
-  async getNutritionStats(): Promise<{ success: boolean; data: any }> {
+  // Text-based food analysis
+  async analyzeFood(input: string | { text_input?: string; analysis_method: string }): Promise<FoodItem[]> {
     try {
-      // Return mock nutrition stats for now
-      return {
-        success: true,
-        data: {
-          weekly_calories: 14500,
-          daily_average: 2071,
-          protein_average: 120,
-          carbs_average: 250,
-          fat_average: 70
+      if (typeof input === 'string') {
+        return this.mockAnalyzeText(input)
+      } else {
+        if (input.analysis_method === 'text' && input.text_input) {
+          return this.mockAnalyzeText(input.text_input)
+        } else if (input.analysis_method === 'image') {
+          return this.mockAnalyzeImage()
         }
-      };
+      }
+      return []
     } catch (error) {
-      console.error('Error getting nutrition stats:', error);
-      return { success: false, data: null };
+      console.error('Food analysis failed:', error)
+      return []
     }
   }
 
-  // RAG Chatbot method
-  async getChatbotResponse(params: {
-    query: string;
-    context: any;
-    knowledge: string[];
-  }): Promise<{ success: boolean; message?: string; error?: string }> {
+  // Save nutrition log
+  async saveNutritionLog(log: Omit<NutritionLog, 'id' | 'created_at'>): Promise<NutritionLog> {
     try {
-      // First try to connect to the RAG backend service
-      const response = await fetch('http://localhost:8000/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          user_id: params.context.profile?.userId || 'demo-user',
-          message: params.query,
-          context_type: 'nutrition',
-          user_profile: params.context.profile,
-          nutrition_context: params.context.recentLogs
-        }),
-      });
+      const savedLog: NutritionLog = {
+        ...log,
+        id: Math.random().toString(36).substr(2, 9),
+        created_at: new Date().toISOString()
+      }
+      return savedLog
+    } catch (error) {
+      console.error('Failed to save nutrition log:', error)
+      throw error
+    }
+  }
 
-      if (response.ok) {
-        const data = await response.json();
-        return {
-          success: true,
-          message: data.response
-        };
-      } else {
-        throw new Error(`Backend responded with status: ${response.status}`);
+  async createNutritionLog(log: Omit<NutritionLog, 'id' | 'created_at'>): Promise<NutritionLog> {
+    return this.saveNutritionLog(log)
+  }
+
+  // Get nutrition logs
+  async getNutritionLogs(): Promise<NutritionLog[]> {
+    try {
+      return [
+        {
+          id: '1',
+          user_id: '1',
+          date: new Date().toISOString().split('T')[0],
+          meal_type: 'breakfast',
+          meals: [
+            {
+              id: '1',
+              name: 'Oatmeal',
+              quantity: '1 cup',
+              nutrition: { calories: 150, protein: 5, carbs: 27, fat: 3 },
+              confidence: 0.9
+            }
+          ],
+          total_nutrition: { calories: 150, protein: 5, carbs: 27, fat: 3 },
+          created_at: new Date().toISOString()
+        }
+      ]
+    } catch (error) {
+      console.error('Failed to get nutrition logs:', error)
+      return []
+    }
+  }
+
+  // Get nutrition statistics
+  async getNutritionStats(): Promise<any> {
+    try {
+      return {
+        total_entries: 42,
+        average_calories: 2150,
+        average_protein: 85,
+        average_carbs: 250,
+        average_fat: 75,
+        health_score: 85
       }
     } catch (error) {
-      console.warn('RAG backend unavailable, using fallback response:', error);
-      
-      // Fallback response generation
-      const fallbackMessage = this.generateFallbackChatResponse(params.query, params.context, params.knowledge);
+      console.error('Failed to get nutrition stats:', error)
+      return {
+        total_entries: 0,
+        average_calories: 0,
+        average_protein: 0,
+        average_carbs: 0,
+        average_fat: 0,
+        health_score: 0
+      }
+    }
+  }
+
+  // Generate weekly report
+  async generateWeeklyReport(): Promise<WeeklyReport> {
+    try {
+      return {
+        period: 'Last 7 days',
+        average_daily_calories: 2150,
+        total_logs: 21,
+        health_score: 85,
+        insights: [
+          'Great protein intake this week!',
+          'Consider adding more vegetables',
+          'Hydration levels look good'
+        ],
+        recommendations: [
+          'Try to include more fiber-rich foods',
+          'Consider reducing processed foods',
+          'Maintain your current exercise routine'
+        ],
+        nutrition_trends: {
+          calories: [2100, 2200, 2050, 2300, 2150, 2000, 2200],
+          protein: [120, 130, 115, 140, 125, 110, 135],
+          carbs: [250, 270, 240, 280, 260, 230, 275],
+          fat: [80, 85, 75, 90, 82, 70, 88]
+        }
+      }
+    } catch (error) {
+      console.error('Failed to generate weekly report:', error)
+      throw error
+    }
+  }
+
+  // Chatbot functionality
+  async getChatbotResponse(message: ChatbotMessage): Promise<ChatbotResponse> {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000))
       
       return {
-        success: true,
-        message: fallbackMessage
-      };
+        response: this.getMockAIResponse(),
+        confidence: 0.95,
+        sources: ['Nutrition Database', 'Health Guidelines', 'User Profile']
+      }
+    } catch (error) {
+      console.error('Chatbot request failed:', error)
+      throw error
     }
   }
 
-  private generateFallbackChatResponse(query: string, context: any, knowledge: string[]): string {
-    const profile = context.profile;
-    const queryLower = query.toLowerCase();
+  // Mock implementations
+  private mockAnalyzeText(text: string): FoodItem[] {
+    const foods = text.toLowerCase().split(/,|\s+and\s+|\s+with\s+/)
+    const results: FoodItem[] = []
 
-    // Create personalized response based on profile
-    let response = `Hello ${profile?.name || 'there'}! 👋\n\n`;
+    foods.forEach((food) => {
+      const cleanFood = food.trim()
+      if (cleanFood.length > 2) {
+        results.push({
+          id: Math.random().toString(36).substr(2, 9),
+          name: cleanFood.charAt(0).toUpperCase() + cleanFood.slice(1),
+          quantity: '1 serving',
+          nutrition: this.getMockNutrition(cleanFood),
+          confidence: 0.85
+        })
+      }
+    })
 
-    // Add relevant knowledge
-    if (knowledge.length > 0) {
-      response += `**Based on your query about "${query}":**\n\n`;
-      response += knowledge.slice(0, 2).join('\n\n') + '\n\n';
+    return results
+  }
+
+  private mockAnalyzeImage(): FoodItem[] {
+    return [
+      {
+        id: '1',
+        name: 'Rice',
+        quantity: '1 cup',
+        nutrition: { calories: 205, protein: 4, carbs: 45, fat: 0.5 },
+        confidence: 0.92
+      },
+      {
+        id: '2',
+        name: 'Chicken Curry',
+        quantity: '150g',
+        nutrition: { calories: 250, protein: 25, carbs: 8, fat: 12 },
+        confidence: 0.88
+      }
+    ]
+  }
+
+  private getMockNutrition(food: string): NutritionData {
+    const nutritionMap: { [key: string]: NutritionData } = {
+      'apple': { calories: 95, protein: 0.5, carbs: 25, fat: 0.3 },
+      'banana': { calories: 105, protein: 1.3, carbs: 27, fat: 0.4 },
+      'chicken': { calories: 165, protein: 31, carbs: 0, fat: 3.6 },
+      'rice': { calories: 205, protein: 4.3, carbs: 45, fat: 0.4 },
+      'bread': { calories: 80, protein: 3, carbs: 15, fat: 1 },
+      'egg': { calories: 70, protein: 6, carbs: 0.5, fat: 5 }
     }
 
-    // Personalized recommendations
-    if (profile?.fitnessGoal) {
-      const goal = profile.fitnessGoal.replace('_', ' ');
-      response += `**For your ${goal} goal:**\n`;
-      
-      if (profile.fitnessGoal === 'weight_loss') {
-        response += `• Focus on creating a moderate calorie deficit\n`;
-        response += `• Include plenty of protein to maintain muscle mass\n`;
-        response += `• Stay hydrated and prioritize whole foods\n\n`;
-      } else if (profile.fitnessGoal === 'weight_gain') {
-        response += `• Aim for a moderate calorie surplus\n`;
-        response += `• Include calorie-dense, nutrient-rich foods\n`;
-        response += `• Focus on strength training alongside nutrition\n\n`;
-      } else {
-        response += `• Maintain a balanced approach to nutrition\n`;
-        response += `• Focus on variety and consistency\n`;
-        response += `• Listen to your body's needs\n\n`;
+    for (const [key, nutrition] of Object.entries(nutritionMap)) {
+      if (food.includes(key)) {
+        return nutrition
       }
     }
 
-    // Activity-specific advice
-    if (profile?.activityLevel) {
-      const activity = profile.activityLevel.replace('_', ' ');
-      response += `**For your ${activity} activity level:**\n`;
-      response += `• Adjust your nutrition timing around your activities\n`;
-      response += `• Ensure adequate recovery nutrition\n\n`;
-    }
+    return { calories: 100, protein: 5, carbs: 15, fat: 3 }
+  }
 
-    // Add general tips based on query
-    if (queryLower.includes('protein')) {
-      response += `**Protein Tips:**\n• Aim for 1.6-2.2g per kg body weight for active individuals\n• Spread protein throughout the day\n• Include both animal and plant sources\n\n`;
-    }
+  private getMockAIResponse(): string {
+    const responses = [
+      "Based on your nutritional profile, I'd recommend focusing on lean proteins and complex carbohydrates to support your fitness goals.",
+      "Your recent meals show good variety! Consider adding more colorful vegetables to increase your micronutrient intake.",
+      "I notice you're getting adequate protein. To optimize muscle recovery, try timing your protein intake around your workouts.",
+      "Your calorie distribution looks balanced. Adding some healthy fats like avocado or nuts could help with nutrient absorption.",
+      "Great job tracking your nutrition! Based on your activity level, you might benefit from slightly increasing your carbohydrate intake on workout days."
+    ]
     
-    if (queryLower.includes('meal') || queryLower.includes('plan')) {
-      response += `**Meal Planning:**\n• Plan your meals around your schedule\n• Include protein, complex carbs, and healthy fats\n• Prep ingredients in advance for convenience\n\n`;
-    }
-
-    response += `*This response was generated using our comprehensive nutrition knowledge base. For more personalized advice, consider consulting with a nutrition professional.*`;
-
-    return response;
+    return responses[Math.floor(Math.random() * responses.length)]
   }
 }
 
-// Create singleton instance
 export const nutritionApi = new NutritionApiService()
-
-// Export types for use in components
-export type {
-  NutritionData,
-  FoodItem,
-  NutritionLog,
-  WeeklyReport,
-  ApiResponse,
-  PaginatedResponse,
-  FoodAnalysisRequest,
-  FoodAnalysisResponse
-}

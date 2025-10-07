@@ -1,22 +1,22 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
-  FaMicrophone, 
-  FaMicrophoneSlash, 
-  FaVolumeUp, 
-  FaVolumeMute, 
-  FaPaperPlane, 
-  FaTimes, 
-  FaRobot, 
-  FaCog,
-  FaMoon,
-  FaSun,
-  FaChartBar,
-  FaHistory,
-  FaBrain,
-  FaAppleAlt,
-  FaCalendarAlt,
-  FaBullseye
-} from 'react-icons/fa';
+  HiMicrophone, 
+  HiOutlineMicrophone, 
+  HiSpeakerWave, 
+  HiSpeakerXMark, 
+  HiPaperAirplane, 
+  HiXMark, 
+  HiCpuChip, 
+  HiCog,
+  HiMoon,
+  HiSun,
+  HiChartBar,
+  HiClock,
+  HiAcademicCap,
+  HiCake,
+  HiCalendar,
+  HiStar
+} from 'react-icons/hi2';
 
 interface NutritionChatbotProps {
   user: {
@@ -294,10 +294,10 @@ const NutritionChatbot: React.FC<NutritionChatbotProps> = ({
 
   // Chat mode configurations
   const chatModes = [
-    { id: 'nutrition' as ChatMode, name: 'Nutrition', icon: FaAppleAlt, color: 'from-green-500 to-emerald-600' },
-    { id: 'meal_plan' as ChatMode, name: 'Meal Plans', icon: FaCalendarAlt, color: 'from-blue-500 to-cyan-600' },
-    { id: 'health_goal' as ChatMode, name: 'Health Goals', icon: FaBullseye, color: 'from-purple-500 to-pink-600' },
-    { id: 'general' as ChatMode, name: 'General', icon: FaBrain, color: 'from-indigo-500 to-purple-600' }
+    { id: 'nutrition' as ChatMode, name: 'Nutrition', icon: HiCake, color: 'from-green-500 to-emerald-600' },
+    { id: 'meal_plan' as ChatMode, name: 'Meal Plans', icon: HiCalendar, color: 'from-blue-500 to-cyan-600' },
+    { id: 'health_goal' as ChatMode, name: 'Health Goals', icon: HiStar, color: 'from-purple-500 to-pink-600' },
+    { id: 'general' as ChatMode, name: 'General', icon: HiAcademicCap, color: 'from-indigo-500 to-purple-600' }
   ];
 
   if (!isOpen) return null;
@@ -316,7 +316,7 @@ const NutritionChatbot: React.FC<NutritionChatbotProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-emerald-600 to-blue-600 text-white rounded-t-2xl">
           <div className="flex items-center gap-3">
-            <FaRobot className="text-xl animate-pulse" />
+            <HiCpuChip className="text-xl animate-pulse" />
             <div>
               <h3 className="font-bold text-lg">AI Nutrition Assistant</h3>
               <p className="text-xs text-emerald-100">
@@ -330,14 +330,14 @@ const NutritionChatbot: React.FC<NutritionChatbotProps> = ({
               className="p-2 hover:bg-white/20 rounded-lg transition-colors"
               title="Settings"
             >
-              <FaCog className={showSettings ? 'animate-spin' : ''} />
+              <HiCog className={showSettings ? 'animate-spin' : ''} />
             </button>
             <button
               onClick={onToggle}
               className="p-2 hover:bg-white/20 rounded-lg transition-colors"
               title="Close"
             >
-              <FaTimes />
+              <HiXMark />
             </button>
           </div>
         </div>
@@ -352,7 +352,7 @@ const NutritionChatbot: React.FC<NutritionChatbotProps> = ({
                   onClick={() => setIsDarkMode(!isDarkMode)}
                   className={`p-2 rounded-lg transition-colors ${isDarkMode ? 'bg-yellow-600 text-white' : 'bg-gray-600 text-white'}`}
                 >
-                  {isDarkMode ? <FaSun /> : <FaMoon />}
+                  {isDarkMode ? <HiSun /> : <HiMoon />}
                 </button>
               </div>
               <div className="flex items-center justify-between">
@@ -361,7 +361,7 @@ const NutritionChatbot: React.FC<NutritionChatbotProps> = ({
                   onClick={() => setVoiceEnabled(!voiceEnabled)}
                   className={`p-2 rounded-lg transition-colors ${voiceEnabled ? 'bg-green-600 text-white' : 'bg-gray-600 text-white'}`}
                 >
-                  {voiceEnabled ? <FaVolumeUp /> : <FaVolumeMute />}
+                  {voiceEnabled ? <HiSpeakerWave /> : <HiSpeakerXMark />}
                 </button>
               </div>
               <div className="flex items-center justify-between">
@@ -370,7 +370,7 @@ const NutritionChatbot: React.FC<NutritionChatbotProps> = ({
                   onClick={() => setShowStats(!showStats)}
                   className={`p-2 rounded-lg transition-colors ${showStats ? 'bg-blue-600 text-white' : 'bg-gray-600 text-white'}`}
                 >
-                  <FaChartBar />
+                  <HiChartBar />
                 </button>
               </div>
             </div>
@@ -381,7 +381,7 @@ const NutritionChatbot: React.FC<NutritionChatbotProps> = ({
         {showStats && (
           <div className={`p-4 border-b ${isDarkMode ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
             <h4 className="text-sm font-bold mb-3 flex items-center gap-2">
-              <FaHistory />
+              <HiClock />
               Chat Statistics
             </h4>
             <div className="grid grid-cols-2 gap-3 text-xs">
@@ -526,7 +526,7 @@ const NutritionChatbot: React.FC<NutritionChatbotProps> = ({
                   }`}
                   title={isListening ? 'Stop listening' : 'Start voice input'}
                 >
-                  {isListening ? <FaMicrophoneSlash /> : <FaMicrophone />}
+                  {isListening ? <HiOutlineMicrophone /> : <HiMicrophone />}
                 </button>
               )}
             </div>
@@ -536,7 +536,7 @@ const NutritionChatbot: React.FC<NutritionChatbotProps> = ({
               className="bg-gradient-to-r from-emerald-500 to-blue-500 text-white px-4 py-3 rounded-xl hover:from-emerald-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:shadow-lg"
               title="Send message"
             >
-              <FaPaperPlane className="text-sm" />
+              <HiPaperAirplane className="text-sm" />
             </button>
           </div>
         </div>

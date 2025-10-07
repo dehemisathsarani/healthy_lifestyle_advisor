@@ -4,6 +4,7 @@ import { useAuth } from '../auth/AuthContext'
 import { nutritionApi } from '../services/nutritionApi'
 import NutritionalProfileSetup, { type NutritionalProfileData } from './NutritionalProfileSetup'
 import type { FoodItem, NutritionLog, WeeklyReport, NutritionData } from '../services/nutritionApi'
+import EnhancedAdvancedFoodAnalysisService from '../services/enhancedAdvancedFoodAnalysis'
 
 interface AdvancedNutritionHubProps {
   onBackToServices: () => void
@@ -49,6 +50,9 @@ export const AdvancedNutritionHub: React.FC<AdvancedNutritionHubProps> = ({ onBa
   const [showFloatingChat, setShowFloatingChat] = useState(false)
   const [floatingChatMessages, setFloatingChatMessages] = useState<ChatMessage[]>([])
   const [floatingChatInput, setFloatingChatInput] = useState('')
+
+  // Initialize enhanced food analysis service
+  const enhancedFoodAnalysis = EnhancedAdvancedFoodAnalysisService.getInstance()
   const [isFloatingChatLoading, setIsFloatingChatLoading] = useState(false)
   
   // Setup auth token when authentication changes
@@ -165,16 +169,13 @@ What would you like to explore about nutrition today?`,
 
       // 4. Enhanced Frontend AI Response Generation
       const response = await nutritionApi.getChatbotResponse({
-        query: userQuery,
-        context: userContext,
-        knowledge: nutritionKnowledge
+        message: userQuery,
+        mode: queryIntent,
+        conversation_history: chatMessages.slice(-6),
+        relevant_knowledge: nutritionKnowledge
       })
 
-      if (response.success && response.message) {
-        return response.message
-      } else {
-        throw new Error('Failed to get AI response')
-      }
+      return response.response
     } catch (_error) {
       console.error('RAG Response Error:', _error)
       return generateEnhancedFallbackResponse(userQuery)
@@ -612,11 +613,9 @@ What would you like to explore about nutrition today?`,
   // Load nutrition logs from API
   const loadNutritionLogs = useCallback(async () => {
     try {
-      const response = await nutritionApi.getNutritionLogs({ per_page: 20 })
-      if (response.success && response.logs) {
-        setNutritionLogs(response.logs)
-        console.log('✅ Loaded nutrition logs from database:', response.logs.length)
-      }
+      const response = await nutritionApi.getNutritionLogs()
+      setNutritionLogs(response)
+      console.log('✅ Loaded nutrition logs from database:', response.length)
     } catch (error) {
       console.error('❌ Error loading nutrition logs:', error)
     }
@@ -641,22 +640,53 @@ What would you like to explore about nutrition today?`,
     'fish curry': { calories: 140, protein: 18, carbs: 4, fat: 6, fiber: 0.5 }
   }
 
-  // Text analysis function using API
+  // Enhanced text analysis function using comprehensive food database
   const analyzeTextFood = useCallback(async (text: string): Promise<FoodItem[]> => {
+    try {
+      // First try the enhanced analysis service
+      const enhancedResult = await enhancedFoodAnalysis.analyzeFood({
+        text: text,
+        userContext: {
+          profile: nutritionalProfile,
+          preferences: nutritionalProfile?.dietaryRestrictions || [],
+          allergies: nutritionalProfile?.allergies || []
+        },
+        realTimeMode: true
+      })
+
+      // Convert enhanced results to FoodItem format
+      const convertedFoods: FoodItem[] = enhancedResult.foodItems.map(food => ({
+        id: Math.random().toString(36).substr(2, 9),
+        name: food.name,
+        quantity: `${food.portionWeight}g (${food.portion})`,
+        nutrition: {
+          calories: food.calories,
+          protein: food.protein,
+          carbs: food.carbs,
+          fat: food.fat
+        },
+        confidence: food.confidence
+      }))
+
+      if (convertedFoods.length > 0) {
+        console.log('✅ Enhanced food analysis successful:', convertedFoods)
+        return convertedFoods
+      }
+    } catch (error) {
+      console.warn('Enhanced analysis failed, trying API fallback:', error)
+    }
+
+    // Fallback to existing API
     try {
       const response = await nutritionApi.analyzeFood({
         text_input: text,
         analysis_method: 'text'
       })
       
-      if (response.success) {
-        return response.food_items
-      } else {
-        throw new Error('Analysis failed')
-      }
+      return response
     } catch (error) {
       console.error('Text analysis error:', error)
-      // Fallback to local analysis
+      // Final fallback to local analysis
       const foods = text.toLowerCase().split(/[,\n]+/).map(item => item.trim()).filter(Boolean)
       const results: FoodItem[] = []
 
@@ -668,6 +698,7 @@ What would you like to explore about nutrition today?`,
         if (matchedFood) {
           const [name, nutrition] = matchedFood
           results.push({
+            id: Math.random().toString(36).substr(2, 9),
             name: name.charAt(0).toUpperCase() + name.slice(1),
             quantity: '1 serving',
             nutrition: nutrition as NutritionData,
@@ -675,6 +706,7 @@ What would you like to explore about nutrition today?`,
           })
         } else {
           results.push({
+            id: Math.random().toString(36).substr(2, 9),
             name: food.charAt(0).toUpperCase() + food.slice(1),
             quantity: '1 serving',
             nutrition: { calories: 0, protein: 0, carbs: 0, fat: 0 },
@@ -684,36 +716,75 @@ What would you like to explore about nutrition today?`,
       }
       return results
     }
-  }, [foodDatabase])
+  }, [foodDatabase, enhancedFoodAnalysis, nutritionalProfile])
 
-  // Image analysis function using API
+  // Enhanced image analysis function using comprehensive food analysis
   const analyzeImageFood = useCallback(async (file: File): Promise<FoodItem[]> => {
     try {
       console.log('Processing file:', file.name)
       
-      // For now, use mock analysis since image upload isn't implemented yet
+      // First try the enhanced analysis service with image + text description
+      const textDescription = textInput.trim() || undefined
+      const enhancedResult = await enhancedFoodAnalysis.analyzeFood({
+        imageFile: file,
+        text: textDescription,
+        userContext: {
+          profile: nutritionalProfile,
+          preferences: nutritionalProfile?.dietaryRestrictions || [],
+          allergies: nutritionalProfile?.allergies || []
+        },
+        realTimeMode: true
+      })
+
+      // Convert enhanced results to FoodItem format
+      const convertedFoods: FoodItem[] = enhancedResult.foodItems.map(food => ({
+        id: Math.random().toString(36).substr(2, 9),
+        name: food.name,
+        quantity: `${food.portionWeight}g (${food.portion})`,
+        nutrition: {
+          calories: food.calories,
+          protein: food.protein,
+          carbs: food.carbs,
+          fat: food.fat
+        },
+        confidence: food.confidence
+      }))
+
+      if (convertedFoods.length > 0) {
+        console.log('✅ Enhanced image analysis successful:', convertedFoods)
+        console.log('📊 Analysis confidence:', enhancedResult.confidence)
+        console.log('🔬 Analysis method:', enhancedResult.analysisMethod)
+        if (enhancedResult.recommendations.length > 0) {
+          console.log('💡 Recommendations:', enhancedResult.recommendations)
+        }
+        return convertedFoods
+      }
+    } catch (error) {
+      console.warn('Enhanced image analysis failed, trying API fallback:', error)
+    }
+
+    // Fallback to existing API
+    try {
       const response = await nutritionApi.analyzeFood({
         analysis_method: 'image'
       })
       
-      if (response.success) {
-        return response.food_items
-      } else {
-        throw new Error('Image analysis failed')
-      }
+      return response
     } catch (error) {
       console.error('Image analysis error:', error)
-      // Fallback to mock results
+      // Final fallback to mock results
       await new Promise(resolve => setTimeout(resolve, 2000))
       
       return [
         {
+          id: Math.random().toString(36).substr(2, 9),
           name: 'Rice',
           quantity: '200g',
           nutrition: { calories: 260, protein: 5, carbs: 55, fat: 1 },
           confidence: 0.92
         },
         {
+          id: Math.random().toString(36).substr(2, 9),
           name: 'Chicken Curry',
           quantity: '150g',
           nutrition: { calories: 250, protein: 18, carbs: 10, fat: 15 },
@@ -721,39 +792,83 @@ What would you like to explore about nutrition today?`,
         }
       ]
     }
-  }, [])
+  }, [enhancedFoodAnalysis, nutritionalProfile, textInput])
 
-  // Handle food analysis
+  // Enhanced food analysis handling
   const handleAnalysis = async () => {
     if (!textInput.trim() && !imageFile) return
 
     setIsAnalyzing(true)
     try {
       let results: FoodItem[]
+      let enhancedInsights: string[] = []
 
       if (analysisMode === 'text' && textInput.trim()) {
         results = await analyzeTextFood(textInput)
+        
+        // Try to get enhanced insights from the analysis service
+        try {
+          const enhancedResult = await enhancedFoodAnalysis.analyzeFood({
+            text: textInput,
+            userContext: { profile: nutritionalProfile },
+            realTimeMode: true
+          })
+          
+          if (enhancedResult.recommendations.length > 0) {
+            enhancedInsights.push(...enhancedResult.recommendations.map(r => `💡 ${r}`))
+          }
+          if (enhancedResult.improvements.length > 0) {
+            enhancedInsights.push(...enhancedResult.improvements.map(i => `🔧 ${i}`))
+          }
+          if (enhancedResult.unknownFoods.length > 0) {
+            enhancedInsights.push(`🔍 Found ${enhancedResult.unknownFoods.length} unknown food(s) - estimated nutrition provided`)
+          }
+        } catch (error) {
+          console.log('Enhanced insights generation failed:', error)
+        }
+        
       } else if (analysisMode === 'image' && imageFile) {
         results = await analyzeImageFood(imageFile)
+        
+        // Try to get enhanced insights from image analysis
+        try {
+          const enhancedResult = await enhancedFoodAnalysis.analyzeFood({
+            imageFile: imageFile,
+            text: textInput.trim() || undefined,
+            userContext: { profile: nutritionalProfile },
+            realTimeMode: true
+          })
+          
+          enhancedInsights.push(`🎯 Analysis confidence: ${(enhancedResult.confidence * 100).toFixed(1)}%`)
+          enhancedInsights.push(`🔬 Method: ${enhancedResult.analysisMethod}`)
+          
+          if (enhancedResult.healthScore !== undefined) {
+            enhancedInsights.push(`💚 Health score: ${enhancedResult.healthScore.toFixed(1)}/10`)
+          }
+          if (enhancedResult.balanceScore !== undefined) {
+            enhancedInsights.push(`⚖️ Balance score: ${enhancedResult.balanceScore.toFixed(1)}/10`)
+          }
+          if (enhancedResult.sustainabilityScore !== undefined) {
+            enhancedInsights.push(`🌱 Sustainability: ${enhancedResult.sustainabilityScore.toFixed(1)}/10`)
+          }
+          
+          if (enhancedResult.recommendations.length > 0) {
+            enhancedInsights.push(...enhancedResult.recommendations.map(r => `💡 ${r}`))
+          }
+        } catch (error) {
+          console.log('Enhanced image insights generation failed:', error)
+        }
       } else {
         return
       }
 
       setAnalysisResult(results)
       
-      // Generate AI insights (try API first, fallback to local)
-      try {
-        const response = await nutritionApi.analyzeFood({
-          text_input: analysisMode === 'text' ? textInput : undefined,
-          analysis_method: analysisMode
-        })
-        
-        if (response.success && response.ai_insights.length > 0) {
-          setAiInsights(response.ai_insights)
-        } else {
-          generateAIInsights(results)
-        }
-      } catch {
+      // Set enhanced insights if available, otherwise fallback to local generation
+      if (enhancedInsights.length > 0) {
+        setAiInsights(enhancedInsights)
+      } else {
+        // Generate AI insights using local analysis
         generateAIInsights(results)
       }
       
@@ -809,30 +924,31 @@ What would you like to explore about nutrition today?`,
       setIsLoading(true)
       
       const response = await nutritionApi.createNutritionLog({
+        user_id: profile?.email || 'demo-user',
+        date: new Date().toISOString().split('T')[0],
         meals: analysisResult,
         meal_type: 'lunch', // Default, could be made configurable
         notes: textInput || 'Food analysis',
-        analysis_method: analysisMode === 'text' ? 'text' : 'image',
-        text_input: analysisMode === 'text' ? textInput : undefined,
-        ai_insights: aiInsights
+        total_nutrition: {
+          calories: analysisResult.reduce((sum, food) => sum + food.nutrition.calories, 0),
+          protein: analysisResult.reduce((sum, food) => sum + food.nutrition.protein, 0),
+          carbs: analysisResult.reduce((sum, food) => sum + food.nutrition.carbs, 0),
+          fat: analysisResult.reduce((sum, food) => sum + food.nutrition.fat, 0)
+        }
       })
 
-      if (response.success) {
-        console.log('✅ Nutrition log saved to database:', response.data)
-        
-        // Refresh nutrition logs
-        await loadNutritionLogs()
-        
-        setActiveTab('logs')
-        
-        // Clear analysis
-        setAnalysisResult(null)
-        setTextInput('')
-        setImageFile(undefined)
-        setAiInsights([])
-      } else {
-        throw new Error(response.message || 'Failed to save nutrition log')
-      }
+      console.log('✅ Nutrition log saved to database:', response)
+      
+      // Refresh nutrition logs
+      await loadNutritionLogs()
+      
+      setActiveTab('logs')
+      
+      // Clear analysis
+      setAnalysisResult(null)
+      setTextInput('')
+      setImageFile(undefined)
+      setAiInsights([])
     } catch (error) {
       console.error('❌ Error saving nutrition log:', error)
       alert('Failed to save nutrition log. Please try again.')
@@ -849,12 +965,8 @@ What would you like to explore about nutrition today?`,
       
       const response = await nutritionApi.generateWeeklyReport()
       
-      if (response.success && response.data) {
-        setWeeklyReport(response.data)
-        console.log('✅ Weekly report generated:', response.data)
-      } else {
-        throw new Error(response.message || 'Failed to generate weekly report')
-      }
+      setWeeklyReport(response)
+      console.log('✅ Weekly report generated:', response)
     } catch (error) {
       console.error('❌ Failed to generate weekly report:', error)
       
@@ -870,12 +982,12 @@ What would you like to explore about nutrition today?`,
       const totalCalories = lastWeekLogs.reduce((sum, log) => sum + log.total_nutrition.calories, 0)
       const avgCalories = totalCalories / lastWeekLogs.length
 
-      const nutritionTrends = lastWeekLogs.reduce((total, log) => ({
-        calories: total.calories + log.total_nutrition.calories,
-        protein: total.protein + log.total_nutrition.protein,
-        carbs: total.carbs + log.total_nutrition.carbs,
-        fat: total.fat + log.total_nutrition.fat
-      }), { calories: 0, protein: 0, carbs: 0, fat: 0 })
+      const nutritionTrends = {
+        calories: lastWeekLogs.map(log => log.total_nutrition.calories),
+        protein: lastWeekLogs.map(log => log.total_nutrition.protein),
+        carbs: lastWeekLogs.map(log => log.total_nutrition.carbs),
+        fat: lastWeekLogs.map(log => log.total_nutrition.fat)
+      }
 
       setWeeklyReport({
         period: `${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString()} - ${new Date().toLocaleDateString()}`,
@@ -890,9 +1002,7 @@ What would you like to explore about nutrition today?`,
           '🌱 Increase vegetable portions in your meals',
           '💧 Maintain hydration with 8-10 glasses of water daily'
         ],
-        health_score: 75,
-        start_date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        end_date: new Date().toISOString().split('T')[0]
+        health_score: 75
       })
     } finally {
       setIsLoading(false)

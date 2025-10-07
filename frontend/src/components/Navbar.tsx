@@ -1,6 +1,6 @@
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import { FaAppleAlt, FaDumbbell, FaUserCircle } from 'react-icons/fa'
+import { HiCake, HiCpuChip, HiUser } from 'react-icons/hi2'
 import { useEffect, useRef, useState } from 'react'
 
 export const Navbar = () => {
@@ -29,7 +29,7 @@ export const Navbar = () => {
     <header className="border-b bg-white/80 backdrop-blur sticky top-0 z-40">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 font-semibold text-gray-900">
-          <FaAppleAlt className="text-brand" />
+          <HiCake className="text-brand" />
           <span>HealthFit Advisor</span>
         </Link>
         <nav className="flex items-center gap-6">
@@ -43,7 +43,7 @@ export const Navbar = () => {
             <>
               <div className="relative" ref={menuRef}>
                 <button onClick={() => navigate('/profile')} className="inline-flex items-center gap-2 rounded-md bg-brand px-3 py-2 text-white shadow hover:bg-brand-dark">
-                  <FaUserCircle /> Profile
+                  <HiUser /> Profile
                 </button>
                 {open && (
                 <div className="absolute right-0 mt-2 min-w-[240px] rounded-lg border bg-white p-4 text-sm shadow-lg">
@@ -60,7 +60,7 @@ export const Navbar = () => {
                 )}
               </div>
               <button onClick={() => navigate('/dashboard')} className="hidden sm:inline-flex items-center gap-2 rounded-md border px-3 py-2 text-gray-700 hover:bg-gray-50">
-                <FaDumbbell /> Dashboard
+                <HiCpuChip /> Dashboard
               </button>
               <button
                 onClick={logout}

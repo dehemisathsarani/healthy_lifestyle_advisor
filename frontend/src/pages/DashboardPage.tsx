@@ -1,6 +1,6 @@
 import { useAuth } from '../auth/AuthContext'
 import { useNavigate } from 'react-router-dom'
-import { FaSignOutAlt, FaUser, FaAppleAlt, FaFire, FaHeart, FaCalendarAlt, FaChartLine, FaDumbbell, FaBrain } from 'react-icons/fa'
+import { HiArrowRightOnRectangle, HiUser, HiCake, HiStar, HiStop, HiCalendar, HiPresentationChartLine, HiCpuChip, HiAcademicCap } from 'react-icons/hi2'
 import { useState, useEffect } from 'react'
 
 export const DashboardPage = () => {
@@ -26,7 +26,7 @@ export const DashboardPage = () => {
       target: '2,500',
       percentage: 86,
       color: 'from-orange-400 to-red-500',
-      icon: FaFire,
+      icon: HiStar,
       bgColor: 'bg-gradient-to-br from-orange-50 to-red-50'
     },
     { 
@@ -36,7 +36,7 @@ export const DashboardPage = () => {
       target: '150',
       percentage: 80,
       color: 'from-blue-400 to-indigo-500',
-      icon: FaDumbbell,
+      icon: HiCpuChip,
       bgColor: 'bg-gradient-to-br from-blue-50 to-indigo-50'
     },
     { 
@@ -46,7 +46,7 @@ export const DashboardPage = () => {
       target: '300',
       percentage: 77,
       color: 'from-green-400 to-emerald-500',
-      icon: FaAppleAlt,
+      icon: HiCake,
       bgColor: 'bg-gradient-to-br from-green-50 to-emerald-50'
     },
     { 
@@ -56,7 +56,7 @@ export const DashboardPage = () => {
       target: '80',
       percentage: 81,
       color: 'from-purple-400 to-pink-500',
-      icon: FaHeart,
+      icon: HiStop,
       bgColor: 'bg-gradient-to-br from-purple-50 to-pink-50'
     },
   ]
@@ -85,7 +85,7 @@ export const DashboardPage = () => {
           <div className="flex items-center space-x-4">
             <div className="relative">
               <div className="w-16 h-16 bg-gradient-to-r from-emerald-500 via-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
-                <FaUser className="text-white text-xl" />
+                <HiUser className="text-white text-xl" />
               </div>
               <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
                 <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
@@ -117,14 +117,14 @@ export const DashboardPage = () => {
               onClick={() => navigate('/services')}
               className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-emerald-500 to-blue-500 text-white rounded-2xl hover:from-emerald-600 hover:to-blue-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 font-semibold"
             >
-              <FaBrain className="w-4 h-4 mr-2" />
+              <HiAcademicCap className="w-4 h-4 mr-2" />
               Health Services
             </button>
             <button
               onClick={handleLogout}
               className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-2xl hover:from-red-600 hover:to-pink-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 font-semibold"
             >
-              <FaSignOutAlt className="w-4 h-4 mr-2" />
+              <HiArrowRightOnRectangle className="w-4 h-4 mr-2" />
               Logout
             </button>
           </div>
@@ -194,7 +194,7 @@ export const DashboardPage = () => {
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center space-x-3">
               <div className="p-3 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-2xl shadow-lg">
-                <FaCalendarAlt className="text-white text-xl" />
+                <HiCalendar className="text-white text-xl" />
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">Today's Schedule</h2>
@@ -202,7 +202,7 @@ export const DashboardPage = () => {
               </div>
             </div>
             <button className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-blue-500 text-white rounded-2xl hover:from-emerald-600 hover:to-blue-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 font-semibold">
-              <FaChartLine className="w-4 h-4 mr-2 inline" />
+              <HiPresentationChartLine className="w-4 h-4 mr-2 inline" />
               View Analytics
             </button>
           </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { ArrowLeft, User, Target, Camera, Apple, Calculator, Heart, Activity } from 'lucide-react'
-import { FaRobot } from 'react-icons/fa'
+import { HiCpuChip } from 'react-icons/hi2'
 import SimpleProfessionalCalendar from './SimpleProfessionalCalendar'
 import NLPNutritionInsights from './NLPNutritionInsights'
 import SessionStatus from './SessionStatus'
@@ -457,7 +457,7 @@ export const DietAgentSimple: React.FC<DietAgentProps> = ({ onBackToServices, au
             className="fixed bottom-6 right-6 z-40 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
             title="Open AI Nutrition Assistant"
           >
-            <FaRobot className="text-2xl" />
+            <HiCpuChip className="text-2xl" />
           </button>
         )}
         
@@ -653,7 +653,7 @@ export const DietAgentSimple: React.FC<DietAgentProps> = ({ onBackToServices, au
           className="fixed bottom-6 right-6 z-40 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
           title="Open AI Nutrition Assistant"
         >
-          <FaRobot className="text-2xl" />
+          <HiCpuChip className="text-2xl" />
         </button>
       )}
       

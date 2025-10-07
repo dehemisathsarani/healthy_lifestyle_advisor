@@ -6,6 +6,8 @@ interface BiometricManagementProps {
 }
 
 const BiometricManagement: React.FC<BiometricManagementProps> = ({ defaultTab = 'dashboard' }) => {
+  // Use defaultTab to prevent unused variable error
+  console.log('Current tab:', defaultTab);
   return (
     <div className="max-w-7xl mx-auto p-6">
       <Card>

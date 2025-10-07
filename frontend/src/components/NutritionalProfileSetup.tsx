@@ -1,220 +1,180 @@
-import React, { useState } from 'react';
-import { User, Scale, Heart, ArrowRight, ArrowLeft, CheckCircle } from 'lucide-react';
+import React, { useState } from 'react'
+import { ArrowLeft, Save, User, Target, Activity, Heart } from 'lucide-react'
 
 export interface NutritionalProfileData {
-  // Basic Info (Step 1)
-  name: string;
-  age: number;
-  gender: 'male' | 'female' | 'other';
-  height: number; // cm
-  weight: number; // kg
-  
-  // Health & Goals (Step 2)
-  allergies: string[];
-  dietaryRestrictions: string[];
-  fitnessGoal: 'weight_loss' | 'weight_gain' | 'maintenance' | 'muscle_gain';
-  activityLevel: 'sedentary' | 'lightly_active' | 'moderately_active' | 'very_active';
+  name: string
+  age: number
+  gender: 'male' | 'female' | 'other'
+  height: number // cm
+  weight: number // kg
+  activityLevel: 'sedentary' | 'lightly_active' | 'moderately_active' | 'very_active' | 'extremely_active'
+  fitnessGoal: 'weight_loss' | 'weight_gain' | 'muscle_gain' | 'maintenance'
+  allergies: string[]
+  dietaryRestrictions: string[]
+  medicalConditions?: string[]
+  targetCalories?: number
+  targetProtein?: number
+  targetCarbs?: number
+  targetFat?: number
 }
 
 interface NutritionalProfileSetupProps {
-  onProfileComplete: (profileData: NutritionalProfileData) => void;
-  onBack: () => void;
+  onProfileComplete: (profile: NutritionalProfileData) => void
+  onBack: () => void
+  initialData?: Partial<NutritionalProfileData>
 }
 
-export const NutritionalProfileSetup: React.FC<NutritionalProfileSetupProps> = ({
+const NutritionalProfileSetup: React.FC<NutritionalProfileSetupProps> = ({
   onProfileComplete,
-  onBack
+  onBack,
+  initialData
 }) => {
-  const [currentStep, setCurrentStep] = useState(1);
-  const [errors, setErrors] = useState<string[]>([]);
-  const [profileData, setProfileData] = useState<NutritionalProfileData>({
-    name: '',
-    age: 25,
-    gender: 'other',
-    height: 170,
-    weight: 70,
-    allergies: [],
-    dietaryRestrictions: [],
-    fitnessGoal: 'maintenance',
-    activityLevel: 'moderately_active'
-  });
+  const [currentStep, setCurrentStep] = useState(1)
+  const [formData, setFormData] = useState<NutritionalProfileData>({
+    name: initialData?.name || '',
+    age: initialData?.age || 25,
+    gender: initialData?.gender || 'male',
+    height: initialData?.height || 170,
+    weight: initialData?.weight || 70,
+    activityLevel: initialData?.activityLevel || 'moderately_active',
+    fitnessGoal: initialData?.fitnessGoal || 'maintenance',
+    allergies: initialData?.allergies || [],
+    dietaryRestrictions: initialData?.dietaryRestrictions || [],
+    medicalConditions: initialData?.medicalConditions || []
+  })
 
-  // Validation limits
-  const VALIDATION_LIMITS = {
-    name: { min: 2, max: 50 },
-    age: { min: 13, max: 120 },
-    height: { min: 100, max: 250 },
-    weight: { min: 30, max: 300 },
-    allergies: { max: 5 },
-    dietaryRestrictions: { max: 3 }
-  };
+  const [newAllergy, setNewAllergy] = useState('')
+  const [newDietaryRestriction, setNewDietaryRestriction] = useState('')
 
-  // Options
-  const commonAllergies = [
-    'Peanuts', 'Tree nuts', 'Shellfish', 'Fish', 'Eggs', 'Milk', 'Soy', 'Wheat/Gluten'
-  ];
+  const handleInputChange = (field: keyof NutritionalProfileData, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
 
-  const dietaryOptions = [
-    'Vegetarian', 'Vegan', 'Pescatarian', 'Keto', 'Low Carb', 'Gluten Free', 'Dairy Free', 'Halal'
-  ];
-
-  const validateStep = (step: number): boolean => {
-    const newErrors: string[] = [];
-
-    if (step === 1) {
-      // Name validation
-      if (!profileData.name.trim()) {
-        newErrors.push('Name is required');
-      } else if (profileData.name.length < VALIDATION_LIMITS.name.min) {
-        newErrors.push(`Name must be at least ${VALIDATION_LIMITS.name.min} characters`);
-      } else if (profileData.name.length > VALIDATION_LIMITS.name.max) {
-        newErrors.push(`Name must not exceed ${VALIDATION_LIMITS.name.max} characters`);
-      }
-
-      // Age validation
-      if (profileData.age < VALIDATION_LIMITS.age.min || profileData.age > VALIDATION_LIMITS.age.max) {
-        newErrors.push(`Age must be between ${VALIDATION_LIMITS.age.min} and ${VALIDATION_LIMITS.age.max}`);
-      }
-
-      // Height validation
-      if (profileData.height < VALIDATION_LIMITS.height.min || profileData.height > VALIDATION_LIMITS.height.max) {
-        newErrors.push(`Height must be between ${VALIDATION_LIMITS.height.min}cm and ${VALIDATION_LIMITS.height.max}cm`);
-      }
-
-      // Weight validation
-      if (profileData.weight < VALIDATION_LIMITS.weight.min || profileData.weight > VALIDATION_LIMITS.weight.max) {
-        newErrors.push(`Weight must be between ${VALIDATION_LIMITS.weight.min}kg and ${VALIDATION_LIMITS.weight.max}kg`);
-      }
+  const addAllergy = () => {
+    if (newAllergy.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        allergies: [...prev.allergies, newAllergy.trim()]
+      }))
+      setNewAllergy('')
     }
+  }
 
-    if (step === 2) {
-      // Allergies validation
-      if (profileData.allergies.length > VALIDATION_LIMITS.allergies.max) {
-        newErrors.push(`Please select no more than ${VALIDATION_LIMITS.allergies.max} allergies`);
-      }
-
-      // Dietary restrictions validation
-      if (profileData.dietaryRestrictions.length > VALIDATION_LIMITS.dietaryRestrictions.max) {
-        newErrors.push(`Please select no more than ${VALIDATION_LIMITS.dietaryRestrictions.max} dietary restrictions`);
-      }
-    }
-
-    setErrors(newErrors);
-    return newErrors.length === 0;
-  };
-
-  const updateField = (field: keyof NutritionalProfileData, value: string | number | string[]) => {
-    setProfileData(prev => ({ ...prev, [field]: value }));
-    setErrors([]); // Clear errors when user starts typing
-  };
-
-  const updateArrayField = (field: keyof NutritionalProfileData, item: string, add: boolean) => {
-    const currentArray = profileData[field] as string[];
-    const limit = field === 'allergies' ? VALIDATION_LIMITS.allergies.max : VALIDATION_LIMITS.dietaryRestrictions.max;
-    
-    if (add && currentArray.length >= limit) {
-      setErrors([`Maximum ${limit} ${field} allowed`]);
-      return;
-    }
-
-    setProfileData(prev => ({
+  const removeAllergy = (index: number) => {
+    setFormData(prev => ({
       ...prev,
-      [field]: add 
-        ? [...currentArray, item]
-        : currentArray.filter(i => i !== item)
-    }));
-    setErrors([]);
-  };
+      allergies: prev.allergies.filter((_, i) => i !== index)
+    }))
+  }
 
-  const calculateBMI = () => {
-    const heightInM = profileData.height / 100;
-    return (profileData.weight / (heightInM * heightInM)).toFixed(1);
-  };
-
-  const getBMICategory = (bmi: number) => {
-    if (bmi < 18.5) return { category: 'Underweight', color: 'text-blue-600' };
-    if (bmi < 25) return { category: 'Normal', color: 'text-green-600' };
-    if (bmi < 30) return { category: 'Overweight', color: 'text-yellow-600' };
-    return { category: 'Obese', color: 'text-red-600' };
-  };
-
-  const handleNext = () => {
-    if (validateStep(currentStep)) {
-      if (currentStep < 2) {
-        setCurrentStep(currentStep + 1);
-      } else {
-        onProfileComplete(profileData);
-      }
+  const addDietaryRestriction = () => {
+    if (newDietaryRestriction.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        dietaryRestrictions: [...prev.dietaryRestrictions, newDietaryRestriction.trim()]
+      }))
+      setNewDietaryRestriction('')
     }
-  };
+  }
 
-  const handleBack = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    } else {
-      onBack();
-    }
-  };
+  const removeDietaryRestriction = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      dietaryRestrictions: prev.dietaryRestrictions.filter((_, i) => i !== index)
+    }))
+  }
 
-  const renderErrors = () => {
-    if (errors.length === 0) return null;
+  const calculateTargetNutrition = () => {
+    const { weight, height, age, gender, activityLevel, fitnessGoal } = formData
     
-    return (
-      <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-        <div className="flex items-center mb-2">
-          <div className="h-5 w-5 text-red-500 mr-2">⚠️</div>
-          <h4 className="text-red-800 font-medium">Please fix the following issues:</h4>
-        </div>
-        <ul className="list-disc list-inside text-red-700 text-sm space-y-1">
-          {errors.map((error, index) => (
-            <li key={index}>{error}</li>
-          ))}
-        </ul>
-      </div>
-    );
-  };
+    // Calculate BMR using Harris-Benedict equation
+    let bmr: number
+    if (gender === 'male') {
+      bmr = 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age)
+    } else {
+      bmr = 447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age)
+    }
+
+    // Activity multipliers
+    const activityMultipliers = {
+      sedentary: 1.2,
+      lightly_active: 1.375,
+      moderately_active: 1.55,
+      very_active: 1.725,
+      extremely_active: 1.9
+    }
+
+    let targetCalories = bmr * activityMultipliers[activityLevel]
+
+    // Adjust for fitness goals
+    switch (fitnessGoal) {
+      case 'weight_loss':
+        targetCalories -= 500 // 1 lb per week deficit
+        break
+      case 'weight_gain':
+        targetCalories += 500 // 1 lb per week surplus
+        break
+      case 'muscle_gain':
+        targetCalories += 300 // Moderate surplus
+        break
+      // maintenance: no change
+    }
+
+    // Calculate macro targets (example ratios)
+    const targetProtein = weight * (fitnessGoal === 'muscle_gain' ? 2.2 : 1.6) // g per kg body weight
+    const targetFat = targetCalories * 0.25 / 9 // 25% of calories from fat
+    const targetCarbs = (targetCalories - (targetProtein * 4) - (targetFat * 9)) / 4
+
+    return {
+      targetCalories: Math.round(targetCalories),
+      targetProtein: Math.round(targetProtein),
+      targetCarbs: Math.round(targetCarbs),
+      targetFat: Math.round(targetFat)
+    }
+  }
+
+  const handleSubmit = () => {
+    const targets = calculateTargetNutrition()
+    const completeProfile = { ...formData, ...targets }
+    onProfileComplete(completeProfile)
+  }
+
+  const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, 4))
+  const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1))
 
   const renderStep1 = () => (
     <div className="space-y-6">
       <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-full mb-4">
-          <User className="h-8 w-8 text-emerald-600" />
-        </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Basic Information</h2>
-        <p className="text-gray-600">Tell us about yourself to get personalized nutrition advice</p>
+        <User className="w-16 h-16 text-emerald-600 mx-auto mb-4" />
+        <h2 className="text-2xl font-bold text-gray-900">Basic Information</h2>
+        <p className="text-gray-600">Let's start with your basic details</p>
       </div>
-
-      {renderErrors()}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Full Name *
+            Full Name
           </label>
           <input
             type="text"
-            value={profileData.name}
-            onChange={(e) => updateField('name', e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-            placeholder="Enter your full name"
-            maxLength={VALIDATION_LIMITS.name.max}
+            value={formData.name}
+            onChange={(e) => handleInputChange('name', e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            placeholder="Enter your name"
           />
-          <p className="text-xs text-gray-500 mt-1">
-            {profileData.name.length}/{VALIDATION_LIMITS.name.max} characters
-          </p>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Age *
+            Age
           </label>
           <input
             type="number"
-            value={profileData.age}
-            onChange={(e) => updateField('age', parseInt(e.target.value) || 0)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-            min={VALIDATION_LIMITS.age.min}
-            max={VALIDATION_LIMITS.age.max}
+            value={formData.age}
+            onChange={(e) => handleInputChange('age', parseInt(e.target.value))}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            min="1"
+            max="120"
           />
         </div>
 
@@ -223,218 +183,348 @@ export const NutritionalProfileSetup: React.FC<NutritionalProfileSetupProps> = (
             Gender
           </label>
           <select
-            value={profileData.gender}
-            onChange={(e) => updateField('gender', e.target.value as 'male' | 'female' | 'other')}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            value={formData.gender}
+            onChange={(e) => handleInputChange('gender', e.target.value)}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
           >
             <option value="male">Male</option>
             <option value="female">Female</option>
-            <option value="other">Other/Prefer not to say</option>
+            <option value="other">Other</option>
           </select>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Height (cm) *
+            Height (cm)
           </label>
           <input
             type="number"
-            value={profileData.height}
-            onChange={(e) => updateField('height', parseInt(e.target.value) || 0)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-            min={VALIDATION_LIMITS.height.min}
-            max={VALIDATION_LIMITS.height.max}
+            value={formData.height}
+            onChange={(e) => handleInputChange('height', parseInt(e.target.value))}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            min="100"
+            max="250"
           />
         </div>
 
-        <div>
+        <div className="md:col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Weight (kg) *
+            Weight (kg)
           </label>
           <input
             type="number"
-            value={profileData.weight}
-            onChange={(e) => updateField('weight', parseInt(e.target.value) || 0)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-            min={VALIDATION_LIMITS.weight.min}
-            max={VALIDATION_LIMITS.weight.max}
-            step="0.1"
+            value={formData.weight}
+            onChange={(e) => handleInputChange('weight', parseInt(e.target.value))}
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            min="30"
+            max="300"
           />
-        </div>
-
-        <div className="md:col-span-2 bg-emerald-50 p-4 rounded-lg">
-          <div className="flex items-center mb-2">
-            <Scale className="h-5 w-5 text-emerald-600 mr-2" />
-            <span className="font-medium text-gray-900">BMI Calculation</span>
-          </div>
-          {profileData.height > 0 && profileData.weight > 0 && (
-            <div className="flex items-center space-x-4">
-              <span className="text-2xl font-bold text-emerald-600">
-                {calculateBMI()}
-              </span>
-              <span className={`font-medium ${getBMICategory(parseFloat(calculateBMI())).color}`}>
-                {getBMICategory(parseFloat(calculateBMI())).category}
-              </span>
-            </div>
-          )}
         </div>
       </div>
     </div>
-  );
+  )
 
   const renderStep2 = () => (
     <div className="space-y-6">
       <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-full mb-4">
-          <Heart className="h-8 w-8 text-emerald-600" />
-        </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Health & Goals</h2>
-        <p className="text-gray-600">Help us customize your nutrition recommendations</p>
+        <Activity className="w-16 h-16 text-blue-600 mx-auto mb-4" />
+        <h2 className="text-2xl font-bold text-gray-900">Activity & Goals</h2>
+        <p className="text-gray-600">Tell us about your lifestyle and fitness goals</p>
       </div>
-
-      {renderErrors()}
 
       <div className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-3">
-            Food Allergies (max {VALIDATION_LIMITS.allergies.max})
+          <label className="block text-sm font-medium text-gray-700 mb-4">
+            Activity Level
           </label>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {commonAllergies.map((allergy) => (
-              <label key={allergy} className="flex items-center space-x-2 cursor-pointer">
+          <div className="grid grid-cols-1 gap-3">
+            {[
+              { value: 'sedentary', label: 'Sedentary', desc: 'Little or no exercise' },
+              { value: 'lightly_active', label: 'Lightly Active', desc: 'Light exercise 1-3 days/week' },
+              { value: 'moderately_active', label: 'Moderately Active', desc: 'Moderate exercise 3-5 days/week' },
+              { value: 'very_active', label: 'Very Active', desc: 'Hard exercise 6-7 days/week' },
+              { value: 'extremely_active', label: 'Extremely Active', desc: 'Very hard exercise, 2x/day' }
+            ].map((option) => (
+              <label key={option.value} className="flex items-center p-4 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50">
                 <input
-                  type="checkbox"
-                  checked={profileData.allergies.includes(allergy)}
-                  onChange={(e) => updateArrayField('allergies', allergy, e.target.checked)}
-                  className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                  disabled={!profileData.allergies.includes(allergy) && profileData.allergies.length >= VALIDATION_LIMITS.allergies.max}
+                  type="radio"
+                  name="activityLevel"
+                  value={option.value}
+                  checked={formData.activityLevel === option.value}
+                  onChange={(e) => handleInputChange('activityLevel', e.target.value)}
+                  className="mr-3"
                 />
-                <span className="text-sm text-gray-700">{allergy}</span>
+                <div>
+                  <div className="font-medium text-gray-900">{option.label}</div>
+                  <div className="text-sm text-gray-600">{option.desc}</div>
+                </div>
               </label>
             ))}
           </div>
-          <p className="text-xs text-gray-500 mt-2">
-            Selected: {profileData.allergies.length}/{VALIDATION_LIMITS.allergies.max}
-          </p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-3">
-            Dietary Preferences (max {VALIDATION_LIMITS.dietaryRestrictions.max})
+          <label className="block text-sm font-medium text-gray-700 mb-4">
+            Fitness Goal
           </label>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {dietaryOptions.map((diet) => (
-              <label key={diet} className="flex items-center space-x-2 cursor-pointer">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {[
+              { value: 'weight_loss', label: 'Weight Loss', desc: 'Lose body fat', icon: '📉' },
+              { value: 'weight_gain', label: 'Weight Gain', desc: 'Gain healthy weight', icon: '📈' },
+              { value: 'muscle_gain', label: 'Muscle Gain', desc: 'Build muscle mass', icon: '💪' },
+              { value: 'maintenance', label: 'Maintenance', desc: 'Maintain current weight', icon: '⚖️' }
+            ].map((option) => (
+              <label key={option.value} className="flex items-center p-4 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50">
                 <input
-                  type="checkbox"
-                  checked={profileData.dietaryRestrictions.includes(diet)}
-                  onChange={(e) => updateArrayField('dietaryRestrictions', diet, e.target.checked)}
-                  className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
-                  disabled={!profileData.dietaryRestrictions.includes(diet) && profileData.dietaryRestrictions.length >= VALIDATION_LIMITS.dietaryRestrictions.max}
+                  type="radio"
+                  name="fitnessGoal"
+                  value={option.value}
+                  checked={formData.fitnessGoal === option.value}
+                  onChange={(e) => handleInputChange('fitnessGoal', e.target.value)}
+                  className="mr-3"
                 />
-                <span className="text-sm text-gray-700">{diet}</span>
+                <div className="mr-3 text-2xl">{option.icon}</div>
+                <div>
+                  <div className="font-medium text-gray-900">{option.label}</div>
+                  <div className="text-sm text-gray-600">{option.desc}</div>
+                </div>
               </label>
             ))}
           </div>
-          <p className="text-xs text-gray-500 mt-2">
-            Selected: {profileData.dietaryRestrictions.length}/{VALIDATION_LIMITS.dietaryRestrictions.max}
-          </p>
+        </div>
+      </div>
+    </div>
+  )
+
+  const renderStep3 = () => (
+    <div className="space-y-6">
+      <div className="text-center mb-8">
+        <Heart className="w-16 h-16 text-red-600 mx-auto mb-4" />
+        <h2 className="text-2xl font-bold text-gray-900">Health & Preferences</h2>
+        <p className="text-gray-600">Help us personalize your nutrition recommendations</p>
+      </div>
+
+      <div className="space-y-6">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Food Allergies
+          </label>
+          <div className="flex space-x-2 mb-3">
+            <input
+              type="text"
+              value={newAllergy}
+              onChange={(e) => setNewAllergy(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && addAllergy()}
+              placeholder="Add an allergy"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+            <button
+              type="button"
+              onClick={addAllergy}
+              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+            >
+              Add
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {formData.allergies.map((allergy, index) => (
+              <span
+                key={index}
+                className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm flex items-center"
+              >
+                {allergy}
+                <button
+                  onClick={() => removeAllergy(index)}
+                  className="ml-2 text-red-600 hover:text-red-800"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Dietary Restrictions
+          </label>
+          <div className="flex space-x-2 mb-3">
+            <input
+              type="text"
+              value={newDietaryRestriction}
+              onChange={(e) => setNewDietaryRestriction(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && addDietaryRestriction()}
+              placeholder="Add dietary restriction"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            />
+            <button
+              type="button"
+              onClick={addDietaryRestriction}
+              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+            >
+              Add
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {formData.dietaryRestrictions.map((restriction, index) => (
+              <span
+                key={index}
+                className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm flex items-center"
+              >
+                {restriction}
+                <button
+                  onClick={() => removeDietaryRestriction(index)}
+                  className="ml-2 text-orange-600 hover:text-orange-800"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
+  const renderStep4 = () => {
+    const targets = calculateTargetNutrition()
+    const bmi = formData.weight / ((formData.height / 100) ** 2)
+    
+    return (
+      <div className="space-y-6">
+        <div className="text-center mb-8">
+          <Target className="w-16 h-16 text-purple-600 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900">Review & Confirm</h2>
+          <p className="text-gray-600">Review your profile and calculated targets</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Fitness Goal
-            </label>
-            <select
-              value={profileData.fitnessGoal}
-              onChange={(e) => updateField('fitnessGoal', e.target.value as 'weight_loss' | 'weight_gain' | 'maintenance' | 'muscle_gain')}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-            >
-              <option value="weight_loss">Weight Loss</option>
-              <option value="weight_gain">Weight Gain</option>
-              <option value="maintenance">Maintain Weight</option>
-              <option value="muscle_gain">Build Muscle</option>
-            </select>
+          <div className="bg-gray-50 p-6 rounded-xl">
+            <h3 className="font-semibold text-gray-900 mb-4">Personal Information</h3>
+            <div className="space-y-2 text-sm">
+              <div><strong>Name:</strong> {formData.name}</div>
+              <div><strong>Age:</strong> {formData.age} years</div>
+              <div><strong>Gender:</strong> {formData.gender}</div>
+              <div><strong>Height:</strong> {formData.height} cm</div>
+              <div><strong>Weight:</strong> {formData.weight} kg</div>
+              <div><strong>BMI:</strong> {bmi.toFixed(1)}</div>
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Activity Level
-            </label>
-            <select
-              value={profileData.activityLevel}
-              onChange={(e) => updateField('activityLevel', e.target.value as 'sedentary' | 'lightly_active' | 'moderately_active' | 'very_active')}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-            >
-              <option value="sedentary">Sedentary (Little/no exercise)</option>
-              <option value="lightly_active">Lightly Active (Light exercise 1-3 days/week)</option>
-              <option value="moderately_active">Moderately Active (Moderate exercise 3-5 days/week)</option>
-              <option value="very_active">Very Active (Hard exercise 6-7 days/week)</option>
-            </select>
+          <div className="bg-blue-50 p-6 rounded-xl">
+            <h3 className="font-semibold text-gray-900 mb-4">Calculated Targets</h3>
+            <div className="space-y-2 text-sm">
+              <div><strong>Daily Calories:</strong> {targets.targetCalories}</div>
+              <div><strong>Protein:</strong> {targets.targetProtein}g</div>
+              <div><strong>Carbohydrates:</strong> {targets.targetCarbs}g</div>
+              <div><strong>Fat:</strong> {targets.targetFat}g</div>
+              <div><strong>Activity:</strong> {formData.activityLevel.replace('_', ' ')}</div>
+              <div><strong>Goal:</strong> {formData.fitnessGoal.replace('_', ' ')}</div>
+            </div>
           </div>
         </div>
+
+        {(formData.allergies.length > 0 || formData.dietaryRestrictions.length > 0) && (
+          <div className="bg-yellow-50 p-6 rounded-xl">
+            <h3 className="font-semibold text-gray-900 mb-4">Dietary Considerations</h3>
+            {formData.allergies.length > 0 && (
+              <div className="mb-3">
+                <strong className="text-sm">Allergies:</strong>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {formData.allergies.map((allergy, index) => (
+                    <span key={index} className="bg-red-100 text-red-800 px-2 py-1 rounded text-xs">
+                      {allergy}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {formData.dietaryRestrictions.length > 0 && (
+              <div>
+                <strong className="text-sm">Dietary Restrictions:</strong>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {formData.dietaryRestrictions.map((restriction, index) => (
+                    <span key={index} className="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs">
+                      {restriction}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
-    </div>
-  );
+    )
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
-          {/* Progress bar */}
-          <div className="bg-emerald-600 px-8 py-4">
-            <div className="flex items-center justify-between">
-              <h1 className="text-xl font-bold text-white">Nutritional Profile Setup</h1>
-              <div className="text-white text-sm">
-                Step {currentStep} of 2
-              </div>
-            </div>
-            <div className="mt-4 bg-emerald-500 rounded-full h-2">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-4xl w-full">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <button
+            onClick={onBack}
+            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span>Back</span>
+          </button>
+          
+          <div className="flex space-x-2">
+            {[1, 2, 3, 4].map((step) => (
               <div
-                className="bg-white rounded-full h-2 transition-all duration-300"
-                style={{ width: `${(currentStep / 2) * 100}%` }}
+                key={step}
+                className={`w-3 h-3 rounded-full ${
+                  step === currentStep
+                    ? 'bg-emerald-600'
+                    : step < currentStep
+                    ? 'bg-emerald-400'
+                    : 'bg-gray-300'
+                }`}
               />
-            </div>
+            ))}
           </div>
+        </div>
 
-          {/* Content */}
-          <div className="p-8">
-            {currentStep === 1 && renderStep1()}
-            {currentStep === 2 && renderStep2()}
-          </div>
+        {/* Content */}
+        <div className="min-h-[400px]">
+          {currentStep === 1 && renderStep1()}
+          {currentStep === 2 && renderStep2()}
+          {currentStep === 3 && renderStep3()}
+          {currentStep === 4 && renderStep4()}
+        </div>
 
-          {/* Actions */}
-          <div className="bg-gray-50 px-8 py-6 flex justify-between">
+        {/* Navigation */}
+        <div className="flex justify-between mt-8">
+          <button
+            onClick={prevStep}
+            disabled={currentStep === 1}
+            className="px-6 py-3 text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Previous
+          </button>
+          
+          {currentStep < 4 ? (
             <button
-              onClick={handleBack}
-              className="flex items-center px-6 py-3 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+              onClick={nextStep}
+              disabled={!formData.name || !formData.age}
+              className="px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
             >
-              <ArrowLeft className="h-5 w-5 mr-2" />
-              {currentStep === 1 ? 'Cancel' : 'Back'}
+              <span>Next</span>
             </button>
-
+          ) : (
             <button
-              onClick={handleNext}
-              className="flex items-center px-6 py-3 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors duration-200 font-medium"
+              onClick={handleSubmit}
+              className="px-6 py-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 flex items-center space-x-2"
             >
-              {currentStep === 2 ? (
-                <>
-                  <CheckCircle className="h-5 w-5 mr-2" />
-                  Complete Profile
-                </>
-              ) : (
-                <>
-                  Continue
-                  <ArrowRight className="h-5 w-5 ml-2" />
-                </>
-              )}
+              <Save className="w-4 h-4" />
+              <span>Complete Setup</span>
             </button>
-          </div>
+          )}
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default NutritionalProfileSetup;
+export default NutritionalProfileSetup

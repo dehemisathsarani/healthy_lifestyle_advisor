@@ -34,7 +34,7 @@ export const DataExportImport: React.FC<DataExportImportProps> = ({ onDataUpdate
         biometricApi.getExerciseHistory('current-user').catch(() => []),
         biometricApi.getHydrationHistory('current-user').catch(() => []),
         biometricApi.getWeeklyProgress('current-user').catch(() => []),
-        nutritionApi.getNutritionLogs().catch(() => [])
+        nutritionApi.getNutritionLogs().catch(() => [] as any[])
       ]);
 
       const exportData = {
@@ -48,7 +48,7 @@ export const DataExportImport: React.FC<DataExportImportProps> = ({ onDataUpdate
           progress: progressEntries || []
         },
         nutrition: {
-          logs: Array.isArray(nutritionLogs) ? nutritionLogs : (nutritionLogs && 'logs' in nutritionLogs ? nutritionLogs.logs : [])
+          logs: Array.isArray(nutritionLogs) ? nutritionLogs : []
         }
       };
 
