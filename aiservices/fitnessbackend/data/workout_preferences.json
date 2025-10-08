@@ -1,0 +1,32 @@
+[
+  {
+    "id": "prefs_test_user_workout_planner_123",
+    "user_id": "test_user_workout_planner_123",
+    "preferred_workout_types": [
+      "cardio",
+      "strength_training",
+      "pilates"
+    ],
+    "available_equipment": [
+      "yoga_mat",
+      "light_dumbbells",
+      "resistance_bands"
+    ],
+    "workout_location": "home",
+    "preferred_workout_times": [
+      "morning"
+    ],
+    "intensity_preference": "moderate",
+    "focus_areas": [
+      "core",
+      "legs",
+      "arms"
+    ],
+    "injuries_limitations": [],
+    "dislikes_avoid": [
+      "high_impact_jumping"
+    ],
+    "created_at": "2025-09-22T15:25:28.313643",
+    "updated_at": "2025-09-22T15:25:28.313647"
+  }
+]

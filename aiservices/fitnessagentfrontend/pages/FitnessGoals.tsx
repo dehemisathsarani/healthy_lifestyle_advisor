@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { UserProfile, FitnessGoal, Achievement } from '../api';
+import { UserProfile, FitnessGoal } from '../api';
 import GoalSetting from '../components/GoalSetting';
 import Achievements from '../components/Achievements';
 import LevelSystem from '../components/LevelSystem';

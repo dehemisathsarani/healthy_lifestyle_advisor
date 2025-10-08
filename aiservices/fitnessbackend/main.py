@@ -6,7 +6,16 @@ from typing import List
 
 from auth import create_access_token, get_current_user
 from settings import settings
-from routers import users, workouts, dashboard, health
+from routers import users, workouts, dashboard, health, workout_planner
+
+# RabbitMQ integration
+from mq import rabbitmq_client
+import asyncio
+import logging
+from database import get_database, COLLECTIONS
+from fastapi import Depends
+
+logger = logging.getLogger(__name__)
 
 # Create FastAPI app
 app = FastAPI(
@@ -29,6 +38,93 @@ app.include_router(users.router)
 app.include_router(workouts.router)
 app.include_router(dashboard.router)
 app.include_router(health.router)
+app.include_router(workout_planner.router)  # New workout planner router
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize RabbitMQ client and register handlers on startup."""
+    try:
+        # connect to rabbitmq (diet exchange)
+        await rabbitmq_client.connect()
+
+        # Register handlers to process diet messages
+        # Handler when nutrition updates arrive (meal logged, hydration)
+        async def nutrition_handler(message: dict):
+            # Insert nutrition log and adjust user profile targets
+            try:
+                user_id = message.get('user_id')
+                nutrition = message.get('nutrition_data') or message.get('data') or {}
+                db = await get_database()
+
+                # store a nutrition log (collection name chosen conservatively)
+                await db["nutrition_logs"].insert_one({
+                    "user_id": user_id,
+                    "nutrition": nutrition,
+                    "source": "diet_agent",
+                    "timestamp": datetime.utcnow()
+                })
+
+                logger.info(f"Stored nutrition log for {user_id}")
+
+                # Example: if calories consumed present, update recent calorie average in user_profiles
+                calories = None
+                if isinstance(nutrition, dict):
+                    calories = nutrition.get('calories') or nutrition.get('energy_kcal')
+
+                if calories:
+                    # Upsert a quick profile summary with last_calories and increment meal count
+                    await db[COLLECTIONS['user_profiles']].update_one(
+                        {"user_id": user_id},
+                        {
+                            "$set": {"last_meal_calories": calories, "last_meal_at": datetime.utcnow()},
+                            "$inc": {"meals_logged": 1}
+                        },
+                        upsert=True
+                    )
+
+                # Further integrations: adjust workout intensity, recovery advice, or schedule reminders
+            except Exception as e:
+                logger.error(f"nutrition_handler error: {e}")
+
+        async def notifications_handler(message: dict):
+            try:
+                user_id = message.get('user_id')
+                notification_type = message.get('notification_type')
+                db = await get_database()
+                logger.info(f"Notification for user {user_id}: {notification_type}")
+
+                # If an achievement notification, award XP to the user
+                if message.get('achievement'):
+                    achievement = message['achievement']
+                    points = achievement.get('points', 5) if isinstance(achievement, dict) else 5
+                    await db[COLLECTIONS['user_profiles']].update_one(
+                        {"user_id": user_id},
+                        {"$inc": {"xp": points}, "$set": {"last_achievement": achievement, "last_achievement_at": datetime.utcnow()}},
+                        upsert=True
+                    )
+                    logger.info(f"Awarded {points} XP to {user_id} for achievement")
+
+                # Additional notification types can be mapped to fitness actions here
+            except Exception as e:
+                logger.error(f"notifications_handler error: {e}")
+
+        rabbitmq_client.register_handler('nutrition', nutrition_handler)
+        rabbitmq_client.register_handler('notifications', notifications_handler)
+
+        # start consuming in background
+        asyncio.create_task(rabbitmq_client.consume())
+
+    except Exception as e:
+        logger.warning(f"RabbitMQ not available at startup: {e}")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    try:
+        await rabbitmq_client.disconnect()
+    except Exception:
+        pass
 
 
 @app.get("/")

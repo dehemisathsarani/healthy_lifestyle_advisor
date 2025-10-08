@@ -3,9 +3,10 @@ from typing import Optional, List
 
 
 class Settings(BaseSettings):
-    # MongoDB settings
+    # Database settings
     MONGODB_URL: str = "mongodb://localhost:27017"
     DB_NAME: str = "fitness_db"
+    USE_FILE_DATABASE: bool = False  # Use file-based database for testing
     
     # JWT settings
     JWT_SECRET_KEY: str = "your_secret_key"  # Replace in production
@@ -34,6 +35,13 @@ class Settings(BaseSettings):
     
     # CORS settings
     CORS_ORIGINS: List[str] = ["*"]
+    
+    # RabbitMQ settings (used for inter-agent communication)
+    RABBITMQ_URL: str = "amqp://guest:guest@rabbitmq:5672/"
+    DIET_QUEUE: str = "diet_processing"
+    NUTRITION_QUEUE: str = "nutrition_analysis"
+    IMAGE_QUEUE: str = "image_processing"
+    NOTIFICATION_QUEUE: str = "notifications"
     
     class Config:
         env_file = ".env"

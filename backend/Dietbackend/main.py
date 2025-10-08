@@ -244,14 +244,13 @@ async def analyze_food_image(
         
         await db.meal_entries.insert_one(meal_entry)
         
-        # Send to RabbitMQ for further processing
-        await rabbitmq_client.publish_message(
-            "diet_processing",
+        # Send a nutrition update to RabbitMQ for other agents (fitness, analytics)
+        await rabbitmq_client.publish_nutrition_update(
+            current_user['user_id'],
             {
-                "type": "meal_logged",
-                "user_id": current_user['user_id'],
                 "meal_entry": meal_entry,
-                "timestamp": datetime.now().isoformat()
+                "calories": meal_entry.get('analysis_result', {}).get('calories'),
+                "macros": meal_entry.get('analysis_result', {}).get('macros')
             }
         )
         
@@ -307,6 +306,27 @@ async def analyze_text_meal(
     except Exception as e:
         logger.error(f"Error analyzing text meal: {e}")
         raise HTTPException(status_code=500, detail="Analysis failed")
+
+
+@app.post("/test/publish-nutrition")
+async def test_publish_nutrition(user_id: str, calories: int = 400):
+    """Test helper: publish a nutrition.update message to RabbitMQ so other agents (fitness) can consume it."""
+    try:
+        if not rabbitmq_client:
+            raise HTTPException(status_code=503, detail="RabbitMQ client not initialized")
+
+        await rabbitmq_client.publish_nutrition_update(
+            user_id,
+            {"calories": calories, "macros": {"protein": 20, "fat": 10, "carbs": 50}}
+        )
+
+        return {"message": "Published nutrition update", "user_id": user_id, "calories": calories}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error publishing test nutrition message: {e}")
+        raise HTTPException(status_code=500, detail="Publish failed")
 
 @app.get("/meal-plan")
 async def get_meal_plan(

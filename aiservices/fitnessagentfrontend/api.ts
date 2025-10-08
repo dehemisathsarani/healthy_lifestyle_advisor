@@ -1,5 +1,5 @@
 // API client for the Fitness Agent system
-import axios, { type AxiosInstance } from 'axios';
+import axios from 'axios';
 import { 
   HealthSummary, 
   HeartRateData, 
@@ -126,6 +126,7 @@ fitnessAPI.interceptors.request.use((config) => {
 export interface UserProfile {
   user_id: string;
   name: string;
+  email: string;
   age: number;
   gender: 'male' | 'female' | 'other';
   height_cm: number;
@@ -296,7 +297,7 @@ class FitnessApiClient {
 
   async activateWorkoutPlan(planId: string): Promise<{ success: boolean }> {
     try {
-      const response = await fitnessAPI.post(`/workouts/plans/${planId}/activate`);
+      await fitnessAPI.post(`/workouts/plans/${planId}/activate`);
       return { success: true };
     } catch (error) {
       console.error('Error activating workout plan:', error);
@@ -335,7 +336,7 @@ class FitnessApiClient {
     notes?: string;
   }): Promise<{ success: boolean }> {
     try {
-      const response = await fitnessAPI.post('/workouts/complete', workoutData);
+      await fitnessAPI.post('/workouts/complete', workoutData);
       return { success: true };
     } catch (error) {
       console.error('Error completing workout:', error);
@@ -368,6 +369,58 @@ class FitnessApiClient {
     } catch (error) {
       console.error('Error fetching exercise details:', error);
       throw new Error('Failed to fetch exercise details');
+    }
+  }
+
+  // HTTP Methods for healthApi.ts compatibility
+  async get(url: string) {
+    try {
+      const response = await backendAPI.get(url);
+      return response;
+    } catch (error) {
+      console.error('Error in GET request:', error);
+      throw new Error('Failed to fetch data');
+    }
+  }
+
+  async post(url: string, data?: any) {
+    try {
+      const response = await backendAPI.post(url, data);
+      return response;
+    } catch (error) {
+      console.error('Error in POST request:', error);
+      throw new Error('Failed to submit data');
+    }
+  }
+
+  async put(url: string, data?: any) {
+    try {
+      const response = await backendAPI.put(url, data);
+      return response;
+    } catch (error) {
+      console.error('Error in PUT request:', error);
+      throw new Error('Failed to update data');
+    }
+  }
+
+  async delete(url: string) {
+    try {
+      const response = await backendAPI.delete(url);
+      return response;
+    } catch (error) {
+      console.error('Error in DELETE request:', error);
+      throw new Error('Failed to delete data');
+    }
+  }
+
+  // Add missing method getExercises
+  async getExercises(): Promise<Exercise[]> {
+    try {
+      const response = await backendAPI.get('/exercises');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching exercises:', error);
+      throw new Error('Failed to fetch exercises');
     }
   }
 }
@@ -947,15 +1000,15 @@ export const demoMode = {
     // Apply filters if provided
     let filtered = [...completedWorkouts];
     
-    if (filters.start_date) {
+    if (filters?.start_date) {
       filtered = filtered.filter(workout => workout.date >= filters.start_date);
     }
     
-    if (filters.end_date) {
+    if (filters?.end_date) {
       filtered = filtered.filter(workout => workout.date <= filters.end_date);
     }
     
-    if (filters.workout_type) {
+    if (filters?.workout_type) {
       filtered = filtered.filter(workout => 
         workout.session_name.toLowerCase().includes(filters.workout_type.toLowerCase()));
     }
@@ -1396,6 +1449,7 @@ export const demoMode = {
   getDemoUserProfile: (): UserProfile => ({
     user_id: 'demo-user',
     name: 'Demo User',
+    email: 'demo@example.com',
     age: 32,
     gender: 'male',
     height_cm: 175,
