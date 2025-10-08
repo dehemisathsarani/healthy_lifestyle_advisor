@@ -1,0 +1,670 @@
+import React, { useState, useRef } from 'react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Camera, Upload, Utensils, Plus, Trash2, Edit3, Save, X } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+
+interface DetectedFood {
+  name: string;
+  confidence: number;
+  estimated_portion: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+  sodium: number;
+  sugar: number;
+}
+
+interface AnalysisResult {
+  analysis_id: string;
+  detected_foods: DetectedFood[];
+  total_nutrition: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    fiber: number;
+    sodium: number;
+    sugar: number;
+  };
+  confidence_score: number;
+  analysis_method: string;
+  nutrition_logged: boolean;
+}
+
+const MealLogger: React.FC<{ userId: string; onMealLogged: () => void }> = ({ 
+  userId, 
+  onMealLogged 
+}) => {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>('');
+  const [mealType, setMealType] = useState<string>('lunch');
+  const [textDescription, setTextDescription] = useState<string>('');
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [error, setError] = useState<string>('');
+  const [editingFood, setEditingFood] = useState<number | null>(null);
+  const [editedFoods, setEditedFoods] = useState<DetectedFood[]>([]);
+  const [manualEntry, setManualEntry] = useState(false);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      setError('');
+    }
+  };
+
+  const handleCameraCapture = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      setError('');
+    }
+  };
+
+  const analyzeImage = async () => {
+    if (!selectedFile) {
+      setError('Please select an image first');
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setError('');
+
+    try {
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      formData.append('user_id', userId);
+      formData.append('meal_type', mealType);
+      if (textDescription.trim()) {
+        formData.append('text_description', textDescription);
+      }
+
+      const response = await fetch('/api/analyze/image/enhanced', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to analyze image');
+      }
+
+      const result: AnalysisResult = await response.json();
+      setAnalysisResult(result);
+      setEditedFoods([...result.detected_foods]);
+
+      if (result.nutrition_logged) {
+        // Automatically logged, trigger refresh
+        onMealLogged();
+      }
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Analysis failed');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleEditFood = (index: number) => {
+    setEditingFood(index);
+  };
+
+  const handleSaveEdit = (index: number, updatedFood: DetectedFood) => {
+    const newFoods = [...editedFoods];
+    newFoods[index] = updatedFood;
+    setEditedFoods(newFoods);
+    setEditingFood(null);
+    
+    // Recalculate totals
+    recalculateNutrition(newFoods);
+  };
+
+  const handleDeleteFood = (index: number) => {
+    const newFoods = editedFoods.filter((_, i) => i !== index);
+    setEditedFoods(newFoods);
+    recalculateNutrition(newFoods);
+  };
+
+  const recalculateNutrition = (foods: DetectedFood[]) => {
+    if (!analysisResult) return;
+
+    const totals = foods.reduce((acc, food) => ({
+      calories: acc.calories + food.calories,
+      protein: acc.protein + food.protein,
+      carbs: acc.carbs + food.carbs,
+      fat: acc.fat + food.fat,
+      fiber: acc.fiber + food.fiber,
+      sodium: acc.sodium + food.sodium,
+      sugar: acc.sugar + food.sugar,
+    }), {
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fat: 0,
+      fiber: 0,
+      sodium: 0,
+      sugar: 0,
+    });
+
+    setAnalysisResult({
+      ...analysisResult,
+      detected_foods: foods,
+      total_nutrition: totals
+    });
+  };
+
+  const logManualMeal = async () => {
+    if (!analysisResult || editedFoods.length === 0) {
+      setError('No food data to log');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/nutrition/log-meal', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          meal_type: mealType,
+          foods: editedFoods.map(food => ({
+            name: food.name,
+            confidence: food.confidence,
+            estimated_portion: food.estimated_portion,
+            calories: food.calories,
+            protein: food.protein,
+            carbs: food.carbs,
+            fat: food.fat,
+            fiber: food.fiber,
+            sodium: food.sodium,
+            sugar: food.sugar,
+          })),
+          total_nutrition: analysisResult.total_nutrition,
+          confidence_score: analysisResult.confidence_score,
+          analysis_method: 'manual_review',
+          text_description: textDescription,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to log meal');
+      }
+
+      onMealLogged();
+      resetForm();
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to log meal');
+    }
+  };
+
+  const resetForm = () => {
+    setSelectedFile(null);
+    setPreviewUrl('');
+    setTextDescription('');
+    setAnalysisResult(null);
+    setEditedFoods([]);
+    setError('');
+    setEditingFood(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    if (cameraInputRef.current) cameraInputRef.current.value = '';
+  };
+
+  const handleAddManualFood = () => {
+    const newFood: DetectedFood = {
+      name: 'New Food Item',
+      confidence: 0.8,
+      estimated_portion: '1 serving',
+      calories: 100,
+      protein: 5,
+      carbs: 15,
+      fat: 3,
+      fiber: 2,
+      sodium: 100,
+      sugar: 2,
+    };
+    
+    const newFoods = [...editedFoods, newFood];
+    setEditedFoods(newFoods);
+    setEditingFood(newFoods.length - 1);
+    
+    if (!analysisResult) {
+      setAnalysisResult({
+        analysis_id: 'manual',
+        detected_foods: newFoods,
+        total_nutrition: {
+          calories: newFood.calories,
+          protein: newFood.protein,
+          carbs: newFood.carbs,
+          fat: newFood.fat,
+          fiber: newFood.fiber,
+          sodium: newFood.sodium,
+          sugar: newFood.sugar,
+        },
+        confidence_score: 0.8,
+        analysis_method: 'manual',
+        nutrition_logged: false,
+      });
+    } else {
+      recalculateNutrition(newFoods);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-6">
+      <div className="max-w-4xl mx-auto space-y-8">
+        {/* Header Section */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent mb-2">
+            Smart Meal Logger
+          </h1>
+          <p className="text-gray-600 text-lg">AI-powered nutrition tracking made simple</p>
+        </div>
+
+        {/* Main Card */}
+        <Card className="border-0 shadow-2xl bg-white/80 backdrop-blur-sm rounded-3xl overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 text-white p-8">
+            <CardTitle className="flex items-center text-2xl font-bold">
+              <div className="p-3 bg-white/20 rounded-full mr-4">
+                <Utensils className="h-8 w-8" />
+              </div>
+              <div>
+                <div className="text-2xl">Log Your Meal</div>
+                <div className="text-purple-100 text-sm font-normal mt-1">
+                  Capture, analyze, and track your nutrition effortlessly
+                </div>
+              </div>
+            </CardTitle>
+          </CardHeader>
+          
+          <CardContent className="p-8">
+            {/* Meal Type Selection with Modern Design */}
+            <div className="mb-8">
+              <label className="block text-lg font-semibold text-gray-800 mb-4">
+                🍽️ What meal are you logging?
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { value: 'breakfast', label: 'Breakfast', icon: '☀️', gradient: 'from-yellow-400 to-orange-500' },
+                  { value: 'lunch', label: 'Lunch', icon: '🌤️', gradient: 'from-green-400 to-blue-500' },
+                  { value: 'dinner', label: 'Dinner', icon: '🌙', gradient: 'from-purple-400 to-pink-500' },
+                  { value: 'snack', label: 'Snack', icon: '✨', gradient: 'from-pink-400 to-red-500' }
+                ].map((meal) => (
+                  <button
+                    key={meal.value}
+                    onClick={() => setMealType(meal.value)}
+                    className={`p-4 rounded-2xl border-2 transition-all duration-300 hover:scale-105 ${
+                      mealType === meal.value
+                        ? `bg-gradient-to-r ${meal.gradient} text-white border-transparent shadow-xl transform scale-105`
+                        : 'bg-white border-gray-200 hover:border-gray-300 text-gray-700 hover:shadow-lg'
+                    }`}
+                  >
+                    <div className="text-2xl mb-2">{meal.icon}</div>
+                    <div className="font-semibold text-sm">{meal.label}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Secondary Select (kept for additional functionality if needed) */}
+            <div className="mb-6">
+              <Select value={mealType} onValueChange={setMealType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="breakfast">Breakfast</SelectItem>
+                  <SelectItem value="lunch">Lunch</SelectItem>
+                  <SelectItem value="dinner">Dinner</SelectItem>
+                  <SelectItem value="snack">Snack</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+          {/* Image Upload Options */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <Button 
+                onClick={() => fileInputRef.current?.click()} 
+                variant="outline" 
+                className="w-full h-20 border-2 border-dashed border-gray-300 hover:border-blue-500"
+                disabled={isAnalyzing}
+              >
+                <Upload className="h-8 w-8 mr-2" />
+                Choose from Gallery
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+            </div>
+            
+            <div>
+              <Button 
+                onClick={() => cameraInputRef.current?.click()} 
+                variant="outline" 
+                className="w-full h-20 border-2 border-dashed border-gray-300 hover:border-green-500"
+                disabled={isAnalyzing}
+              >
+                <Camera className="h-8 w-8 mr-2" />
+                Take Photo
+              </Button>
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleCameraCapture}
+                className="hidden"
+              />
+            </div>
+          </div>
+
+          {/* Manual Entry Toggle */}
+          <div className="flex items-center justify-between mb-4">
+            <Button
+              onClick={() => setManualEntry(!manualEntry)}
+              variant="ghost"
+              className="text-blue-600 hover:text-blue-800"
+            >
+              {manualEntry ? 'Switch to Camera' : 'Manual Entry'}
+            </Button>
+            
+            {manualEntry && (
+              <Button onClick={handleAddManualFood} variant="outline" size="sm">
+                <Plus className="h-4 w-4 mr-1" />
+                Add Food
+              </Button>
+            )}
+          </div>
+
+          {/* Text Description */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Description (optional)
+            </label>
+            <Textarea
+              value={textDescription}
+              onChange={(e) => setTextDescription(e.target.value)}
+              placeholder="Describe your meal (e.g., 'rice and chicken curry', 'large portion')..."
+              rows={3}
+            />
+          </div>
+
+          {/* Image Preview */}
+          {previewUrl && (
+            <div className="mb-6">
+              <img 
+                src={previewUrl} 
+                alt="Selected meal" 
+                className="w-full max-w-md mx-auto rounded-lg shadow-md"
+              />
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            {selectedFile && !manualEntry && (
+              <Button 
+                onClick={analyzeImage} 
+                disabled={isAnalyzing}
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
+              >
+                {isAnalyzing ? 'Analyzing...' : 'Analyze Food'}
+              </Button>
+            )}
+            
+            {(analysisResult || manualEntry) && (
+              <Button 
+                onClick={logManualMeal}
+                className="flex-1 bg-green-600 hover:bg-green-700"
+                disabled={!analysisResult || editedFoods.length === 0}
+              >
+                Log Meal
+              </Button>
+            )}
+            
+            <Button onClick={resetForm} variant="outline">
+              Reset
+            </Button>
+          </div>
+
+          {/* Error Display */}
+          {error && (
+            <Alert className="mt-4 border-red-200 bg-red-50">
+              <AlertDescription className="text-red-800">{error}</AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Analysis Results */}
+      {analysisResult && (
+        <Card className="border-0 shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>Analysis Results</span>
+              <div className="flex items-center space-x-2">
+                <Badge variant={analysisResult.confidence_score > 0.7 ? "default" : "secondary"}>
+                  {Math.round(analysisResult.confidence_score * 100)}% confidence
+                </Badge>
+                {analysisResult.nutrition_logged && (
+                  <Badge className="bg-green-100 text-green-800">
+                    ✓ Logged
+                  </Badge>
+                )}
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {/* Nutrition Summary */}
+            <div className="bg-gradient-to-r from-blue-50 to-green-50 p-4 rounded-lg mb-6">
+              <h4 className="font-semibold text-gray-800 mb-3">Total Nutrition</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {Math.round(analysisResult.total_nutrition.calories)}
+                  </div>
+                  <div className="text-gray-600">Calories</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xl font-bold text-green-600">
+                    {Math.round(analysisResult.total_nutrition.protein)}g
+                  </div>
+                  <div className="text-gray-600">Protein</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xl font-bold text-yellow-600">
+                    {Math.round(analysisResult.total_nutrition.carbs)}g
+                  </div>
+                  <div className="text-gray-600">Carbs</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-xl font-bold text-purple-600">
+                    {Math.round(analysisResult.total_nutrition.fat)}g
+                  </div>
+                  <div className="text-gray-600">Fat</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Detected Foods */}
+            <div className="space-y-3">
+              <h4 className="font-semibold text-gray-800">Detected Foods</h4>
+              {editedFoods.map((food, index) => (
+                <div key={index} className="border border-gray-200 rounded-lg p-4">
+                  {editingFood === index ? (
+                    <EditFoodForm
+                      food={food}
+                      onSave={(updatedFood) => handleSaveEdit(index, updatedFood)}
+                      onCancel={() => setEditingFood(null)}
+                    />
+                  ) : (
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <h5 className="font-medium text-gray-800">{food.name}</h5>
+                          <Badge variant="outline" className="text-xs">
+                            {Math.round(food.confidence * 100)}%
+                          </Badge>
+                        </div>
+                        <div className="text-sm text-gray-600 mb-2">
+                          Portion: {food.estimated_portion}
+                        </div>
+                        <div className="grid grid-cols-4 gap-2 text-xs text-gray-700">
+                          <span>{Math.round(food.calories)} cal</span>
+                          <span>{Math.round(food.protein)}g protein</span>
+                          <span>{Math.round(food.carbs)}g carbs</span>
+                          <span>{Math.round(food.fat)}g fat</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          onClick={() => handleEditFood(index)}
+                          variant="ghost"
+                          size="sm"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          onClick={() => handleDeleteFood(index)}
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+};
+
+// Component for editing food details
+const EditFoodForm: React.FC<{
+  food: DetectedFood;
+  onSave: (food: DetectedFood) => void;
+  onCancel: () => void;
+}> = ({ food, onSave, onCancel }) => {
+  const [editedFood, setEditedFood] = useState<DetectedFood>({ ...food });
+
+  const handleSave = () => {
+    onSave(editedFood);
+  };
+
+  const updateField = (field: keyof DetectedFood, value: string | number) => {
+    setEditedFood(prev => ({ ...prev, [field]: value }));
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">
+            Food Name
+          </label>
+          <Input
+            value={editedFood.name}
+            onChange={(e) => updateField('name', e.target.value)}
+            className="text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">
+            Portion
+          </label>
+          <Input
+            value={editedFood.estimated_portion}
+            onChange={(e) => updateField('estimated_portion', e.target.value)}
+            className="text-sm"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">
+            Calories
+          </label>
+          <Input
+            type="number"
+            value={editedFood.calories}
+            onChange={(e) => updateField('calories', parseFloat(e.target.value) || 0)}
+            className="text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">
+            Protein (g)
+          </label>
+          <Input
+            type="number"
+            value={editedFood.protein}
+            onChange={(e) => updateField('protein', parseFloat(e.target.value) || 0)}
+            className="text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">
+            Carbs (g)
+          </label>
+          <Input
+            type="number"
+            value={editedFood.carbs}
+            onChange={(e) => updateField('carbs', parseFloat(e.target.value) || 0)}
+            className="text-sm"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1">
+            Fat (g)
+          </label>
+          <Input
+            type="number"
+            value={editedFood.fat}
+            onChange={(e) => updateField('fat', parseFloat(e.target.value) || 0)}
+            className="text-sm"
+          />
+        </div>
+      </div>
+
+      <div className="flex justify-end space-x-2">
+        <Button onClick={onCancel} variant="outline" size="sm">
+          <X className="h-4 w-4 mr-1" />
+          Cancel
+        </Button>
+        <Button onClick={handleSave} size="sm">
+          <Save className="h-4 w-4 mr-1" />
+          Save
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+export default MealLogger;
