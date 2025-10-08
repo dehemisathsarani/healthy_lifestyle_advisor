@@ -36,6 +36,13 @@ class Settings(BaseSettings):
     # CORS settings
     CORS_ORIGINS: List[str] = ["*"]
     
+    # RabbitMQ settings (used for inter-agent communication)
+    RABBITMQ_URL: str = "amqp://guest:guest@rabbitmq:5672/"
+    DIET_QUEUE: str = "diet_processing"
+    NUTRITION_QUEUE: str = "nutrition_analysis"
+    IMAGE_QUEUE: str = "image_processing"
+    NOTIFICATION_QUEUE: str = "notifications"
+    
     class Config:
         env_file = ".env"
 

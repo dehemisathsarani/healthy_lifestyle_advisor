@@ -66,15 +66,22 @@ async def startup_event():
     """Initialize all services on application startup"""
     print("🚀 Starting Health Agent API...")
     app_state["startup_time"] = datetime.now()
-    
-    # For demo purposes, we'll skip the database connection completely
-    app_state["db_connected"] = False
-    print("⚠️ Running in DEMO MODE - No database connection")
-        
-    # Continue without database connection
+    # Attempt to connect to MongoDB. This will set app_state based on success.
+    try:
+        print("🔄 Attempting to connect to MongoDB...")
+        connected = await connect_to_mongo()
+        app_state["db_connected"] = bool(connected)
+        if connected:
+            print("✅ Database connection established")
+        else:
+            app_state["db_connected"] = False
+            print("⚠️ Database connection not established (falling back to degraded mode)")
+    except Exception as e:
+        app_state["db_connected"] = False
+        print(f"⚠️ Error while connecting to database: {e}")
+
     print("✅ Application startup completed successfully")
     print("🌐 API Documentation available at: http://localhost:8000/docs")
-    print("📖 Some features may be limited in demo mode")
 
 @app.on_event("shutdown")
 async def shutdown_event():

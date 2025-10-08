@@ -62,3 +62,16 @@ Notes & Next Steps
 - Handlers are simple examples; extend them to call actual fitness logic (workout adjustments, recovery scheduling, push notifications).
 - Consider adding authentication/authorization for messages or an internal API for more structured interactions.
 - For high-throughput scenarios, consider dedicated worker processes for consuming and processing messages.
+
+Run the Fitness backend locally (for frontend integration)
+
+- Start the fitness backend on port 8002 so the main web app can target it from the browser. From the `aiservices/fitnessbackend` folder:
+
+```powershell
+cd aiservices/fitnessbackend
+python -m uvicorn main:app --reload --host 0.0.0.0 --port 8002
+```
+
+- Ensure the frontend `VITE_FITNESS_API_URL` points to `http://localhost:8002`. The project `frontend/.env` includes this value by default.
+
+- In the browser, open the main web app (usually http://localhost:5174) and navigate to the Fitness Planner page. The frontend will use the configured fitness API base for real API calls when available.
