@@ -1,6 +1,6 @@
 import axios, { AxiosResponse } from 'axios'
 
-const API_BASE_URL = 'http://localhost:8005' // Changed from 8000 to 8005
+const API_BASE_URL = 'http://localhost:8004' // Backend is running on port 8004
 
 // Types
 export interface MoodAnalysisRequest {
@@ -200,13 +200,12 @@ class MentalHealthAPI {
     try {
       const response = await axios.post(
         `${this.baseURL}/history`,
-        null,
         {
-          params: {
-            user_id: userId,
-            item_type: itemType,
-            content: JSON.stringify(content)
-          },
+          user_id: userId,
+          item_type: itemType,
+          content: content  // Send as object, not stringified
+        },
+        {
           timeout: 10000
         }
       )
@@ -331,6 +330,248 @@ class MentalHealthAPI {
     
     return moodMessages[mood as keyof typeof moodMessages] || moodMessages.default
   }
+
+  // =====================================================
+  // MONGODB-BACKED METHODS
+  // =====================================================
+
+  /**
+   * Save mood entry to MongoDB
+   */
+  async saveMoodEntry(moodEntry: {
+    user_id: string
+    rating: number
+    type: string
+    notes: string
+    mood_emoji?: string
+    energy_level?: number
+    stress_level?: number
+  }): Promise<{ success: boolean; mood_entry_id: string; message: string }> {
+    try {
+      const response = await axios.post(
+        `${this.baseURL}/mood-entry`,
+        moodEntry,
+        {
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 10000
+        }
+      )
+      return response.data
+    } catch (error) {
+      console.error('Error saving mood entry:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Get mood entries from MongoDB
+   */
+  async getMoodEntries(userId: string, limit: number = 50): Promise<{
+    success: boolean
+    entries: any[]
+    total_count: number
+  }> {
+    try {
+      const response = await axios.get(
+        `${this.baseURL}/mood-entries/${encodeURIComponent(userId)}?limit=${limit}`,
+        { timeout: 10000 }
+      )
+      return response.data
+    } catch (error) {
+      console.error('Error getting mood entries:', error)
+      return { success: false, entries: [], total_count: 0 }
+    }
+  }
+
+  /**
+   * Get specific mood entry by ID
+   */
+  async getMoodEntry(entryId: string): Promise<{ success: boolean; entry: any }> {
+    try {
+      const response = await axios.get(
+        `${this.baseURL}/mood-entry/${encodeURIComponent(entryId)}`,
+        { timeout: 10000 }
+      )
+      return response.data
+    } catch (error) {
+      console.error('Error getting mood entry:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Update mood entry
+   */
+  async updateMoodEntry(entryId: string, updates: any): Promise<{ success: boolean; message: string }> {
+    try {
+      const response = await axios.put(
+        `${this.baseURL}/mood-entry/${encodeURIComponent(entryId)}`,
+        updates,
+        {
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 10000
+        }
+      )
+      return response.data
+    } catch (error) {
+      console.error('Error updating mood entry:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Delete mood entry
+   */
+  async deleteMoodEntry(entryId: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const response = await axios.delete(
+        `${this.baseURL}/mood-entry/${encodeURIComponent(entryId)}`,
+        { timeout: 10000 }
+      )
+      return response.data
+    } catch (error) {
+      console.error('Error deleting mood entry:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Save intervention to MongoDB
+   */
+  async saveIntervention(intervention: {
+    user_id: string
+    mood_entry_id?: string
+    type: string
+    details: any
+    effectiveness?: string
+    feedback?: string
+  }): Promise<{ success: boolean; intervention_id: string; message: string }> {
+    try {
+      const response = await axios.post(
+        `${this.baseURL}/intervention`,
+        intervention,
+        {
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 10000
+        }
+      )
+      return response.data
+    } catch (error) {
+      console.error('Error saving intervention:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Get interventions from MongoDB
+   */
+  async getInterventions(userId: string, limit: number = 50, type?: string): Promise<{
+    success: boolean
+    interventions: any[]
+    total_count: number
+  }> {
+    try {
+      const params = new URLSearchParams({ limit: limit.toString() })
+      if (type) params.append('intervention_type', type)
+      
+      const response = await axios.get(
+        `${this.baseURL}/interventions/${encodeURIComponent(userId)}?${params.toString()}`,
+        { timeout: 10000 }
+      )
+      return response.data
+    } catch (error) {
+      console.error('Error getting interventions:', error)
+      return { success: false, interventions: [], total_count: 0 }
+    }
+  }
+
+  /**
+   * Update intervention feedback
+   */
+  async updateInterventionFeedback(
+    interventionId: string,
+    effectiveness: string,
+    feedback?: string
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const params = new URLSearchParams({ effectiveness })
+      if (feedback) params.append('feedback', feedback)
+      
+      const response = await axios.put(
+        `${this.baseURL}/intervention/${encodeURIComponent(interventionId)}/feedback?${params.toString()}`,
+        {},
+        { timeout: 10000 }
+      )
+      return response.data
+    } catch (error) {
+      console.error('Error updating intervention feedback:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Save or update user profile
+   */
+  async saveProfile(profile: {
+    user_id: string
+    name: string
+    email: string
+    phone?: string
+    preferences?: any
+    goals?: string[]
+    emergency_contacts?: any[]
+    risk_level?: string
+  }): Promise<{ success: boolean; profile_id: string; message: string }> {
+    try {
+      const response = await axios.post(
+        `${this.baseURL}/profile`,
+        profile,
+        {
+          headers: { 'Content-Type': 'application/json' },
+          timeout: 10000
+        }
+      )
+      return response.data
+    } catch (error) {
+      console.error('Error saving profile:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Get user profile
+   */
+  async getProfile(userId: string): Promise<{ success: boolean; profile: any }> {
+    try {
+      const response = await axios.get(
+        `${this.baseURL}/profile/${encodeURIComponent(userId)}`,
+        { timeout: 10000 }
+      )
+      return response.data
+    } catch (error) {
+      console.error('Error getting profile:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Get mood analytics
+   */
+  async getAnalytics(userId: string, days: number = 30): Promise<{
+    success: boolean
+    analytics: any
+  }> {
+    try {
+      const response = await axios.get(
+        `${this.baseURL}/analytics/${encodeURIComponent(userId)}?days=${days}`,
+        { timeout: 10000 }
+      )
+      return response.data
+    } catch (error) {
+      console.error('Error getting analytics:', error)
+      return { success: false, analytics: null }
+    }
+  }
 }
 
 // Export singleton instance
@@ -347,5 +588,16 @@ export const {
   getCrisisResources,
   clearHistory,
   detectCrisisLanguage,
-  getMoodResponseMessage
+  getMoodResponseMessage,
+  saveMoodEntry,
+  getMoodEntries,
+  getMoodEntry,
+  updateMoodEntry,
+  deleteMoodEntry,
+  saveIntervention,
+  getInterventions,
+  updateInterventionFeedback,
+  saveProfile,
+  getProfile,
+  getAnalytics
 } = mentalHealthAPI

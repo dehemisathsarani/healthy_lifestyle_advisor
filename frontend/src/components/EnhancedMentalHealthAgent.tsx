@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { Brain, Heart, MessageCircle, TrendingUp, Target, Smile } from 'lucide-react'
 import type { UserMentalHealthProfile as SessionUserProfile } from '../services/MentalHealthSessionManager'
 import { 
@@ -123,6 +123,7 @@ export const EnhancedMentalHealthAgent: React.FC<MentalHealthAgentProps> = ({ on
   const [showCrisisModal, setShowCrisisModal] = useState(false)
   const [crisisResources, setCrisisResources] = useState<CrisisResources | null>(null)
   const [userInput, setUserInput] = useState('')
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Load data when component mounts or user changes
   useEffect(() => {
@@ -630,24 +631,93 @@ export const EnhancedMentalHealthAgent: React.FC<MentalHealthAgentProps> = ({ on
         </p>
       </div>
 
-      <div className="mb-4">
+      <div className="mb-4 relative">
+        <label htmlFor="feeling-textarea" className="block text-sm font-medium text-purple-700 mb-2">
+          💭 Share your feelings:
+        </label>
         <textarea
+          ref={textareaRef}
+          id="feeling-textarea"
+          name="userFeelingsInput"
           value={userInput}
-          onChange={(e) => setUserInput(e.target.value)}
-          placeholder="Tell me how you're feeling... (e.g., 'I'm feeling really sad today' or 'I'm anxious about work')"
-          className="w-full p-4 rounded-xl border-2 border-purple-200 focus:border-purple-400 focus:outline-none resize-none"
-          rows={3}
+          onChange={(e) => {
+            e.persist() // Ensure event persists
+            const newValue = e.target.value
+            console.log('✍️ Textarea change:', newValue, 'Length:', newValue.length)
+            setUserInput(newValue)
+            // Force update the ref value as backup
+            if (textareaRef.current) {
+              textareaRef.current.value = newValue
+            }
+          }}
+          onInput={(e) => {
+            e.persist()
+            const target = e.target as HTMLTextAreaElement
+            const newValue = target.value
+            console.log('📝 Input event:', newValue, 'Length:', newValue.length)
+            setUserInput(newValue)
+          }}
+          onKeyPress={(e) => {
+            console.log('⌨️ Key pressed:', e.key, 'Current value:', (e.target as HTMLTextAreaElement).value)
+          }}
+          onFocus={() => {
+            console.log('✨ Textarea focused - Ready for input')
+            console.log('Current value in state:', userInput)
+            console.log('Current value in DOM:', textareaRef.current?.value)
+          }}
+          onBlur={() => console.log('👋 Textarea blurred, final value:', userInput)}
+          onClick={() => console.log('🖱️ Textarea clicked')}
+          placeholder="Type here... Tell me how you're feeling today (e.g., 'I'm feeling really happy' or 'I feel anxious about work')"
+          className="w-full min-h-[100px] p-4 rounded-xl border-2 border-purple-200 focus:border-purple-500 focus:outline-none resize-none transition-all duration-200 hover:border-purple-300 focus:ring-4 focus:ring-purple-100 bg-white text-gray-900 cursor-text"
+          rows={4}
+          disabled={isLoading}
+          readOnly={false}
+          autoComplete="off"
+          autoCorrect="on"
+          autoCapitalize="sentences"
+          spellCheck={true}
+          aria-label="Share your feelings"
+          aria-describedby="feeling-help-text"
         />
+        <div className="flex justify-between items-center mt-1">
+          <p id="feeling-help-text" className="text-xs text-purple-600">
+            💡 Tip: Be honest about your feelings. I'm here to help!
+          </p>
+          <p className="text-xs text-gray-500">
+            {userInput.length > 0 ? `${userInput.length} characters` : 'Start typing...'}
+          </p>
+        </div>
+        {isLoading && (
+          <div className="absolute inset-0 bg-gray-100 bg-opacity-70 rounded-xl flex items-center justify-center z-20">
+            <div className="bg-white px-6 py-3 rounded-lg shadow-lg">
+              <p className="text-purple-600 font-medium">🔄 Processing your feelings...</p>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="flex gap-3 flex-wrap">
+      <div className="flex gap-3 flex-wrap items-center">
         <button
-          onClick={() => handleUserInput(userInput)}
+          onClick={() => {
+            console.log('🚀 Submit button clicked with text:', userInput)
+            handleUserInput(userInput)
+          }}
           disabled={!userInput.trim() || isLoading}
-          className="px-6 py-3 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-300 text-white rounded-lg font-medium transition-colors"
+          className="px-6 py-3 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg"
         >
           {isLoading ? '🔄 Analyzing...' : '💬 Share My Feelings'}
         </button>
+        {userInput.trim() && !isLoading && (
+          <button
+            onClick={() => {
+              console.log('🗑️ Clear button clicked')
+              setUserInput('')
+            }}
+            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm transition-colors"
+          >
+            🗑️ Clear
+          </button>
+        )}
         
         {/* Quick mood buttons */}
         <button

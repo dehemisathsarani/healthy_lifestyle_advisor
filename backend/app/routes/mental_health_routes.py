@@ -7,8 +7,15 @@ import random
 import re
 from datetime import datetime, timedelta
 import os
+from bson import ObjectId
 
 from ..core.database import get_database
+from ..models.mental_health_models import (
+    MoodEntryModel, 
+    InterventionModel, 
+    UserMentalHealthProfileModel,
+    MoodAnalyticsModel
+)
 
 router = APIRouter(prefix="/mental-health", tags=["Mental Health"])
 
@@ -42,6 +49,11 @@ class FunnyImageResponse(BaseModel):
     description: str
     type: str
     caption: str
+
+class HistoryRequest(BaseModel):
+    user_id: str
+    item_type: str
+    content: Dict[str, Any]
 
 class HistoryResponse(BaseModel):
     user_id: str
@@ -347,17 +359,17 @@ async def get_funny_image():
         raise HTTPException(status_code=500, detail=f"Failed to get funny image: {str(e)}")
 
 @router.post("/history")
-async def save_to_history(user_id: str, item_type: str, content: Dict[str, Any]):
+async def save_to_history(request: HistoryRequest):
     """Save an item to user's mental health history"""
     try:
         db = get_database()
         
         history_item = {
-            "user_id": user_id,
-            "type": item_type,  # 'joke', 'image', 'youtube', 'mood_entry'
-            "content": content,
+            "user_id": request.user_id,
+            "type": request.item_type,  # 'joke', 'image', 'youtube', 'mood_entry'
+            "content": request.content,
             "timestamp": datetime.utcnow(),
-            "session_id": f"{user_id}_{datetime.now().strftime('%Y%m%d_%H')}"
+            "session_id": f"{request.user_id}_{datetime.now().strftime('%Y%m%d_%H')}"
         }
         
         result = await db.mental_health_history.insert_one(history_item)
@@ -424,3 +436,441 @@ async def clear_history(user_id: str):
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to clear history: {str(e)}")
+
+
+# =====================================================
+# MOOD ENTRIES ENDPOINTS (MongoDB Storage)
+# =====================================================
+
+@router.post("/mood-entry")
+async def create_mood_entry(mood_entry: Dict[str, Any]):
+    """Create a new mood entry in MongoDB"""
+    try:
+        db = get_database()
+        
+        # Prepare mood entry document
+        mood_document = {
+            "user_id": mood_entry.get("user_id"),
+            "rating": mood_entry.get("rating"),
+            "type": mood_entry.get("type"),
+            "notes": mood_entry.get("notes", ""),
+            "timestamp": datetime.utcnow(),
+            "mood_emoji": mood_entry.get("mood_emoji"),
+            "energy_level": mood_entry.get("energy_level"),
+            "stress_level": mood_entry.get("stress_level"),
+            "interventions": mood_entry.get("interventions", [])
+        }
+        
+        result = await db.mood_entries.insert_one(mood_document)
+        
+        return {
+            "success": True,
+            "mood_entry_id": str(result.inserted_id),
+            "message": "Mood entry saved successfully"
+        }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save mood entry: {str(e)}")
+
+
+@router.get("/mood-entries/{user_id}")
+async def get_mood_entries(user_id: str, limit: int = 50):
+    """Get user's mood entries from MongoDB"""
+    try:
+        db = get_database()
+        
+        cursor = db.mood_entries.find({"user_id": user_id}).sort("timestamp", -1).limit(limit)
+        entries = []
+        
+        async for entry in cursor:
+            entries.append({
+                "id": str(entry["_id"]),
+                "user_id": entry["user_id"],
+                "rating": entry["rating"],
+                "type": entry["type"],
+                "notes": entry.get("notes", ""),
+                "timestamp": entry["timestamp"].isoformat(),
+                "mood_emoji": entry.get("mood_emoji"),
+                "energy_level": entry.get("energy_level"),
+                "stress_level": entry.get("stress_level"),
+                "interventions": entry.get("interventions", [])
+            })
+        
+        return {
+            "success": True,
+            "entries": entries,
+            "total_count": len(entries)
+        }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get mood entries: {str(e)}")
+
+
+@router.get("/mood-entry/{entry_id}")
+async def get_mood_entry(entry_id: str):
+    """Get a specific mood entry by ID"""
+    try:
+        db = get_database()
+        
+        if not ObjectId.is_valid(entry_id):
+            raise HTTPException(status_code=400, detail="Invalid entry ID")
+        
+        entry = await db.mood_entries.find_one({"_id": ObjectId(entry_id)})
+        
+        if not entry:
+            raise HTTPException(status_code=404, detail="Mood entry not found")
+        
+        return {
+            "success": True,
+            "entry": {
+                "id": str(entry["_id"]),
+                "user_id": entry["user_id"],
+                "rating": entry["rating"],
+                "type": entry["type"],
+                "notes": entry.get("notes", ""),
+                "timestamp": entry["timestamp"].isoformat(),
+                "mood_emoji": entry.get("mood_emoji"),
+                "energy_level": entry.get("energy_level"),
+                "stress_level": entry.get("stress_level"),
+                "interventions": entry.get("interventions", [])
+            }
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get mood entry: {str(e)}")
+
+
+@router.put("/mood-entry/{entry_id}")
+async def update_mood_entry(entry_id: str, updates: Dict[str, Any]):
+    """Update a mood entry"""
+    try:
+        db = get_database()
+        
+        if not ObjectId.is_valid(entry_id):
+            raise HTTPException(status_code=400, detail="Invalid entry ID")
+        
+        # Remove fields that shouldn't be updated
+        updates.pop("_id", None)
+        updates.pop("user_id", None)
+        updates["updated_at"] = datetime.utcnow()
+        
+        result = await db.mood_entries.update_one(
+            {"_id": ObjectId(entry_id)},
+            {"$set": updates}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Mood entry not found")
+        
+        return {
+            "success": True,
+            "message": "Mood entry updated successfully"
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update mood entry: {str(e)}")
+
+
+@router.delete("/mood-entry/{entry_id}")
+async def delete_mood_entry(entry_id: str):
+    """Delete a mood entry"""
+    try:
+        db = get_database()
+        
+        if not ObjectId.is_valid(entry_id):
+            raise HTTPException(status_code=400, detail="Invalid entry ID")
+        
+        result = await db.mood_entries.delete_one({"_id": ObjectId(entry_id)})
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Mood entry not found")
+        
+        return {
+            "success": True,
+            "message": "Mood entry deleted successfully"
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete mood entry: {str(e)}")
+
+
+# =====================================================
+# INTERVENTION ENDPOINTS (MongoDB Storage)
+# =====================================================
+
+@router.post("/intervention")
+async def create_intervention(intervention: Dict[str, Any]):
+    """Create a new intervention record in MongoDB"""
+    try:
+        db = get_database()
+        
+        intervention_document = {
+            "user_id": intervention.get("user_id"),
+            "mood_entry_id": intervention.get("mood_entry_id"),
+            "type": intervention.get("type"),
+            "details": intervention.get("details", {}),
+            "timestamp": datetime.utcnow(),
+            "effectiveness": intervention.get("effectiveness"),
+            "feedback": intervention.get("feedback", "")
+        }
+        
+        result = await db.interventions.insert_one(intervention_document)
+        
+        # Update mood entry with intervention reference
+        if intervention.get("mood_entry_id"):
+            await db.mood_entries.update_one(
+                {"_id": ObjectId(intervention["mood_entry_id"])},
+                {"$push": {"interventions": str(result.inserted_id)}}
+            )
+        
+        return {
+            "success": True,
+            "intervention_id": str(result.inserted_id),
+            "message": "Intervention saved successfully"
+        }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save intervention: {str(e)}")
+
+
+@router.get("/interventions/{user_id}")
+async def get_interventions(user_id: str, limit: int = 50, intervention_type: Optional[str] = None):
+    """Get user's interventions from MongoDB"""
+    try:
+        db = get_database()
+        
+        query = {"user_id": user_id}
+        if intervention_type:
+            query["type"] = intervention_type
+        
+        cursor = db.interventions.find(query).sort("timestamp", -1).limit(limit)
+        interventions = []
+        
+        async for intervention in cursor:
+            interventions.append({
+                "id": str(intervention["_id"]),
+                "user_id": intervention["user_id"],
+                "mood_entry_id": intervention.get("mood_entry_id"),
+                "type": intervention["type"],
+                "details": intervention.get("details", {}),
+                "timestamp": intervention["timestamp"].isoformat(),
+                "effectiveness": intervention.get("effectiveness"),
+                "feedback": intervention.get("feedback", "")
+            })
+        
+        return {
+            "success": True,
+            "interventions": interventions,
+            "total_count": len(interventions)
+        }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get interventions: {str(e)}")
+
+
+@router.put("/intervention/{intervention_id}/feedback")
+async def update_intervention_feedback(intervention_id: str, effectiveness: str, feedback: Optional[str] = None):
+    """Update intervention effectiveness feedback"""
+    try:
+        db = get_database()
+        
+        if not ObjectId.is_valid(intervention_id):
+            raise HTTPException(status_code=400, detail="Invalid intervention ID")
+        
+        update_data = {
+            "effectiveness": effectiveness,
+            "updated_at": datetime.utcnow()
+        }
+        if feedback:
+            update_data["feedback"] = feedback
+        
+        result = await db.interventions.update_one(
+            {"_id": ObjectId(intervention_id)},
+            {"$set": update_data}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Intervention not found")
+        
+        return {
+            "success": True,
+            "message": "Intervention feedback updated successfully"
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update intervention feedback: {str(e)}")
+
+
+# =====================================================
+# USER PROFILE ENDPOINTS (MongoDB Storage)
+# =====================================================
+
+@router.post("/profile")
+async def create_or_update_profile(profile: Dict[str, Any]):
+    """Create or update user mental health profile"""
+    try:
+        db = get_database()
+        
+        user_id = profile.get("user_id")
+        if not user_id:
+            raise HTTPException(status_code=400, detail="user_id is required")
+        
+        profile_document = {
+            "user_id": user_id,
+            "name": profile.get("name"),
+            "email": profile.get("email"),
+            "phone": profile.get("phone"),
+            "preferences": profile.get("preferences", {"interventions": [], "musicGenres": [], "exerciseTypes": []}),
+            "goals": profile.get("goals", []),
+            "emergency_contacts": profile.get("emergency_contacts", []),
+            "risk_level": profile.get("risk_level", "low"),
+            "updated_at": datetime.utcnow()
+        }
+        
+        # Upsert: update if exists, create if not
+        result = await db.mental_health_profiles.update_one(
+            {"user_id": user_id},
+            {"$set": profile_document, "$setOnInsert": {"created_at": datetime.utcnow()}},
+            upsert=True
+        )
+        
+        return {
+            "success": True,
+            "profile_id": str(result.upserted_id) if result.upserted_id else user_id,
+            "message": "Profile saved successfully"
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save profile: {str(e)}")
+
+
+@router.get("/profile/{user_id}")
+async def get_profile(user_id: str):
+    """Get user mental health profile"""
+    try:
+        db = get_database()
+        
+        profile = await db.mental_health_profiles.find_one({"user_id": user_id})
+        
+        if not profile:
+            raise HTTPException(status_code=404, detail="Profile not found")
+        
+        return {
+            "success": True,
+            "profile": {
+                "id": str(profile["_id"]),
+                "user_id": profile["user_id"],
+                "name": profile.get("name"),
+                "email": profile.get("email"),
+                "phone": profile.get("phone"),
+                "preferences": profile.get("preferences", {}),
+                "goals": profile.get("goals", []),
+                "emergency_contacts": profile.get("emergency_contacts", []),
+                "risk_level": profile.get("risk_level", "low"),
+                "created_at": profile.get("created_at", datetime.utcnow()).isoformat(),
+                "updated_at": profile.get("updated_at", datetime.utcnow()).isoformat()
+            }
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get profile: {str(e)}")
+
+
+# =====================================================
+# ANALYTICS ENDPOINTS (MongoDB Aggregation)
+# =====================================================
+
+@router.get("/analytics/{user_id}")
+async def get_mood_analytics(user_id: str, days: int = 30):
+    """Get mood analytics for a user"""
+    try:
+        db = get_database()
+        
+        # Calculate date range
+        end_date = datetime.utcnow()
+        start_date = end_date - timedelta(days=days)
+        
+        # Get mood entries in date range
+        cursor = db.mood_entries.find({
+            "user_id": user_id,
+            "timestamp": {"$gte": start_date, "$lte": end_date}
+        }).sort("timestamp", -1)
+        
+        entries = []
+        async for entry in cursor:
+            entries.append(entry)
+        
+        if not entries:
+            return {
+                "success": True,
+                "analytics": {
+                    "total_entries": 0,
+                    "message": "No mood entries found for this period"
+                }
+            }
+        
+        # Calculate analytics
+        total_entries = len(entries)
+        ratings = [e["rating"] for e in entries if "rating" in e]
+        energy_levels = [e["energy_level"] for e in entries if "energy_level" in e and e["energy_level"]]
+        stress_levels = [e["stress_level"] for e in entries if "stress_level" in e and e["stress_level"]]
+        
+        avg_mood_rating = sum(ratings) / len(ratings) if ratings else 0
+        avg_energy = sum(energy_levels) / len(energy_levels) if energy_levels else 0
+        avg_stress = sum(stress_levels) / len(stress_levels) if stress_levels else 0
+        
+        # Mood distribution
+        mood_distribution = {}
+        for entry in entries:
+            mood_type = entry.get("type", "unknown")
+            mood_distribution[mood_type] = mood_distribution.get(mood_type, 0) + 1
+        
+        most_common_mood = max(mood_distribution.items(), key=lambda x: x[1])[0] if mood_distribution else "unknown"
+        
+        # Get intervention effectiveness
+        intervention_cursor = db.interventions.find({
+            "user_id": user_id,
+            "timestamp": {"$gte": start_date, "$lte": end_date}
+        })
+        
+        intervention_effectiveness = {}
+        async for intervention in intervention_cursor:
+            i_type = intervention.get("type", "unknown")
+            effectiveness = intervention.get("effectiveness", "not_rated")
+            
+            if i_type not in intervention_effectiveness:
+                intervention_effectiveness[i_type] = {}
+            
+            intervention_effectiveness[i_type][effectiveness] = intervention_effectiveness[i_type].get(effectiveness, 0) + 1
+        
+        return {
+            "success": True,
+            "analytics": {
+                "date_range": {
+                    "start": start_date.isoformat(),
+                    "end": end_date.isoformat()
+                },
+                "total_entries": total_entries,
+                "average_mood_rating": round(avg_mood_rating, 2),
+                "average_energy_level": round(avg_energy, 2),
+                "average_stress_level": round(avg_stress, 2),
+                "most_common_mood": most_common_mood,
+                "mood_distribution": mood_distribution,
+                "intervention_effectiveness": intervention_effectiveness
+            }
+        }
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get analytics: {str(e)}")
