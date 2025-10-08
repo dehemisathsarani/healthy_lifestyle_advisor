@@ -6,7 +6,6 @@ import WorkoutPlanner from '../pages/WorkoutPlanner'
 import ExerciseLibrary from '../pages/ExerciseLibrary'
 import WorkoutPlanDetail from '../pages/WorkoutPlanDetail'
 import WorkoutHistory from '../pages/WorkoutHistory'
-import TestHealthMonitoring from '../pages/TestHealthMonitoring'
 import UserHealthData from '../pages/UserHealthData'
 import FitnessGoals from '../pages/FitnessGoals'
 import { demoMode } from '../api'
@@ -26,7 +25,6 @@ const App: React.FC = () => {
           <Route path="/exercises" element={<ExerciseLibrary />} />
           <Route path="/history" element={<WorkoutHistory />} />
           <Route path="/workout/:id" element={<WorkoutPlanDetail />} />
-          <Route path="/test-health" element={<TestHealthMonitoring />} />
           <Route path="/health-data" element={<UserHealthData />} />
           <Route path="/goals" element={<FitnessGoals />} />
         </Routes>

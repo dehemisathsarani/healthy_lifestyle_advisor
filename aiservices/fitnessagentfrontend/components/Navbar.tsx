@@ -26,7 +26,6 @@ const Navbar: React.FC = () => {
           <div className="hidden md:flex space-x-4">
             <NavLink to="/" active={location.pathname === "/"}>Dashboard</NavLink>
             <NavLink to="/planner" active={location.pathname === "/planner"}>Workout Planner</NavLink>
-            <NavLink to="/test-health" active={location.pathname === "/test-health"}>Health Monitoring</NavLink>
             <NavLink to="/health-data" active={location.pathname === "/health-data"}>Health Tracking</NavLink>
             <NavLink to="/goals" active={location.pathname === "/goals"}>Goals & Rewards</NavLink>
             <NavLink to="/profile" active={location.pathname === "/profile"}>Profile</NavLink>
@@ -55,9 +54,6 @@ const Navbar: React.FC = () => {
               </MobileNavLink>
               <MobileNavLink to="/planner" active={location.pathname === "/planner"} onClick={() => setIsMenuOpen(false)}>
                 Workout Planner
-              </MobileNavLink>
-              <MobileNavLink to="/test-health" active={location.pathname === "/test-health"} onClick={() => setIsMenuOpen(false)}>
-                Health Monitoring
               </MobileNavLink>
               <MobileNavLink to="/health-data" active={location.pathname === "/health-data"} onClick={() => setIsMenuOpen(false)}>
                 Health Tracking
