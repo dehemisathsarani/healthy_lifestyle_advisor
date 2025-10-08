@@ -13,6 +13,11 @@ export default defineConfig({
   server: {
     port: 3000,
     host: true,
+    watch: {
+      // Reduce file watching to prevent excessive reloads
+      ignored: ['**/node_modules/**', '**/.git/**'],
+      usePolling: false,
+    },
   },
   build: {
     outDir: 'dist',

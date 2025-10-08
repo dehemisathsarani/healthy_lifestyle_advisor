@@ -7,9 +7,23 @@ import logging
 from datetime import datetime
 import uuid
 
-router = APIRouter(prefix="/api/nutrition", tags=["enhanced_nutrition"])
-
+# Setup logger first
 logger = logging.getLogger(__name__)
+
+# Import AI Vision Integration
+try:
+    import sys
+    import os
+    # Add the dietaiservices directory to the path
+    sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'aiservices', 'dietaiservices'))
+    from ai_vision_integration import router as ai_vision_router
+    AI_VISION_AVAILABLE = True
+    logger.info("✅ AI Vision integration available")
+except ImportError as e:
+    AI_VISION_AVAILABLE = False
+    logger.warning(f"⚠️ AI Vision not available: {e}")
+
+router = APIRouter(prefix="/api/nutrition", tags=["enhanced_nutrition"])
 
 # Enhanced Food Analysis Models
 class EnhancedFoodItem:

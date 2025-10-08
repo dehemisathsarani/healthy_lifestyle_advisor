@@ -1,5 +1,4 @@
 """
-"""
 Hardcore Advanced Food Recognition System
 Features:
 1. Multi-Model AI Integration (Google Vision + Custom CNN + YOLO + DeepFood)

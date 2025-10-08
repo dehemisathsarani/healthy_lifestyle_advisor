@@ -296,95 +296,203 @@ const NutritionalProfileSetup: React.FC<NutritionalProfileSetupProps> = ({
     </div>
   )
 
-  const renderStep3 = () => (
-    <div className="space-y-6">
-      <div className="text-center mb-8">
-        <Heart className="w-16 h-16 text-red-600 mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-gray-900">Health & Preferences</h2>
-        <p className="text-gray-600">Help us personalize your nutrition recommendations</p>
-      </div>
+  const renderStep3 = () => {
+    // Common allergies options
+    const commonAllergies = [
+      'Peanuts', 'Tree Nuts', 'Dairy', 'Eggs', 'Soy', 'Wheat/Gluten', 
+      'Fish', 'Shellfish', 'Sesame', 'None'
+    ]
+    
+    // Common dietary restrictions
+    const commonRestrictions = [
+      'Vegetarian', 'Vegan', 'Pescatarian', 'Halal', 'Kosher',
+      'Gluten-Free', 'Dairy-Free', 'Low Carb', 'Keto', 'None'
+    ]
 
+    const toggleAllergy = (allergy: string) => {
+      if (allergy === 'None') {
+        setFormData({ ...formData, allergies: [] })
+        return
+      }
+      
+      if (formData.allergies.includes(allergy)) {
+        setFormData({
+          ...formData,
+          allergies: formData.allergies.filter(a => a !== allergy)
+        })
+      } else {
+        setFormData({
+          ...formData,
+          allergies: [...formData.allergies, allergy]
+        })
+      }
+    }
+
+    const toggleRestriction = (restriction: string) => {
+      if (restriction === 'None') {
+        setFormData({ ...formData, dietaryRestrictions: [] })
+        return
+      }
+      
+      if (formData.dietaryRestrictions.includes(restriction)) {
+        setFormData({
+          ...formData,
+          dietaryRestrictions: formData.dietaryRestrictions.filter(r => r !== restriction)
+        })
+      } else {
+        setFormData({
+          ...formData,
+          dietaryRestrictions: [...formData.dietaryRestrictions, restriction]
+        })
+      }
+    }
+
+    return (
       <div className="space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Food Allergies
-          </label>
-          <div className="flex space-x-2 mb-3">
-            <input
-              type="text"
-              value={newAllergy}
-              onChange={(e) => setNewAllergy(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && addAllergy()}
-              placeholder="Add an allergy"
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-            />
-            <button
-              type="button"
-              onClick={addAllergy}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
-            >
-              Add
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {formData.allergies.map((allergy, index) => (
-              <span
-                key={index}
-                className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm flex items-center"
-              >
-                {allergy}
-                <button
-                  onClick={() => removeAllergy(index)}
-                  className="ml-2 text-red-600 hover:text-red-800"
-                >
-                  ×
-                </button>
-              </span>
-            ))}
-          </div>
+        <div className="text-center mb-8">
+          <Heart className="w-16 h-16 text-red-600 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-gray-900">Health & Preferences</h2>
+          <p className="text-gray-600">Help us personalize your nutrition recommendations</p>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Dietary Restrictions
-          </label>
-          <div className="flex space-x-2 mb-3">
-            <input
-              type="text"
-              value={newDietaryRestriction}
-              onChange={(e) => setNewDietaryRestriction(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && addDietaryRestriction()}
-              placeholder="Add dietary restriction"
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-            />
-            <button
-              type="button"
-              onClick={addDietaryRestriction}
-              className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
-            >
-              Add
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {formData.dietaryRestrictions.map((restriction, index) => (
-              <span
-                key={index}
-                className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm flex items-center"
-              >
-                {restriction}
-                <button
-                  onClick={() => removeDietaryRestriction(index)}
-                  className="ml-2 text-orange-600 hover:text-orange-800"
+        <div className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Food Allergies
+            </label>
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              {commonAllergies.map((allergy) => (
+                <label
+                  key={allergy}
+                  className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                    formData.allergies.includes(allergy)
+                      ? 'border-red-500 bg-red-50'
+                      : 'border-gray-200 hover:border-red-300'
+                  }`}
                 >
-                  ×
-                </button>
-              </span>
-            ))}
+                  <input
+                    type="checkbox"
+                    checked={formData.allergies.includes(allergy)}
+                    onChange={() => toggleAllergy(allergy)}
+                    className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                  />
+                  <span className="ml-2 text-sm font-medium text-gray-700">
+                    {allergy}
+                  </span>
+                </label>
+              ))}
+            </div>
+            
+            {/* Custom allergy input */}
+            <div className="flex space-x-2 mt-4">
+              <input
+                type="text"
+                value={newAllergy}
+                onChange={(e) => setNewAllergy(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && addAllergy()}
+                placeholder="Add custom allergy"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              />
+              <button
+                type="button"
+                onClick={addAllergy}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+              >
+                Add
+              </button>
+            </div>
+            
+            {/* Display selected allergies */}
+            {formData.allergies.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {formData.allergies.map((allergy, index) => (
+                  <span
+                    key={index}
+                    className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm flex items-center"
+                  >
+                    {allergy}
+                    <button
+                      onClick={() => removeAllergy(index)}
+                      className="ml-2 text-red-600 hover:text-red-800"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Dietary Restrictions
+            </label>
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              {commonRestrictions.map((restriction) => (
+                <label
+                  key={restriction}
+                  className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                    formData.dietaryRestrictions.includes(restriction)
+                      ? 'border-emerald-500 bg-emerald-50'
+                      : 'border-gray-200 hover:border-emerald-300'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={formData.dietaryRestrictions.includes(restriction)}
+                    onChange={() => toggleRestriction(restriction)}
+                    className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
+                  />
+                  <span className="ml-2 text-sm font-medium text-gray-700">
+                    {restriction}
+                  </span>
+                </label>
+              ))}
+            </div>
+            
+            {/* Custom restriction input */}
+            <div className="flex space-x-2 mt-4">
+              <input
+                type="text"
+                value={newDietaryRestriction}
+                onChange={(e) => setNewDietaryRestriction(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && addDietaryRestriction()}
+                placeholder="Add custom dietary restriction"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              />
+              <button
+                type="button"
+                onClick={addDietaryRestriction}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+              >
+                Add
+              </button>
+            </div>
+            
+            {/* Display selected restrictions */}
+            {formData.dietaryRestrictions.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {formData.dietaryRestrictions.map((restriction, index) => (
+                  <span
+                    key={index}
+                    className="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm flex items-center"
+                  >
+                    {restriction}
+                    <button
+                      onClick={() => removeDietaryRestriction(index)}
+                      className="ml-2 text-emerald-600 hover:text-emerald-800"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>
-    </div>
-  )
+    )
+  }
 
   const renderStep4 = () => {
     const targets = calculateTargetNutrition()

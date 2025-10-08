@@ -1,38 +1,33 @@
-import * as React from "react"
+import React from 'react'
 
-interface AlertProps extends React.HTMLAttributes<HTMLDivElement> {
+interface AlertProps {
+  children: React.ReactNode
   variant?: 'default' | 'destructive'
+  className?: string
 }
 
-const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
-  ({ className, variant = 'default', ...props }, ref) => {
-    const variants = {
-      default: 'bg-blue-50 border-blue-200 text-blue-800',
-      destructive: 'bg-red-50 border-red-200 text-red-800'
-    }
+interface AlertDescriptionProps {
+  children: React.ReactNode
+  className?: string
+}
 
-    return (
-      <div
-        ref={ref}
-        role="alert"
-        className={`relative w-full rounded-lg border p-4 ${variants[variant]} ${className || ''}`}
-        {...props}
-      />
-    )
+export function Alert({ children, variant = 'default', className = '' }: AlertProps) {
+  const variants = {
+    default: 'border-gray-200 bg-gray-50 text-gray-900',
+    destructive: 'border-red-200 bg-red-50 text-red-900'
   }
-)
-Alert.displayName = "Alert"
+  
+  return (
+    <div className={`relative w-full rounded-lg border p-4 ${variants[variant]} ${className}`}>
+      {children}
+    </div>
+  )
+}
 
-const AlertDescription = React.forwardRef<
-  HTMLParagraphElement,
-  React.HTMLAttributes<HTMLParagraphElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={`text-sm [&_p]:leading-relaxed ${className || ''}`}
-    {...props}
-  />
-))
-AlertDescription.displayName = "AlertDescription"
-
-export { Alert, AlertDescription }
+export function AlertDescription({ children, className = '' }: AlertDescriptionProps) {
+  return (
+    <div className={`text-sm ${className}`}>
+      {children}
+    </div>
+  )
+}

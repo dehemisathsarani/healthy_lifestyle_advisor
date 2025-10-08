@@ -16,7 +16,7 @@ from langchain_community.document_loaders import JSONLoader
 from langchain.schema import Document
 from langchain_community.chat_models import ChatOpenAI
 from langchain.chains import ConversationalRetrievalChain
-from langchain_community.memory import ConversationBufferWindowMemory
+from langchain.memory import ConversationBufferWindowMemory
 from langchain.prompts import PromptTemplate
 from pydantic import BaseModel
 import motor.motor_asyncio

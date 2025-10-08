@@ -1,5 +1,4 @@
 """
-"""
 YOLOv8 + Tesseract Food Analysis System
 Advanced local food recognition without external APIs
 """
@@ -612,22 +611,6 @@ class YOLOTesseractFoodAnalyzer:
         for db_food_name, food_data in self.nutrition_analyzer.food_database.items():
             aliases = food_data.get('aliases', [])
             if any(alias.lower() == food_name.lower() for alias in aliases):
-                logger.info(f"✅ REAL DATA VALIDATED: {food_name} matched via alias to {db_food_name}")
-                return True
-        
-        # If nutrition info has default/estimated values, reject it
-        if (nutrition_info.calories == 200 and nutrition_info.protein == 8 and 
-            nutrition_info.carbs == 25 and nutrition_info.fat == 8):
-            logger.warning(f"❌ DUMMY DATA REJECTED: {food_name} has default estimated values")
-            return False
-        
-        # Check for other common dummy patterns
-        if nutrition_info.food_category == "unknown":
-            logger.warning(f"❌ DUMMY DATA REJECTED: {food_name} has unknown category")
-            return False
-        
-        logger.warning(f"⚠️ DATA UNCERTAIN: {food_name} not found in comprehensive database")
-        return False
                 logger.info(f"✅ REAL DATA VALIDATED: {food_name} matched via alias to {db_food_name}")
                 return True
         

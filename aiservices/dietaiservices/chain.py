@@ -1,7 +1,7 @@
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
 from langchain.chains import LLMChain, SequentialChain
-from langchain_community.memory import ConversationBufferMemory
+from langchain.memory import ConversationBufferMemory
 from langchain_core.tools import Tool
 from langchain.agents import create_react_agent, AgentExecutor
 from langchain_core.messages import HumanMessage, SystemMessage

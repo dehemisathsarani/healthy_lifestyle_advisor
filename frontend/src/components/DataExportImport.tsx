@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
+import { Button } from './ui/button';
 import { 
   Download, 
   Upload, 
@@ -34,7 +34,7 @@ export const DataExportImport: React.FC<DataExportImportProps> = ({ onDataUpdate
         biometricApi.getExerciseHistory('current-user').catch(() => []),
         biometricApi.getHydrationHistory('current-user').catch(() => []),
         biometricApi.getWeeklyProgress('current-user').catch(() => []),
-        nutritionApi.getNutritionLogs().catch(() => [] as any[])
+        nutritionApi.getNutritionLogs().catch(() => [])
       ]);
 
       const exportData = {
@@ -48,7 +48,11 @@ export const DataExportImport: React.FC<DataExportImportProps> = ({ onDataUpdate
           progress: progressEntries || []
         },
         nutrition: {
-          logs: Array.isArray(nutritionLogs) ? nutritionLogs : []
+          logs: Array.isArray(nutritionLogs) 
+            ? nutritionLogs 
+            : (nutritionLogs && typeof nutritionLogs === 'object' && 'logs' in nutritionLogs 
+                ? (nutritionLogs as any).logs 
+                : [])
         }
       };
 

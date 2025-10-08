@@ -11,6 +11,7 @@ import { DashboardPage } from './pages/DashboardPage'
 import { OAuthCallbackPage } from './pages/OAuthCallbackPage'
 import { ProfilePage } from './pages/ProfilePage'
 import CalendarPage from './pages/CalendarPage'
+import AIVisionTestComponent from './components/AIVisionTestComponent'
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/ai-vision-test" element={<AIVisionTestComponent />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
