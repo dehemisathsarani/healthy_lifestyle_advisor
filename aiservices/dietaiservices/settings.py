@@ -40,10 +40,12 @@ class Settings(BaseSettings):
     USE_MOCK_GOOGLE_VISION: bool = False
     USE_SIMPLE_MQ: bool = False
     
-    class Config:
-        env_file = "../.env"
-        case_sensitive = True
-        extra = "ignore"  # Ignore extra environment variables
+    # Pydantic v2 configuration
+    model_config = {
+        "env_file": "../.env",
+        "case_sensitive": True,
+        "extra": "ignore"  # Ignore extra environment variables
+    }
 
 # Global settings instance
 settings = Settings()
