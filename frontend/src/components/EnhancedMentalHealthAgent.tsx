@@ -56,7 +56,8 @@ const EnhancedMentalHealthAgent: React.FC<EnhancedMentalHealthAgentProps> = ({
 }) => {
   // State management
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard')
-  const [moodEntries] = useState<MoodEntry[]>([])
+  const [moodEntries, setMoodEntries] = useState<MoodEntry[]>([])
+  const [moodLogs, setMoodLogs] = useState<MoodLog[]>([]) // Store mood logs for history
   const [isLoading, setIsLoading] = useState(false)
 
   // Enhanced Mood Tracker State
@@ -259,7 +260,20 @@ const EnhancedMentalHealthAgent: React.FC<EnhancedMentalHealthAgentProps> = ({
   const saveMoodLog = useCallback(() => {
     if (!currentMoodLog) return
 
-    // In a real app, you would save to backend/database here
+    // Add the completed mood log to history
+    setMoodLogs(prevLogs => [currentMoodLog, ...prevLogs])
+    
+    // Convert to MoodEntry format for backward compatibility
+    const moodEntry: MoodEntry = {
+      id: currentMoodLog.id,
+      type: currentMoodLog.moodType as MoodType,
+      rating: currentMoodLog.rating as MoodRating,
+      notes: currentMoodLog.description,
+      timestamp: currentMoodLog.timestamp,
+      aiResponse: `Completed ${currentMoodLog.activities.length} activities: ${currentMoodLog.activities.map(a => a.type).join(', ')}`
+    }
+    setMoodEntries(prevEntries => [moodEntry, ...prevEntries])
+
     console.log('Mood log saved:', currentMoodLog)
     setCurrentMoodStep('complete')
     
@@ -290,16 +304,18 @@ const EnhancedMentalHealthAgent: React.FC<EnhancedMentalHealthAgentProps> = ({
               <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6">
                 <h3 className="text-lg font-semibold text-blue-900 mb-2">Recent Mood</h3>
                 <p className="text-blue-700">
-                  {moodEntries.length > 0 
-                    ? `${moodEntries[0].type} (${moodEntries[0].rating}/5)`
-                    : 'No entries yet'
+                  {moodLogs.length > 0 
+                    ? `${moodLogs[0].moodType} (${moodLogs[0].rating}/10) - ${moodLogs[0].mood}`
+                    : moodEntries.length > 0 
+                      ? `${moodEntries[0].type} (${moodEntries[0].rating}/5)`
+                      : 'No entries yet'
                   }
                 </p>
               </div>
               
               <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-6">
                 <h3 className="text-lg font-semibold text-purple-900 mb-2">Total Entries</h3>
-                <p className="text-purple-700">{moodEntries.length} mood entries</p>
+                <p className="text-purple-700">{moodLogs.length + moodEntries.length} mood entries</p>
               </div>
               
               <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-6">
@@ -440,12 +456,21 @@ const EnhancedMentalHealthAgent: React.FC<EnhancedMentalHealthAgentProps> = ({
         )
 
       case 'history':
+        const allEntries = [
+          ...moodLogs.map(log => ({ type: 'enhanced' as const, data: log })),
+          ...moodEntries.map(entry => ({ type: 'legacy' as const, data: entry }))
+        ].sort((a, b) => {
+          const timeA = a.data.timestamp.getTime()
+          const timeB = b.data.timestamp.getTime()
+          return timeB - timeA // Most recent first
+        })
+
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-900">Mood History</h2>
-            <p className="text-gray-600">Track your emotional journey over time.</p>
+            <p className="text-gray-600">Track your emotional journey over time and see all activities you've completed.</p>
             
-            {moodEntries.length === 0 ? (
+            {allEntries.length === 0 ? (
               <div className="text-center py-8">
                 <Heart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <p className="text-gray-500">No mood entries yet. Start tracking your feelings!</p>
@@ -457,30 +482,100 @@ const EnhancedMentalHealthAgent: React.FC<EnhancedMentalHealthAgentProps> = ({
                 </button>
               </div>
             ) : (
-              <div className="space-y-4">
-                {moodEntries.map((entry) => (
-                  <div key={entry.id} className="bg-white border-2 border-purple-200 rounded-xl p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <span className="text-lg font-semibold text-purple-900 capitalize">{entry.type}</span>
-                          <div className="flex">
-                            {Array.from({ length: 5 }, (_, i) => (
-                              <span key={i} className={`text-sm ${i < entry.rating ? 'text-yellow-400' : 'text-gray-300'}`}>
-                                ⭐
+              <div className="space-y-6">
+                {allEntries.map((entry, index) => (
+                  <div key={`${entry.type}-${index}`} className="bg-white border-2 border-purple-200 rounded-xl p-6 shadow-sm">
+                    {entry.type === 'enhanced' ? (
+                      // Enhanced mood log display
+                      <div>
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <span className="text-xl font-bold text-purple-900 capitalize">
+                                {(entry.data as MoodLog).moodType}
                               </span>
-                            ))}
+                              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                (entry.data as MoodLog).mood === 'positive' 
+                                  ? 'bg-green-100 text-green-800' 
+                                  : 'bg-blue-100 text-blue-800'
+                              }`}>
+                                {(entry.data as MoodLog).mood}
+                              </span>
+                              <span className="text-lg text-gray-600">
+                                {(entry.data as MoodLog).rating}/10
+                              </span>
+                            </div>
+                            <p className="text-gray-700 mb-3">{(entry.data as MoodLog).description}</p>
+                            
+                            {(entry.data as MoodLog).factors && (entry.data as MoodLog).factors.length > 0 && (
+                              <div className="mb-3">
+                                <p className="text-sm font-medium text-gray-600 mb-1">Contributing factors:</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {(entry.data as MoodLog).factors.map((factor: string, idx: number) => (
+                                    <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-xs">
+                                      {factor}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {(entry.data as MoodLog).activities && (entry.data as MoodLog).activities.length > 0 && (
+                              <div className="mt-4 p-4 bg-purple-50 rounded-lg">
+                                <h4 className="text-sm font-semibold text-purple-900 mb-2">
+                                  Activities Completed ({(entry.data as MoodLog).activities.length})
+                                </h4>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                  {(entry.data as MoodLog).activities.map((activity: MoodActivity, actIdx: number) => (
+                                    <div key={actIdx} className="flex items-center gap-2 text-sm">
+                                      <span className="text-green-500">✓</span>
+                                      <span className="text-purple-700 capitalize">
+                                        {activity.type}
+                                      </span>
+                                      <span className="text-xs text-gray-500">
+                                        {activity.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                      </span>
+                                      {activity.data && (
+                                        <span className="text-xs text-gray-600 truncate">
+                                          ({typeof activity.data === 'string' ? activity.data.slice(0, 15) + '...' : 'Done'})
+                                        </span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
+                          <span className="text-xs text-gray-500 whitespace-nowrap ml-4">
+                            {entry.data.timestamp.toLocaleDateString()} {entry.data.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
                         </div>
-                        <p className="text-gray-700 mb-2">{entry.notes}</p>
-                        {entry.aiResponse && (
-                          <p className="text-sm text-purple-600 bg-purple-50 rounded-lg p-2">{entry.aiResponse}</p>
-                        )}
                       </div>
-                      <span className="text-xs text-gray-500">
-                        {entry.timestamp.toLocaleDateString()} {entry.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
+                    ) : (
+                      // Legacy mood entry display
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <span className="text-lg font-semibold text-purple-900 capitalize">{(entry.data as MoodEntry).type}</span>
+                            <div className="flex">
+                              {Array.from({ length: 5 }, (_, i) => (
+                                <span key={i} className={`text-sm ${i < (entry.data as MoodEntry).rating ? 'text-yellow-400' : 'text-gray-300'}`}>
+                                  ⭐
+                                </span>
+                              ))}
+                            </div>
+                            <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-xs">Legacy Entry</span>
+                          </div>
+                          <p className="text-gray-700 mb-2">{(entry.data as MoodEntry).notes}</p>
+                          {(entry.data as MoodEntry).aiResponse && (
+                            <p className="text-sm text-purple-600 bg-purple-50 rounded-lg p-2">{(entry.data as MoodEntry).aiResponse}</p>
+                          )}
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {entry.data.timestamp.toLocaleDateString()} {entry.data.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
