@@ -1,770 +1,534 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { Brain, Heart, MessageCircle, TrendingUp, Target, Smile } from 'lucide-react'
-import type { UserMentalHealthProfile as SessionUserProfile } from '../services/MentalHealthSessionManager'
+import React, { useState, useCallback, useRef } from 'react'
+import { Brain, Heart, Flower2, ArrowLeft, Clock, User, Leaf } from 'lucide-react'
 import { 
   mentalHealthAPI, 
-  MoodAnalysisResponse, 
-  YouTubeTrackResponse, 
-  JokeResponse, 
-  FunnyImageResponse,
-  HistoryResponse,
-  CrisisResources
+  MoodAnalysisResponse
 } from '../services/mentalHealthAPI'
 
-// Declare the global type for mood modal
-declare global {
-  interface Window {
-    moodModal?: {
-      nextJoke: () => void
-      showCartoon: () => void
-      stopJokes: () => void
-      nextImage: () => void
-      nextGame: () => void
-      playMusic: (title: string, artist: string) => void
-      stopMusic: () => void
-      askMusicPreference: () => void
-      suggestGameUVGames: (mood?: string) => void
-      startGame: (gameName: string) => void
-      startBreathing: () => void
-      close: () => void
-    }
-    globalStopMusic?: () => void
-    // GameUV functions
-    handleGameUVSelection?: (gameName: string, category: string) => void
-    playGameInPlatform?: (gameName: string, category: string) => void
-    generateInPlatformGame?: (gameName: string, category: string) => string
-    exploreGameUVCategory?: (category: string) => void
-    visitGameUVPlatform?: () => void
-    getPersonalizedGameUVSuggestions?: () => void
-    // Smile Challenge functions
-    smileGameActive?: boolean
-    smileScore?: number
-    startSmileChallenge?: () => void
-    makeSmileFace?: (emoji: string) => void
-  }
-}
-
+// Types and interfaces remain the same
 type MoodRating = 1 | 2 | 3 | 4 | 5
 type MoodType = 'happy' | 'sad' | 'anxious' | 'angry' | 'neutral' | 'excited' | 'stressed' | 'calm' | 'overwhelmed' | 'content'
 
 interface MoodEntry {
   id: string
-  rating: MoodRating
   type: MoodType
+  rating: MoodRating
   notes: string
   timestamp: Date
-  interventions?: InterventionHistory[]
-}
-
-interface InterventionHistory {
-  id: string
-  moodEntryId: string
-  type: 'music' | 'meditation' | 'exercise' | 'games' | 'breathing' | 'journaling' | 'visualization' | 'affirmations' | 'nature_sounds' | 'game_suggestions' | 'joke' | 'image' | 'youtube'
-  details: any
-  timestamp: Date
-  effectiveness: 'helpful' | 'somewhat_helpful' | 'not_helpful' | 'helped'
-}
-
-export interface UserMentalHealthProfile extends SessionUserProfile {
-  id: string
-  name: string
-  email: string
-  phone?: string
-  preferences: {
-    interventions: string[]
-    musicGenres: string[]
-    exerciseTypes: string[]
-  }
-  goals: string[]
-  emergencyContacts: Array<{
-    name: string
-    phone: string
-    relationship: string
-  }>
-  riskLevel: 'low' | 'medium' | 'high'
-}
-
-interface MentalHealthAgentProps {
-  onBackToServices: () => void
-  authenticatedUser?: SessionUserProfile | null
+  aiResponse?: string
 }
 
 interface ContentState {
-  currentJoke?: JokeResponse
-  currentImage?: FunnyImageResponse
-  currentYouTube?: YouTubeTrackResponse
-  jokes: JokeResponse[]
-  images: FunnyImageResponse[]
-  youtubeHistory: YouTubeTrackResponse[]
-  mood?: string
-  moodAnalysis?: MoodAnalysisResponse
-  showingContent: boolean
-  userStoppedContent: boolean
+  moodAnalysis: MoodAnalysisResponse | null
+  isLoading: boolean
+  error: string | null
 }
 
-export const EnhancedMentalHealthAgent: React.FC<MentalHealthAgentProps> = ({ onBackToServices, authenticatedUser }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [user, setUser] = useState<UserMentalHealthProfile | null>(null)
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'mood' | 'activities' | 'insights' | 'profile' | 'history'>('dashboard')
+interface EnhancedMentalHealthAgentProps {
+  user: any
+  isAuthenticated: boolean
+  onBackToServices: () => void
+}
+
+// Meditation types and content
+type MeditationType = 'breathing' | 'mindfulness' | 'guided' | 'body-scan' | 'visualization' | 'nature-sounds'
+
+interface MeditationContent {
+  id: string
+  type: MeditationType
+  title: string
+  description: string
+  duration: number
+  instructions: string[]
+  completed: boolean
+  progress: number
+}
+
+// Tab type updated to use lowercase values to match existing state
+type ActiveTab = 'dashboard' | 'mood' | 'meditation' | 'history' | 'profile'
+
+const EnhancedMentalHealthAgent: React.FC<EnhancedMentalHealthAgentProps> = ({
+  user,
+  isAuthenticated,
+  onBackToServices
+}) => {
+  // State management
+  const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard')
   const [moodEntries, setMoodEntries] = useState<MoodEntry[]>([])
-  const [interventionHistory, setInterventionHistory] = useState<InterventionHistory[]>([])
-  const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null)
-  
-  // Enhanced state for new functionality
-  const [contentState, setContentState] = useState<ContentState>({
-    jokes: [],
-    images: [],
-    youtubeHistory: [],
-    showingContent: false,
-    userStoppedContent: false
-  })
-  const [userHistory, setUserHistory] = useState<HistoryResponse | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [showCrisisModal, setShowCrisisModal] = useState(false)
-  const [crisisResources, setCrisisResources] = useState<CrisisResources | null>(null)
   const [userInput, setUserInput] = useState('')
+  const [contentState, setContentState] = useState<ContentState>({
+    moodAnalysis: null,
+    isLoading: false,
+    error: null
+  })
+  const [isLoading, setIsLoading] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Load data when component mounts or user changes
-  useEffect(() => {
-    if (authenticatedUser?.id) {
-      setIsAuthenticated(true)
-      setUser(authenticatedUser as UserMentalHealthProfile)
-      loadMoodEntries(authenticatedUser.id)
-      loadInterventionHistory(authenticatedUser.id)
-      loadUserHistory(authenticatedUser.id)
+  // Meditation state
+  const [meditationSessions] = useState<MeditationContent[]>([
+    {
+      id: '1',
+      type: 'breathing',
+      title: 'Deep Breathing Exercise',
+      description: 'Simple breathing techniques to reduce stress and anxiety',
+      duration: 5,
+      instructions: [
+        'Find a comfortable seated position',
+        'Close your eyes or soften your gaze',
+        'Breathe in slowly through your nose for 4 counts',
+        'Hold your breath for 4 counts',
+        'Exhale slowly through your mouth for 6 counts',
+        'Repeat this cycle for 5 minutes'
+      ],
+      completed: false,
+      progress: 0
+    },
+    {
+      id: '2',
+      type: 'mindfulness',
+      title: 'Mindfulness Meditation',
+      description: 'Present moment awareness practice',
+      duration: 10,
+      instructions: [
+        'Sit comfortably with your back straight',
+        'Focus on your natural breathing',
+        'Notice thoughts without judgment',
+        'Gently return attention to your breath',
+        'Observe sensations in your body',
+        'Stay present for the full duration'
+      ],
+      completed: false,
+      progress: 0
+    },
+    {
+      id: '3',
+      type: 'guided',
+      title: 'Guided Relaxation',
+      description: 'Follow along with gentle guidance',
+      duration: 15,
+      instructions: [
+        'Listen to the guidance without forcing anything',
+        'Allow yourself to follow the voice',
+        'Let go of any expectations',
+        'Trust the process and be patient',
+        'Notice how you feel afterward'
+      ],
+      completed: false,
+      progress: 0
+    },
+    {
+      id: '4',
+      type: 'body-scan',
+      title: 'Body Scan Meditation',
+      description: 'Progressive relaxation through body awareness',
+      duration: 20,
+      instructions: [
+        'Lie down comfortably on your back',
+        'Start by noticing your toes',
+        'Slowly move attention up through each body part',
+        'Notice tension and consciously relax',
+        'Spend time with each area of your body',
+        'Finish with full body awareness'
+      ],
+      completed: false,
+      progress: 0
+    },
+    {
+      id: '5',
+      type: 'visualization',
+      title: 'Peaceful Place Visualization',
+      description: 'Mental imagery for relaxation and peace',
+      duration: 12,
+      instructions: [
+        'Close your eyes and take deep breaths',
+        'Imagine a place where you feel completely safe',
+        'See the colors, shapes, and lighting',
+        'Hear the sounds of this peaceful place',
+        'Feel the temperature and textures',
+        'Stay in this place as long as you need'
+      ],
+      completed: false,
+      progress: 0
+    },
+    {
+      id: '6',
+      type: 'nature-sounds',
+      title: 'Nature Sounds Meditation',
+      description: 'Relax with soothing natural sounds',
+      duration: 8,
+      instructions: [
+        'Choose comfortable headphones if available',
+        'Let the natural sounds wash over you',
+        'Don\'t try to focus on anything specific',
+        'Allow your mind to wander naturally',
+        'Return to the sounds when you notice thinking',
+        'Enjoy this time of natural connection'
+      ],
+      completed: false,
+      progress: 0
     }
-  }, [authenticatedUser])
+  ])
 
-  const loadMoodEntries = (userId: string) => {
-    const entries = localStorage.getItem(`moodEntries_${userId}`)
-    if (entries) {
-      const parsedEntries = JSON.parse(entries).map((entry: any) => ({
-        ...entry,
-        timestamp: new Date(entry.timestamp)
-      }))
-      setMoodEntries(parsedEntries)
-    }
-  }
-
-  const loadInterventionHistory = (userId: string) => {
-    const history = localStorage.getItem(`interventionHistory_${userId}`)
-    if (history) {
-      const parsedHistory = JSON.parse(history).map((item: any) => ({
-        ...item,
-        timestamp: new Date(item.timestamp)
-      }))
-      setInterventionHistory(parsedHistory)
-    }
-  }
-
-  const loadUserHistory = async (userId: string) => {
-    try {
-      const history = await mentalHealthAPI.getHistory(userId, 100)
-      setUserHistory(history)
-    } catch (error) {
-      console.error('Failed to load user history:', error)
-    }
-  }
-
-  const saveMoodEntry = useCallback((entry: Omit<MoodEntry, 'id' | 'timestamp'>) => {
-    if (!user) return
-
-    const newEntry: MoodEntry = {
-      ...entry,
-      id: Date.now().toString(),
-      timestamp: new Date()
-    }
-
-    const updatedEntries = [newEntry, ...moodEntries]
-    setMoodEntries(updatedEntries)
-    localStorage.setItem(`moodEntries_${user.id}`, JSON.stringify(updatedEntries))
-    
-    return newEntry.id
-  }, [user, moodEntries])
-
-  const saveInteractionHistory = useCallback((moodEntryId: string, type: InterventionHistory['type'], details: any, effectiveness: InterventionHistory['effectiveness']) => {
-    if (!user) return
-
-    const newIntervention: InterventionHistory = {
-      id: Date.now().toString(),
-      moodEntryId,
-      type,
-      details,
-      timestamp: new Date(),
-      effectiveness
-    }
-
-    const updatedHistory = [newIntervention, ...interventionHistory]
-    setInterventionHistory(updatedHistory)
-    localStorage.setItem(`interventionHistory_${user.id}`, JSON.stringify(updatedHistory))
-
-    // Also save to backend
-    mentalHealthAPI.saveToHistory(user.id, type, details).catch(console.error)
-  }, [user, interventionHistory])
-
-  const handleUserInput = async (inputText: string) => {
-    if (!user || !inputText.trim()) return
+  // User input handler
+  const handleUserInput = useCallback(async (inputText: string) => {
+    if (!inputText.trim()) return
 
     setIsLoading(true)
-    setUserInput('')
-    
+    setContentState(prev => ({ ...prev, isLoading: true, error: null }))
+
     try {
-      // Check for crisis language first
-      if (mentalHealthAPI.detectCrisisLanguage(inputText)) {
-        const resources = await mentalHealthAPI.getCrisisResources()
-        setCrisisResources(resources)
-        setShowCrisisModal(true)
-        setIsLoading(false)
-        return
+      const response = await mentalHealthAPI.analyzeMood({ text: inputText })
+      
+      // Create mood entry
+      const newEntry: MoodEntry = {
+        id: Date.now().toString(),
+        type: response.mood as MoodType,
+        rating: 3 as MoodRating, // Default rating since confidence is now a string
+        notes: inputText,
+        timestamp: new Date(),
+        aiResponse: response.reason || response.message
       }
 
-      // Analyze mood
-      const moodAnalysis = await mentalHealthAPI.analyzeMood({
-        text: inputText,
-        user_id: user.id
-      })
-
-      if (moodAnalysis.detected_mood === 'crisis') {
-        const resources = await mentalHealthAPI.getCrisisResources()
-        setCrisisResources(resources)
-        setShowCrisisModal(true)
-        setIsLoading(false)
-        return
-      }
-
-      // Update content state with mood analysis
-      setContentState(prev => ({
-        ...prev,
-        mood: moodAnalysis.detected_mood,
-        moodAnalysis,
-        showingContent: true,
-        userStoppedContent: false
+      setMoodEntries(prev => [newEntry, ...prev])
+      setContentState(prev => ({ 
+        ...prev, 
+        moodAnalysis: response,
+        isLoading: false 
       }))
-
-      // Start providing content based on mood
-      await startMoodBasedContent(moodAnalysis.detected_mood, moodAnalysis)
+      setUserInput('')
 
     } catch (error) {
-      console.error('Error handling user input:', error)
+      setContentState(prev => ({ 
+        ...prev, 
+        isLoading: false, 
+        error: 'Failed to analyze mood. Please try again.' 
+      }))
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [])
 
-  const startMoodBasedContent = async (mood: string, analysis: MoodAnalysisResponse) => {
-    if (!user) return
-
-    // Save mood entry
-    const moodEntryId = saveMoodEntry({
-      rating: 3,
-      type: mood as MoodType,
-      notes: analysis.message
-    })
-
-    if (!moodEntryId) return
-
-    try {
-      // Get YouTube track for mood
-      const youtubeTrack = await mentalHealthAPI.getYouTubeTrack(mood)
-      
-      // Get initial joke
-      const joke = await mentalHealthAPI.getJoke()
-      
-      // Get initial funny image
-      const funnyImage = await mentalHealthAPI.getFunnyImage()
-
-      // Update content state
-      setContentState(prev => ({
-        ...prev,
-        currentYouTube: youtubeTrack,
-        currentJoke: joke,
-        currentImage: funnyImage,
-        jokes: [joke, ...prev.jokes],
-        images: [funnyImage, ...prev.images],
-        youtubeHistory: [youtubeTrack, ...prev.youtubeHistory]
-      }))
-
-      // Save interactions to history
-      saveInteractionHistory(moodEntryId, 'youtube', youtubeTrack, 'helped')
-      saveInteractionHistory(moodEntryId, 'joke', joke, 'helped')
-      saveInteractionHistory(moodEntryId, 'image', funnyImage, 'helped')
-
-      // Show the mood support modal
-      showMoodSupportModal(mood, analysis, youtubeTrack, joke, funnyImage, moodEntryId)
-
-    } catch (error) {
-      console.error('Error starting mood-based content:', error)
-    }
-  }
-
-  const showMoodSupportModal = (
-    mood: string, 
-    analysis: MoodAnalysisResponse, 
-    youtubeTrack: YouTubeTrackResponse, 
-    joke: JokeResponse, 
-    funnyImage: FunnyImageResponse,
-    moodEntryId: string
-  ) => {
-    // Create modal for mood support
-    const modal = document.createElement('div')
-    modal.className = 'fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4'
-    modal.id = 'mood-support-modal'
-
-    const updateModalContent = () => {
-      modal.innerHTML = `
-        <div class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-3xl p-8 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border-2 border-purple-200">
-          <div class="flex justify-between items-center mb-6">
-            <h2 class="text-3xl font-bold text-purple-900">
-              💙 Mental Health Support
-            </h2>
-            <button onclick="this.closest('#mood-support-modal').remove()" class="text-gray-500 hover:text-gray-700 text-2xl font-bold">
-              &times;
-            </button>
-          </div>
-
-          <div class="mb-6 p-4 bg-gradient-to-r from-purple-100 to-blue-100 rounded-xl border border-purple-200">
-            <p class="text-lg text-purple-800 font-medium">${analysis.message}</p>
-            ${analysis.suggestions.length > 0 ? `
-              <div class="mt-3">
-                <p class="text-sm text-purple-700 mb-2">💡 Suggestions:</p>
-                <ul class="list-disc list-inside text-purple-700">
-                  ${analysis.suggestions.map(suggestion => `<li class="text-sm">${suggestion}</li>`).join('')}
-                </ul>
-              </div>
-            ` : ''}
-          </div>
-
-          <!-- YouTube Music Section -->
-          <div class="mb-6 p-6 bg-gradient-to-r from-red-50 to-pink-50 rounded-2xl border border-red-200">
-            <h3 class="text-xl font-bold text-red-900 mb-4 flex items-center">
-              🎵 Music for Your ${mood.charAt(0).toUpperCase() + mood.slice(1)} Mood
-            </h3>
-            <div class="bg-white rounded-xl p-4 mb-4 border border-red-100">
-              <div class="flex items-center justify-between mb-3">
-                <div>
-                  <h4 class="font-semibold text-red-800">${youtubeTrack.title}</h4>
-                  <p class="text-red-600 text-sm">by ${youtubeTrack.artist} • ${youtubeTrack.duration}</p>
-                </div>
-                <div class="flex gap-2">
-                  <button onclick="window.moodModal.playMusic && window.moodModal.playMusic('${youtubeTrack.title}', '${youtubeTrack.artist}')" 
-                    class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm transition-colors">
-                    🔄 New Song
-                  </button>
-                  <button onclick="window.moodModal.stopMusic()" 
-                    class="px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-sm transition-colors">
-                    ⏹️ Stop
-                  </button>
-                </div>
-              </div>
-              <div class="relative rounded-lg overflow-hidden shadow-lg">
-                <iframe 
-                  width="100%" 
-                  height="300" 
-                  src="${youtubeTrack.embed_url}"
-                  frameborder="0" 
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                  allowfullscreen>
-                </iframe>
-              </div>
-            </div>
-          </div>
-
-          <!-- Jokes Section -->
-          <div class="mb-6 p-6 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-2xl border border-yellow-200">
-            <h3 class="text-xl font-bold text-yellow-900 mb-4 flex items-center">
-              😄 Here's a Joke for You
-            </h3>
-            <div class="bg-white rounded-xl p-4 mb-4 border border-yellow-100">
-              <p class="text-yellow-800 text-lg italic mb-4">"${joke.joke}"</p>
-              <div class="flex gap-2 flex-wrap">
-                <button onclick="window.moodModal.nextJoke()" 
-                  class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-sm font-medium transition-colors">
-                  😂 Another Joke!
-                </button>
-                <button onclick="window.moodModal.showCartoon()" 
-                  class="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-sm font-medium transition-colors">
-                  📸 Show Funny Image!
-                </button>
-                <button onclick="window.moodModal.stopJokes()" 
-                  class="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-colors">
-                  I'm Good, Thanks 😊
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Funny Images Section -->
-          ${contentState.currentImage ? `
-            <div class="mb-6 p-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl border border-purple-200">
-              <h3 class="text-xl font-bold text-purple-900 mb-4 flex items-center">
-                📸 Something to Make You Smile
-              </h3>
-              <div class="bg-white rounded-xl p-4 mb-4 border border-purple-100">
-                ${funnyImage.url ? `
-                  <div class="text-center mb-4">
-                    <img src="${funnyImage.url}" alt="${funnyImage.description}" 
-                      class="w-full max-w-xs mx-auto rounded-lg shadow-md" 
-                      style="max-height: 300px; object-fit: cover;" 
-                      onerror="this.style.display='none'">
-                  </div>
-                ` : ''}
-                <div class="text-center ${funnyImage.type === 'emoji' ? 'text-4xl mb-3' : ''}">
-                  ${funnyImage.type === 'emoji' ? funnyImage.caption : ''}
-                </div>
-                ${funnyImage.type !== 'emoji' ? `
-                  <p class="text-purple-700 text-center font-medium">${funnyImage.caption}</p>
-                ` : ''}
-                <div class="flex gap-2 justify-center mt-4">
-                  <button onclick="window.moodModal.nextImage()" 
-                    class="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-sm font-medium transition-colors">
-                    🎨 Another Image!
-                  </button>
-                </div>
-              </div>
-            </div>
-          ` : ''}
-
-          <!-- Action Buttons -->
-          <div class="flex gap-4 justify-center pt-4 border-t border-purple-200">
-            <button onclick="window.moodModal.startBreathing && window.moodModal.startBreathing()" 
-              class="px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition-colors">
-              🧘 Breathing Exercise
-            </button>
-            <button onclick="window.moodModal.suggestGameUVGames && window.moodModal.suggestGameUVGames('${mood}')" 
-              class="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors">
-              🎮 Therapeutic Games
-            </button>
-            <button onclick="this.closest('#mood-support-modal').remove()" 
-              class="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors">
-              ✨ I Feel Better
-            </button>
-          </div>
-        </div>
-      `
-    }
-
-    // Initial content
-    updateModalContent()
-
-    // Add modal to DOM
-    document.body.appendChild(modal)
-
-    // Set up modal functions
-    window.moodModal = {
-      nextJoke: async () => {
-        try {
-          const newJoke = await mentalHealthAPI.getJoke()
-          setContentState(prev => ({
-            ...prev,
-            currentJoke: newJoke,
-            jokes: [newJoke, ...prev.jokes]
-          }))
-          saveInteractionHistory(moodEntryId, 'joke', newJoke, 'helped')
-          
-          // Update modal content
-          const jokeSection = modal.querySelector('.bg-gradient-to-r.from-yellow-50')
-          if (jokeSection) {
-            const jokeText = jokeSection.querySelector('p.italic')
-            if (jokeText) {
-              jokeText.textContent = `"${newJoke.joke}"`
-            }
-          }
-        } catch (error) {
-          console.error('Error getting new joke:', error)
-        }
-      },
-
-      showCartoon: async () => {
-        try {
-          const newImage = await mentalHealthAPI.getFunnyImage()
-          setContentState(prev => ({
-            ...prev,
-            currentImage: newImage,
-            images: [newImage, ...prev.images]
-          }))
-          saveInteractionHistory(moodEntryId, 'image', newImage, 'helped')
-          updateModalContent()
-        } catch (error) {
-          console.error('Error getting funny image:', error)
-        }
-      },
-
-      stopJokes: () => {
-        setContentState(prev => ({ ...prev, userStoppedContent: true }))
-      },
-
-      nextImage: async () => {
-        try {
-          const newImage = await mentalHealthAPI.getFunnyImage()
-          setContentState(prev => ({
-            ...prev,
-            currentImage: newImage,
-            images: [newImage, ...prev.images]
-          }))
-          saveInteractionHistory(moodEntryId, 'image', newImage, 'helped')
-          updateModalContent()
-        } catch (error) {
-          console.error('Error getting new image:', error)
-        }
-      },
-
-      playMusic: async (title: string, artist: string) => {
-        try {
-          const newTrack = await mentalHealthAPI.getYouTubeTrack(mood)
-          setContentState(prev => ({
-            ...prev,
-            currentYouTube: newTrack,
-            youtubeHistory: [newTrack, ...prev.youtubeHistory]
-          }))
-          saveInteractionHistory(moodEntryId, 'youtube', newTrack, 'helped')
-          updateModalContent()
-        } catch (error) {
-          console.error('Error getting new YouTube track:', error)
-        }
-      },
-
-      stopMusic: () => {
-        if (currentAudio) {
-          currentAudio.pause()
-          setCurrentAudio(null)
-        }
-      },
-
-      startBreathing: () => {
-        // Implement breathing exercise modal
-        console.log('Starting breathing exercise')
-      },
-
-      suggestGameUVGames: (mood?: string) => {
-        console.log('Suggesting GameUV games for mood:', mood)
-      },
-
-      close: () => {
-        modal.remove()
-      },
-      
-      // Placeholder functions for compatibility
-      nextGame: () => console.log('Next game'),
-      askMusicPreference: () => console.log('Ask music preference'),
-      startGame: () => console.log('Start game')
-    }
-  }
-
-  // Crisis Modal Component
-  const CrisisModal = () => {
-    if (!showCrisisModal || !crisisResources) return null
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4">
-        <div className="bg-gradient-to-br from-red-50 to-pink-50 rounded-3xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border-2 border-red-200">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-3xl font-bold text-red-900">
-              🆘 Immediate Support Available
-            </h2>
-            <button 
-              onClick={() => setShowCrisisModal(false)}
-              className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
-            >
-              ×
-            </button>
-          </div>
-
-          <div className="mb-6 p-4 bg-gradient-to-r from-red-100 to-pink-100 rounded-xl border border-red-200">
-            <p className="text-lg text-red-800 font-medium mb-4">
-              I'm concerned about what you've shared. Your safety and wellbeing are important.
-            </p>
+  // Tab content renderer
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">Mental Health Dashboard</h2>
             
-            {crisisResources.immediate_support.map((message, index) => (
-              <p key={index} className="text-red-700 mb-2">• {message}</p>
-            ))}
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-blue-900 mb-2">Recent Mood</h3>
+                <p className="text-blue-700">
+                  {moodEntries.length > 0 
+                    ? `${moodEntries[0].type} (${moodEntries[0].rating}/5)`
+                    : 'No entries yet'
+                  }
+                </p>
+              </div>
+              
+              <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-purple-900 mb-2">Total Entries</h3>
+                <p className="text-purple-700">{moodEntries.length} mood entries</p>
+              </div>
+              
+              <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-green-900 mb-2">Meditation Sessions</h3>
+                <p className="text-green-700">
+                  {meditationSessions.filter(session => session.completed).length} completed
+                </p>
+              </div>
+            </div>
 
-          <div className="mb-6">
-            <h3 className="text-xl font-bold text-red-900 mb-4">📞 Crisis Support Resources</h3>
-            <div className="space-y-3">
-              {crisisResources.emergency_numbers.map((resource, index) => (
-                <div key={index} className="bg-white rounded-xl p-4 border border-red-100">
-                  <h4 className="font-semibold text-red-800">{resource.name}</h4>
-                  {resource.number && (
-                    <p className="text-red-600 font-mono text-lg">{resource.number}</p>
-                  )}
-                  {resource.url && (
-                    <a href={resource.url} target="_blank" rel="noopener noreferrer" 
-                      className="text-blue-600 hover:text-blue-800 underline text-sm">
-                      Visit Website
-                    </a>
-                  )}
+            <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6">
+              <h3 className="text-xl font-bold text-purple-900 mb-3">Quick Actions</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button
+                  onClick={() => setActiveTab('mood')}
+                  className="p-4 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow border-2 border-purple-200 hover:border-purple-300"
+                >
+                  <Heart className="w-8 h-8 text-purple-500 mb-2" />
+                  <div className="text-left">
+                    <h4 className="font-semibold text-gray-900">Track Your Mood</h4>
+                    <p className="text-sm text-gray-600">Share how you're feeling today</p>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => setActiveTab('meditation')}
+                  className="p-4 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow border-2 border-purple-200 hover:border-purple-300"
+                >
+                  <Flower2 className="w-8 h-8 text-green-500 mb-2" />
+                  <div className="text-left">
+                    <h4 className="font-semibold text-gray-900">Start Meditation</h4>
+                    <p className="text-sm text-gray-600">Find your inner peace</p>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+
+      case 'mood':
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">How are you feeling today?</h2>
+            <p className="text-gray-600">Share your thoughts and emotions. I'm here to listen and provide support.</p>
+            
+            {/* Mood Input Section */}
+            <div className="space-y-4">
+              <div className="relative">
+                <textarea
+                  ref={textareaRef}
+                  value={userInput}
+                  onChange={(e) => setUserInput(e.target.value)}
+                  placeholder="Tell me how you're feeling today (e.g., 'I'm feeling really happy' or 'I feel anxious about work')"
+                  className="w-full min-h-[100px] p-4 rounded-xl border-2 border-purple-200 focus:border-purple-500 focus:outline-none resize-none transition-all duration-200 hover:border-purple-300 focus:ring-4 focus:ring-purple-100 bg-white text-gray-900"
+                  rows={4}
+                  disabled={isLoading}
+                />
+                {isLoading && (
+                  <div className="absolute inset-0 bg-gray-100 bg-opacity-70 rounded-xl flex items-center justify-center">
+                    <div className="bg-white px-6 py-3 rounded-lg shadow-lg">
+                      <p className="text-purple-600 font-medium">🔄 Processing your feelings...</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <p className="text-xs text-purple-600">
+                  💡 Tip: Be honest about your feelings. I'm here to help!
+                </p>
+                <p className="text-xs text-gray-500">
+                  {userInput.length > 0 ? `${userInput.length} characters` : 'Start typing...'}
+                </p>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 flex-wrap items-center">
+              <button
+                onClick={() => handleUserInput(userInput)}
+                disabled={!userInput.trim() || isLoading}
+                className="px-6 py-3 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg"
+              >
+                {isLoading ? '🔄 Analyzing...' : '💬 Share My Feelings'}
+              </button>
+              
+              {userInput.trim() && !isLoading && (
+                <button
+                  onClick={() => setUserInput('')}
+                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm transition-colors"
+                >
+                  🗑️ Clear
+                </button>
+              )}
+              
+              {/* Quick mood buttons */}
+              <button
+                onClick={() => handleUserInput("I'm feeling sad")}
+                disabled={isLoading}
+                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors"
+              >
+                😢 Sad
+              </button>
+              <button
+                onClick={() => handleUserInput("I'm feeling anxious")}
+                disabled={isLoading}
+                className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm transition-colors"
+              >
+                😰 Anxious
+              </button>
+              <button
+                onClick={() => handleUserInput("I'm feeling angry")}
+                disabled={isLoading}
+                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm transition-colors"
+              >
+                😠 Angry
+              </button>
+              <button
+                onClick={() => handleUserInput("I'm feeling tired")}
+                disabled={isLoading}
+                className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-sm transition-colors"
+              >
+                😴 Tired
+              </button>
+              <button
+                onClick={() => handleUserInput("I'm feeling happy")}
+                disabled={isLoading}
+                className="px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-lg text-sm transition-colors"
+              >
+                😊 Happy
+              </button>
+            </div>
+
+            {/* Mood Analysis Result */}
+            {contentState.moodAnalysis && (
+              <div className="mt-6 p-4 bg-white rounded-xl border-2 border-purple-200">
+                <p className="text-purple-800 font-medium">{contentState.moodAnalysis.message}</p>
+              </div>
+            )}
+
+            {/* Error Display */}
+            {contentState.error && (
+              <div className="mt-4 p-4 bg-red-50 border-2 border-red-200 rounded-xl">
+                <p className="text-red-800">{contentState.error}</p>
+              </div>
+            )}
+          </div>
+        )
+
+      case 'meditation':
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">Meditation & Mindfulness</h2>
+            <p className="text-gray-600">Take a moment to center yourself with these guided meditation exercises.</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {meditationSessions.map((session) => (
+                <div key={session.id} className="bg-white border-2 border-purple-200 rounded-xl p-6 hover:border-purple-300 transition-colors">
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">{session.title}</h3>
+                      <p className="text-sm text-gray-600">{session.description}</p>
+                      <p className="text-xs text-purple-600 mt-1">{session.duration} minutes</p>
+                    </div>
+                    {session.completed && (
+                      <div className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                        ✓ Completed
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <h4 className="text-sm font-medium text-gray-900 mb-2">Instructions:</h4>
+                      <ul className="text-xs text-gray-600 space-y-1">
+                        {session.instructions.slice(0, 3).map((instruction, index) => (
+                          <li key={index}>• {instruction}</li>
+                        ))}
+                        {session.instructions.length > 3 && (
+                          <li className="text-purple-600">• And {session.instructions.length - 3} more steps...</li>
+                        )}
+                      </ul>
+                    </div>
+                    
+                    <button
+                      className="w-full px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-sm font-medium transition-colors"
+                      onClick={() => {
+                        // Start meditation session
+                        console.log(`Starting ${session.title}`)
+                      }}
+                    >
+                      Start {session.duration}min Session
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
+        )
 
-          <div className="flex gap-4 justify-center pt-4 border-t border-red-200">
-            <button 
-              onClick={() => window.open('tel:988', '_self')}
-              className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-colors"
-            >
-              📞 Call 988 Now
-            </button>
-            <button 
-              onClick={() => setShowCrisisModal(false)}
-              className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors"
-            >
-              I'm Safe Now
-            </button>
+      case 'history':
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">Mood History</h2>
+            <p className="text-gray-600">Track your emotional journey over time.</p>
+            
+            {moodEntries.length === 0 ? (
+              <div className="text-center py-8">
+                <Heart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500">No mood entries yet. Start tracking your feelings!</p>
+                <button
+                  onClick={() => setActiveTab('mood')}
+                  className="mt-4 px-6 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors"
+                >
+                  Track Your Mood
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {moodEntries.map((entry) => (
+                  <div key={entry.id} className="bg-white border-2 border-purple-200 rounded-xl p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <span className="text-lg font-semibold text-purple-900 capitalize">{entry.type}</span>
+                          <div className="flex">
+                            {Array.from({ length: 5 }, (_, i) => (
+                              <span key={i} className={`text-sm ${i < entry.rating ? 'text-yellow-400' : 'text-gray-300'}`}>
+                                ⭐
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <p className="text-gray-700 mb-2">{entry.notes}</p>
+                        {entry.aiResponse && (
+                          <p className="text-sm text-purple-600 bg-purple-50 rounded-lg p-2">{entry.aiResponse}</p>
+                        )}
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        {entry.timestamp.toLocaleDateString()} {entry.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
-      </div>
-    )
-  }
+        )
 
-  // Main conversation interface
-  const ConversationInterface = () => (
-    <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-6 border-2 border-purple-200 shadow-lg">
-      <div className="mb-6">
-        <h3 className="text-2xl font-bold text-purple-900 mb-2">
-          💙 How are you feeling today?
-        </h3>
-        <p className="text-purple-700">
-          Share your thoughts with me, and I'll help with personalized support including music, jokes, and activities.
-        </p>
-      </div>
-
-      <div className="mb-4 relative">
-        <label htmlFor="feeling-textarea" className="block text-sm font-medium text-purple-700 mb-2">
-          💭 Share your feelings:
-        </label>
-        <textarea
-          ref={textareaRef}
-          id="feeling-textarea"
-          name="userFeelingsInput"
-          value={userInput}
-          onChange={(e) => {
-            e.persist() // Ensure event persists
-            const newValue = e.target.value
-            console.log('✍️ Textarea change:', newValue, 'Length:', newValue.length)
-            setUserInput(newValue)
-            // Force update the ref value as backup
-            if (textareaRef.current) {
-              textareaRef.current.value = newValue
-            }
-          }}
-          onInput={(e) => {
-            e.persist()
-            const target = e.target as HTMLTextAreaElement
-            const newValue = target.value
-            console.log('📝 Input event:', newValue, 'Length:', newValue.length)
-            setUserInput(newValue)
-          }}
-          onKeyPress={(e) => {
-            console.log('⌨️ Key pressed:', e.key, 'Current value:', (e.target as HTMLTextAreaElement).value)
-          }}
-          onFocus={() => {
-            console.log('✨ Textarea focused - Ready for input')
-            console.log('Current value in state:', userInput)
-            console.log('Current value in DOM:', textareaRef.current?.value)
-          }}
-          onBlur={() => console.log('👋 Textarea blurred, final value:', userInput)}
-          onClick={() => console.log('🖱️ Textarea clicked')}
-          placeholder="Type here... Tell me how you're feeling today (e.g., 'I'm feeling really happy' or 'I feel anxious about work')"
-          className="w-full min-h-[100px] p-4 rounded-xl border-2 border-purple-200 focus:border-purple-500 focus:outline-none resize-none transition-all duration-200 hover:border-purple-300 focus:ring-4 focus:ring-purple-100 bg-white text-gray-900 cursor-text"
-          rows={4}
-          disabled={isLoading}
-          readOnly={false}
-          autoComplete="off"
-          autoCorrect="on"
-          autoCapitalize="sentences"
-          spellCheck={true}
-          aria-label="Share your feelings"
-          aria-describedby="feeling-help-text"
-        />
-        <div className="flex justify-between items-center mt-1">
-          <p id="feeling-help-text" className="text-xs text-purple-600">
-            💡 Tip: Be honest about your feelings. I'm here to help!
-          </p>
-          <p className="text-xs text-gray-500">
-            {userInput.length > 0 ? `${userInput.length} characters` : 'Start typing...'}
-          </p>
-        </div>
-        {isLoading && (
-          <div className="absolute inset-0 bg-gray-100 bg-opacity-70 rounded-xl flex items-center justify-center z-20">
-            <div className="bg-white px-6 py-3 rounded-lg shadow-lg">
-              <p className="text-purple-600 font-medium">🔄 Processing your feelings...</p>
+      case 'profile':
+        return (
+          <div className="space-y-6">
+            <h2 className="text-2xl font-bold text-gray-900">Profile Settings</h2>
+            <p className="text-gray-600">Manage your mental health preferences and account settings.</p>
+            
+            <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">User Information</h3>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Name</label>
+                  <p className="text-lg text-gray-900">{user.name}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Email</label>
+                  <p className="text-lg text-gray-900">{user.email}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white border-2 border-purple-200 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Preferences</h3>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-700">Daily mood reminders</span>
+                  <button className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                    Configure
+                  </button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-700">Privacy settings</span>
+                  <button className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                    Manage
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        )}
-      </div>
+        )
 
-      <div className="flex gap-3 flex-wrap items-center">
-        <button
-          onClick={() => {
-            console.log('🚀 Submit button clicked with text:', userInput)
-            handleUserInput(userInput)
-          }}
-          disabled={!userInput.trim() || isLoading}
-          className="px-6 py-3 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg"
-        >
-          {isLoading ? '🔄 Analyzing...' : '💬 Share My Feelings'}
-        </button>
-        {userInput.trim() && !isLoading && (
-          <button
-            onClick={() => {
-              console.log('🗑️ Clear button clicked')
-              setUserInput('')
-            }}
-            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm transition-colors"
-          >
-            🗑️ Clear
-          </button>
-        )}
-        
-        {/* Quick mood buttons */}
-        <button
-          onClick={() => handleUserInput("I'm feeling sad")}
-          disabled={isLoading}
-          className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors"
-        >
-          😢 Sad
-        </button>
-        <button
-          onClick={() => handleUserInput("I'm feeling anxious")}
-          disabled={isLoading}
-          className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm transition-colors"
-        >
-          😰 Anxious
-        </button>
-        <button
-          onClick={() => handleUserInput("I'm feeling angry")}
-          disabled={isLoading}
-          className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm transition-colors"
-        >
-          😠 Angry
-        </button>
-        <button
-          onClick={() => handleUserInput("I'm feeling tired")}
-          disabled={isLoading}
-          className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-sm transition-colors"
-        >
-          😴 Tired
-        </button>
-        <button
-          onClick={() => handleUserInput("I'm feeling happy")}
-          disabled={isLoading}
-          className="px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-lg text-sm transition-colors"
-        >
-          😊 Happy
-        </button>
-      </div>
+      default:
+        return (
+          <div className="text-center py-8">
+            <p className="text-gray-500">This section is coming soon!</p>
+          </div>
+        )
+    }
+  }
 
-      {contentState.moodAnalysis && (
-        <div className="mt-6 p-4 bg-white rounded-xl border-2 border-purple-200">
-          <p className="text-purple-800 font-medium">{contentState.moodAnalysis.message}</p>
-        </div>
-      )}
-    </div>
-  )
-
+  // Authentication check
   if (!isAuthenticated || !user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-100 p-4">
@@ -786,147 +550,61 @@ export const EnhancedMentalHealthAgent: React.FC<MentalHealthAgentProps> = ({ on
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-100">
-      <div className="container mx-auto px-4 py-6">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center">
-            <button
-              onClick={onBackToServices}
-              className="mr-4 p-2 rounded-lg hover:bg-white hover:bg-opacity-50 transition-colors"
-            >
-              ←
-            </button>
-            <div>
-              <h1 className="text-3xl font-bold text-purple-900 flex items-center">
-                <Heart className="w-8 h-8 mr-3 text-purple-600" />
-                Enhanced Mental Health Agent
-              </h1>
-              <p className="text-purple-700">AI-powered emotional support with music, humor, and personalized care</p>
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-100 p-4">
+      {/* Header */}
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center py-8 relative">
+          <button
+            onClick={onBackToServices}
+            className="absolute left-0 top-8 flex items-center text-purple-600 hover:text-purple-800 transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 mr-2" />
+            Back to Services
+          </button>
+          
+          <div className="flex justify-center items-center gap-3 mb-2">
+            <Brain className="w-12 h-12 text-purple-500" />
+            <h1 className="text-4xl font-bold text-gray-900">Mental Health Agent</h1>
           </div>
-          <div className="flex items-center space-x-4">
-            <div className="text-right">
-              <p className="text-sm text-purple-600">Welcome back,</p>
-              <p className="font-semibold text-purple-900">{user.name}</p>
-            </div>
-          </div>
+          <p className="text-lg text-gray-600">
+            Your personalized AI companion for mental wellness and emotional support
+          </p>
         </div>
 
-        {/* Main conversation interface */}
-        <div className="mb-8">
-          <ConversationInterface />
-        </div>
-
-        {/* Navigation tabs */}
-        <div className="bg-white rounded-2xl shadow-lg border-2 border-purple-200 overflow-hidden">
-          <div className="flex border-b-2 border-purple-200">
-            {[
-              { id: 'dashboard', label: 'Dashboard', icon: TrendingUp },
+        {/* Navigation Tabs */}
+        <div className="flex justify-center mb-8">
+          <div className="flex bg-white rounded-xl p-2 shadow-lg space-x-2">
+            {([
+              { id: 'dashboard', label: 'Dashboard', icon: Brain },
               { id: 'mood', label: 'Mood Tracker', icon: Heart },
-              { id: 'activities', label: 'Activities', icon: Target },
-              { id: 'insights', label: 'Insights', icon: Brain },
-              { id: 'history', label: 'History', icon: MessageCircle },
-              { id: 'profile', label: 'Profile', icon: Smile }
-            ].map((tab) => {
+              { id: 'meditation', label: 'Meditation', icon: Leaf },
+              { id: 'history', label: 'History', icon: Clock },
+              { id: 'profile', label: 'Profile', icon: User }
+            ] as const).map((tab) => {
               const Icon = tab.icon
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={`flex-1 flex items-center justify-center px-4 py-3 font-medium transition-colors ${
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 flex items-center ${
                     activeTab === tab.id
-                      ? 'bg-purple-500 text-white'
-                      : 'text-purple-600 hover:bg-purple-50'
+                      ? 'bg-purple-500 text-white shadow-md'
+                      : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50'
                   }`}
                 >
                   <Icon className="w-5 h-5 mr-2" />
-                  <span className="hidden sm:inline">{tab.label}</span>
+                  {tab.label}
                 </button>
               )
             })}
           </div>
+        </div>
 
-          <div className="p-6">
-            {activeTab === 'dashboard' && (
-              <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-gray-900">Mental Health Dashboard</h2>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-blue-900 mb-2">Recent Mood</h3>
-                    <p className="text-blue-700">
-                      {moodEntries.length > 0 
-                        ? `${moodEntries[0].type} (${moodEntries[0].rating}/5)`
-                        : 'No entries yet'
-                      }
-                    </p>
-                  </div>
-                  
-                  <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-purple-900 mb-2">Support History</h3>
-                    <p className="text-purple-700">
-                      {userHistory ? `${userHistory.total_count} interactions` : 'Loading...'}
-                    </p>
-                  </div>
-                  
-                  <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-green-900 mb-2">Interventions</h3>
-                    <p className="text-green-700">{interventionHistory.length} activities</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'history' && (
-              <div className="space-y-6">
-                <h2 className="text-2xl font-bold text-gray-900">Support History</h2>
-                
-                {userHistory && userHistory.items.length > 0 ? (
-                  <div className="space-y-4">
-                    {userHistory.items.map((item) => (
-                      <div key={item.id} className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-purple-600 capitalize">
-                            {item.type}
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {new Date(item.timestamp).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <div className="text-gray-700">
-                          {item.type === 'joke' && item.content.joke && (
-                            <p className="italic">"{item.content.joke}"</p>
-                          )}
-                          {item.type === 'youtube' && item.content.title && (
-                            <p>🎵 {item.content.title} by {item.content.artist}</p>
-                          )}
-                          {item.type === 'image' && item.content.caption && (
-                            <p>📸 {item.content.caption}</p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500">No history available yet. Start a conversation to build your history!</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Add other tab content here */}
-            {activeTab !== 'dashboard' && activeTab !== 'history' && (
-              <div className="text-center py-8">
-                <p className="text-gray-500">This section is coming soon!</p>
-              </div>
-            )}
-          </div>
+        {/* Content */}
+        <div className="bg-white rounded-2xl shadow-xl p-8 min-h-[600px]">
+          {renderTabContent()}
         </div>
       </div>
-
-      {/* Crisis Modal */}
-      <CrisisModal />
     </div>
   )
 }

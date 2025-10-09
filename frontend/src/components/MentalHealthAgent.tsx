@@ -11,7 +11,8 @@ export const MentalHealthAgent: React.FC<MentalHealthAgentProps> = ({ onBackToSe
   return (
     <EnhancedMentalHealthAgent 
       onBackToServices={onBackToServices}
-      authenticatedUser={authenticatedUser}
+      user={authenticatedUser}
+      isAuthenticated={!!authenticatedUser}
     />
   )
 }

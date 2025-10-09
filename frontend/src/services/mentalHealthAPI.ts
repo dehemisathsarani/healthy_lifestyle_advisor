@@ -1,6 +1,6 @@
 import axios, { AxiosResponse } from 'axios'
 
-const API_BASE_URL = 'http://localhost:8004' // Backend is running on port 8004
+const API_BASE_URL = 'http://localhost:8005' // Backend is running on port 8005
 
 // Types
 export interface MoodAnalysisRequest {
@@ -9,10 +9,13 @@ export interface MoodAnalysisRequest {
 }
 
 export interface MoodAnalysisResponse {
-  detected_mood: string
-  confidence: number
-  message: string
-  suggestions: string[]
+  mood: string // Changed from detected_mood to match new backend
+  confidence: string // Changed from number to string (high/medium/low)
+  reason: string // Changed from message to reason
+  suggestions?: string[] // Made optional
+  // Legacy support
+  detected_mood?: string
+  message?: string
 }
 
 export interface YouTubeTrackResponse {
@@ -88,10 +91,12 @@ class MentalHealthAPI {
       console.error('Error analyzing mood:', error)
       // Return fallback response
       return {
-        detected_mood: 'unclear',
-        confidence: 0.0,
-        message: 'How are you feeling right now?',
-        suggestions: ['Tell me more about how you\'re feeling', 'Would you like to try some activities?']
+        mood: 'neutral',
+        confidence: 'low',
+        reason: 'Unable to analyze mood. How are you feeling right now?',
+        suggestions: ['Tell me more about how you\'re feeling', 'Would you like to try some activities?'],
+        detected_mood: 'neutral', // Legacy support
+        message: 'How are you feeling right now?' // Legacy support
       }
     }
   }
