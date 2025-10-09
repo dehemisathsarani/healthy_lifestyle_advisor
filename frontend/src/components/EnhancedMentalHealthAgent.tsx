@@ -1,9 +1,17 @@
-import React, { useState, useCallback, useRef } from 'react'
+import React, { useState, useCallback } from 'react'
 import { Brain, Heart, Flower2, ArrowLeft, Clock, User, Leaf } from 'lucide-react'
-import { 
-  mentalHealthAPI, 
-  MoodAnalysisResponse
-} from '../services/mentalHealthAPI'
+import { EnhancedMoodTrackerAPI } from '../services/enhancedMoodTrackerAPI.ts';
+import type { 
+  MoodLog, 
+  MoodFormData,
+  JokeResponse,
+  UnsplashImage,
+  YouTubeVideo,
+  GameRecommendation,
+  MoodActivity
+} from '../types/enhancedMoodTracker.ts';
+import MoodForm from './MoodForm.tsx';
+import MoodRecommendations from './MoodRecommendations.tsx';
 
 // Types and interfaces remain the same
 type MoodRating = 1 | 2 | 3 | 4 | 5
@@ -16,12 +24,6 @@ interface MoodEntry {
   notes: string
   timestamp: Date
   aiResponse?: string
-}
-
-interface ContentState {
-  moodAnalysis: MoodAnalysisResponse | null
-  isLoading: boolean
-  error: string | null
 }
 
 interface EnhancedMentalHealthAgentProps {
@@ -54,15 +56,26 @@ const EnhancedMentalHealthAgent: React.FC<EnhancedMentalHealthAgentProps> = ({
 }) => {
   // State management
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard')
-  const [moodEntries, setMoodEntries] = useState<MoodEntry[]>([])
-  const [userInput, setUserInput] = useState('')
-  const [contentState, setContentState] = useState<ContentState>({
-    moodAnalysis: null,
-    isLoading: false,
-    error: null
-  })
+  const [moodEntries] = useState<MoodEntry[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Enhanced Mood Tracker State
+  const [currentMoodStep, setCurrentMoodStep] = useState<'form' | 'recommendations' | 'complete'>('form')
+  const [currentMoodLog, setCurrentMoodLog] = useState<MoodLog | null>(null)
+  const [currentRecommendations, setCurrentRecommendations] = useState<{
+    jokes: JokeResponse[]
+    images: UnsplashImage[]
+    music: YouTubeVideo[]
+    games: GameRecommendation[]
+    quotes: string[]
+  }>({
+    jokes: [],
+    images: [],
+    music: [],
+    games: [],
+    quotes: []
+  })
+  const [showMoreOptions, setShowMoreOptions] = useState(false)
 
   // Meditation state
   const [meditationSessions] = useState<MeditationContent[]>([
@@ -169,44 +182,101 @@ const EnhancedMentalHealthAgent: React.FC<EnhancedMentalHealthAgentProps> = ({
     }
   ])
 
-  // User input handler
-  const handleUserInput = useCallback(async (inputText: string) => {
-    if (!inputText.trim()) return
-
+  // Enhanced Mood Tracker Functions
+  const handleMoodSubmit = useCallback(async (moodData: MoodFormData) => {
     setIsLoading(true)
-    setContentState(prev => ({ ...prev, isLoading: true, error: null }))
-
     try {
-      const response = await mentalHealthAPI.analyzeMood({ text: inputText })
-      
-      // Create mood entry
-      const newEntry: MoodEntry = {
+      // Determine if mood is positive or negative based on rating and mood type
+      const positiveTypes = ['happy', 'excited', 'content'];
+      const isPositiveMood = positiveTypes.includes(moodData.moodType) && moodData.rating >= 6;
+      const mood: 'positive' | 'negative' = isPositiveMood ? 'positive' : 'negative';
+
+      // Create new mood log
+      const newLog: MoodLog = {
         id: Date.now().toString(),
-        type: response.mood as MoodType,
-        rating: 3 as MoodRating, // Default rating since confidence is now a string
-        notes: inputText,
         timestamp: new Date(),
-        aiResponse: response.reason || response.message
+        mood,
+        moodType: moodData.moodType,
+        rating: moodData.rating,
+        description: moodData.description,
+        factors: moodData.factors,
+        activities: []
       }
 
-      setMoodEntries(prev => [newEntry, ...prev])
-      setContentState(prev => ({ 
-        ...prev, 
-        moodAnalysis: response,
-        isLoading: false 
-      }))
-      setUserInput('')
-
+      setCurrentMoodLog(newLog)
+      setCurrentMoodStep('recommendations')
+      
+      // Load recommendations based on mood
+      await loadMoodRecommendations(mood)
+      
     } catch (error) {
-      setContentState(prev => ({ 
-        ...prev, 
-        isLoading: false, 
-        error: 'Failed to analyze mood. Please try again.' 
-      }))
+      console.error('Failed to process mood:', error)
     } finally {
       setIsLoading(false)
     }
   }, [])
+
+  const loadMoodRecommendations = useCallback(async (mood: 'positive' | 'negative') => {
+    try {
+      const [jokes, images, music, games] = await Promise.all([
+        EnhancedMoodTrackerAPI.getJokes(3),
+        EnhancedMoodTrackerAPI.getMotivationalImages(mood === 'positive' ? 'motivation' : 'calm', 3),
+        EnhancedMoodTrackerAPI.getYouTubeMusic(mood, 3),
+        EnhancedMoodTrackerAPI.getFunnyGames(3)
+      ])
+
+      const quotes = EnhancedMoodTrackerAPI.getMotivationalQuotes()
+
+      setCurrentRecommendations({
+        jokes,
+        images,
+        music,
+        games,
+        quotes: quotes.slice(0, 3)
+      })
+    } catch (error) {
+      console.error('Error loading recommendations:', error)
+    }
+  }, [])
+
+  const handleActivityComplete = useCallback((activityType: string, activityData: any) => {
+    if (!currentMoodLog) return
+
+    const newActivity: MoodActivity = {
+      id: Date.now().toString(),
+      type: activityType as 'joke' | 'image' | 'sticker' | 'music' | 'game' | 'quote',
+      data: activityData,
+      completed: true,
+      timestamp: new Date()
+    }
+
+    setCurrentMoodLog((prev: MoodLog | null) => prev ? {
+      ...prev,
+      activities: [...prev.activities, newActivity]
+    } : null)
+  }, [currentMoodLog])
+
+  const saveMoodLog = useCallback(() => {
+    if (!currentMoodLog) return
+
+    // In a real app, you would save to backend/database here
+    console.log('Mood log saved:', currentMoodLog)
+    setCurrentMoodStep('complete')
+    
+    // Reset for next mood entry
+    setTimeout(() => {
+      setCurrentMoodStep('form')
+      setCurrentMoodLog(null)
+      setCurrentRecommendations({
+        jokes: [],
+        images: [],
+        music: [],
+        games: [],
+        quotes: []
+      })
+      setShowMoreOptions(false)
+    }, 3000)
+  }, [currentMoodLog])
 
   // Tab content renderer
   const renderTabContent = () => {
@@ -272,108 +342,47 @@ const EnhancedMentalHealthAgent: React.FC<EnhancedMentalHealthAgentProps> = ({
       case 'mood':
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900">How are you feeling today?</h2>
-            <p className="text-gray-600">Share your thoughts and emotions. I'm here to listen and provide support.</p>
-            
-            {/* Mood Input Section */}
-            <div className="space-y-4">
-              <div className="relative">
-                <textarea
-                  ref={textareaRef}
-                  value={userInput}
-                  onChange={(e) => setUserInput(e.target.value)}
-                  placeholder="Tell me how you're feeling today (e.g., 'I'm feeling really happy' or 'I feel anxious about work')"
-                  className="w-full min-h-[100px] p-4 rounded-xl border-2 border-purple-200 focus:border-purple-500 focus:outline-none resize-none transition-all duration-200 hover:border-purple-300 focus:ring-4 focus:ring-purple-100 bg-white text-gray-900"
-                  rows={4}
-                  disabled={isLoading}
-                />
-                {isLoading && (
-                  <div className="absolute inset-0 bg-gray-100 bg-opacity-70 rounded-xl flex items-center justify-center">
-                    <div className="bg-white px-6 py-3 rounded-lg shadow-lg">
-                      <p className="text-purple-600 font-medium">🔄 Processing your feelings...</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <p className="text-xs text-purple-600">
-                  💡 Tip: Be honest about your feelings. I'm here to help!
-                </p>
-                <p className="text-xs text-gray-500">
-                  {userInput.length > 0 ? `${userInput.length} characters` : 'Start typing...'}
-                </p>
-              </div>
-            </div>
+            {/* Enhanced Mood Tracker */}
+            {currentMoodStep === 'form' && (
+              <div className="space-y-6">
+                <div className="text-center">
+                  <h2 className="text-3xl font-bold text-gray-900 mb-2">How are you feeling today?</h2>
+                  <p className="text-gray-600">Let's identify your mood and find the best ways to support you</p>
+                </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-3 flex-wrap items-center">
-              <button
-                onClick={() => handleUserInput(userInput)}
-                disabled={!userInput.trim() || isLoading}
-                className="px-6 py-3 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-all shadow-md hover:shadow-lg"
-              >
-                {isLoading ? '🔄 Analyzing...' : '💬 Share My Feelings'}
-              </button>
-              
-              {userInput.trim() && !isLoading && (
-                <button
-                  onClick={() => setUserInput('')}
-                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm transition-colors"
-                >
-                  🗑️ Clear
-                </button>
-              )}
-              
-              {/* Quick mood buttons */}
-              <button
-                onClick={() => handleUserInput("I'm feeling sad")}
-                disabled={isLoading}
-                className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors"
-              >
-                😢 Sad
-              </button>
-              <button
-                onClick={() => handleUserInput("I'm feeling anxious")}
-                disabled={isLoading}
-                className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm transition-colors"
-              >
-                😰 Anxious
-              </button>
-              <button
-                onClick={() => handleUserInput("I'm feeling angry")}
-                disabled={isLoading}
-                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm transition-colors"
-              >
-                😠 Angry
-              </button>
-              <button
-                onClick={() => handleUserInput("I'm feeling tired")}
-                disabled={isLoading}
-                className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-sm transition-colors"
-              >
-                😴 Tired
-              </button>
-              <button
-                onClick={() => handleUserInput("I'm feeling happy")}
-                disabled={isLoading}
-                className="px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-lg text-sm transition-colors"
-              >
-                😊 Happy
-              </button>
-            </div>
-
-            {/* Mood Analysis Result */}
-            {contentState.moodAnalysis && (
-              <div className="mt-6 p-4 bg-white rounded-xl border-2 border-purple-200">
-                <p className="text-purple-800 font-medium">{contentState.moodAnalysis.message}</p>
+                <MoodForm onSubmit={handleMoodSubmit} isLoading={isLoading} />
               </div>
             )}
 
-            {/* Error Display */}
-            {contentState.error && (
-              <div className="mt-4 p-4 bg-red-50 border-2 border-red-200 rounded-xl">
-                <p className="text-red-800">{contentState.error}</p>
+            {currentMoodStep === 'recommendations' && currentMoodLog && (
+              <div className="space-y-6">
+                <div className="text-center">
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    {currentMoodLog.mood === 'positive' ? '🌟 Let\'s keep that positive energy flowing!' : '🤗 Here are some things to brighten your day'}
+                  </h2>
+                  <p className="text-gray-600">
+                    You're feeling {currentMoodLog.mood === 'positive' ? 'great' : 'down'}. Let's find some activities to help you feel even better!
+                  </p>
+                </div>
+
+                <MoodRecommendations 
+                  mood={currentMoodLog.mood}
+                  recommendations={currentRecommendations}
+                  onActivityComplete={handleActivityComplete}
+                  onMoreContent={() => setShowMoreOptions(true)}
+                  onComplete={saveMoodLog}
+                  showMoreOptions={showMoreOptions}
+                />
+              </div>
+            )}
+
+            {currentMoodStep === 'complete' && (
+              <div className="text-center space-y-4">
+                <div className="bg-green-50 border-2 border-green-200 rounded-xl p-8">
+                  <div className="text-6xl mb-4">🎉</div>
+                  <h2 className="text-2xl font-bold text-green-800 mb-2">Mood Log Saved!</h2>
+                  <p className="text-green-700">Your mood and activities have been recorded in your history.</p>
+                </div>
               </div>
             )}
           </div>
