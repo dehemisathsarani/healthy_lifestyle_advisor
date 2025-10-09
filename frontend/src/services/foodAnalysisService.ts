@@ -38,7 +38,7 @@ interface StoredFoodItem {
 }
 
 class FoodAnalysisService {
-  private baseUrl = 'http://localhost:8004/api' // Backend URL
+  private baseUrl = 'http://localhost:8005/api' // Backend URL
   
   // Mock database of Sri Lankan foods
   private foodDatabase: StoredFoodItem[] = [

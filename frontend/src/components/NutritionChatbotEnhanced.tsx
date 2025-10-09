@@ -129,7 +129,7 @@ const NutritionChatbot: React.FC<NutritionChatbotProps> = ({
       const timeoutId = setTimeout(() => controller.abort(), 30000);
       
       try {
-        const response = await fetch('http://localhost:8004/api/chat', {
+        const response = await fetch('http://localhost:8005/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -245,7 +245,7 @@ const NutritionChatbot: React.FC<NutritionChatbotProps> = ({
   // Get enhanced recommendations
   const getEnhancedRecommendations = async (): Promise<string> => {
     try {
-      const response = await fetch(`http://localhost:8004/api/chat/recommendations/${user?.id || 'demo-user'}`, {
+      const response = await fetch(`http://localhost:8005/api/chat/recommendations/${user?.id || 'demo-user'}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
       });
