@@ -375,7 +375,7 @@ async def get_weekly_summaries(
 # Weekly Report Endpoints
 @router.post("/reports/weekly", response_model=ApiResponse)
 async def generate_weekly_report(
-    request: WeeklyReportRequest = WeeklyReportRequest(),
+    request: WeeklyReportRequest,
     current_user: dict = Depends(get_current_user)
 ):
     """
