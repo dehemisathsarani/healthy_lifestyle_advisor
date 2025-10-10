@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Food Analysis - User-Specified Foods Only</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .test-result {
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 16px 0;
+        }
+        .success { border-color: #10b981; background-color: #ecfdf5; }
+        .warning { border-color: #f59e0b; background-color: #fffbeb; }
+        .info { border-color: #3b82f6; background-color: #eff6ff; }
+    </style>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold text-gray-900 mb-8">🍽️ Enhanced Food Analysis Demo</h1>
+        <h2 class="text-xl text-gray-700 mb-6">Testing: Only Show User-Specified Foods</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Test Case 1: Specific Foods -->
+            <div class="test-result success">
+                <h3 class="text-lg font-semibold text-green-800 mb-3">✅ Test 1: Specific Foods</h3>
+                <div class="mb-3">
+                    <strong>Input:</strong> "rice and chicken curry, dhal curry"
+                </div>
+                <div class="mb-3">
+                    <strong>Expected:</strong> Shows only rice, chicken curry, and dhal curry
+                </div>
+                <div class="text-sm text-green-700">
+                    ✅ System should detect and analyze only the 3 specific foods mentioned by the user
+                </div>
+            </div>
+
+            <!-- Test Case 2: Vague Description -->
+            <div class="test-result warning">
+                <h3 class="text-lg font-semibold text-yellow-800 mb-3">⚠️ Test 2: Vague Description</h3>
+                <div class="mb-3">
+                    <strong>Input:</strong> "I had lunch today"
+                </div>
+                <div class="mb-3">
+                    <strong>Expected:</strong> Shows "No Specific Foods Detected" message
+                </div>
+                <div class="text-sm text-yellow-700">
+                    ⚠️ System should NOT add generic fallback foods like "mixed meal"
+                </div>
+            </div>
+
+            <!-- Test Case 3: Partial Match -->
+            <div class="test-result info">
+                <h3 class="text-lg font-semibold text-blue-800 mb-3">🔍 Test 3: Partial Match</h3>
+                <div class="mb-3">
+                    <strong>Input:</strong> "kottu roti with vegetables"
+                </div>
+                <div class="mb-3">
+                    <strong>Expected:</strong> Shows kottu roti if recognized, no generic "vegetables"
+                </div>
+                <div class="text-sm text-blue-700">
+                    🔍 System should only show foods that are clearly identifiable
+                </div>
+            </div>
+
+            <!-- Test Case 4: Unknown Food -->
+            <div class="test-result warning">
+                <h3 class="text-lg font-semibold text-yellow-800 mb-3">❓ Test 4: Unknown Food</h3>
+                <div class="mb-3">
+                    <strong>Input:</strong> "xyz mysterious food item"
+                </div>
+                <div class="mb-3">
+                    <strong>Expected:</strong> Shows helpful "No Foods Detected" message
+                </div>
+                <div class="text-sm text-yellow-700">
+                    ❓ System should provide guidance instead of making up food estimates
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 bg-white p-6 rounded-lg shadow">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">🎯 Key Improvements Made</h3>
+            <ul class="space-y-2 text-gray-700">
+                <li class="flex items-start">
+                    <span class="text-green-600 mr-2">✅</span>
+                    <span><strong>Strict Mode:</strong> Only analyzes foods explicitly mentioned by the user</span>
+                </li>
+                <li class="flex items-start">
+                    <span class="text-green-600 mr-2">✅</span>
+                    <span><strong>No Fallbacks:</strong> Disabled automatic addition of generic "mixed meal" or estimated foods</span>
+                </li>
+                <li class="flex items-start">
+                    <span class="text-green-600 mr-2">✅</span>
+                    <span><strong>Better UX:</strong> Clear messaging when no foods are detected with helpful suggestions</span>
+                </li>
+                <li class="flex items-start">
+                    <span class="text-green-600 mr-2">✅</span>
+                    <span><strong>Configuration:</strong> Added settings to control analysis behavior</span>
+                </li>
+            </ul>
+        </div>
+
+        <div class="mt-6 bg-blue-50 p-4 rounded-lg">
+            <h4 class="font-semibold text-blue-800 mb-2">🔧 Configuration Changes</h4>
+            <div class="text-sm text-blue-700">
+                <code class="bg-blue-100 px-2 py-1 rounded">showOnlyUserSpecifiedFoods: true</code><br>
+                <code class="bg-blue-100 px-2 py-1 rounded">enableFallbackEstimation: false</code>
+            </div>
+        </div>
+
+        <div class="mt-6 text-center">
+            <a href="http://localhost:3001" target="_blank" 
+               class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
+                🚀 Test the Enhanced Food Analysis
+            </a>
+        </div>
+    </div>
+</body>
+</html>
