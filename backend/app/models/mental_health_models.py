@@ -71,3 +71,28 @@ class MoodAnalyticsModel(BaseModel):
     mood_distribution: Dict[str, int]
     intervention_effectiveness: Dict[str, Dict[str, int]]
     trends: Dict[str, Any]
+
+
+class MoodActivityModel(BaseModel):
+    """Model for activities within a mood log"""
+    id: str
+    type: str  # joke, quote, image, music, game
+    content: Dict[str, Any]
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)
+
+
+class EnhancedMoodLogModel(BaseModel):
+    """Model for enhanced mood logs with activities - stores in MongoDB"""
+    id: Optional[str] = Field(alias="_id", default=None)
+    user_id: str
+    mood_type: str  # happy, sad, anxious, stressed, angry, excited, calm, overwhelmed, neutral, content
+    mood: str  # positive or negative
+    rating: int  # 1-10 scale
+    description: str
+    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    activities: List[MoodActivityModel] = []
+    factors: List[str] = []  # Contributing factors to the mood
+    
+    model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)

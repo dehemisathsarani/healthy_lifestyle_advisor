@@ -1,6 +1,7 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import { Brain, Heart, Flower2, ArrowLeft, Clock, User, Leaf } from 'lucide-react'
 import { EnhancedMoodTrackerAPI } from '../services/enhancedMoodTrackerAPI.ts';
+import { MoodLogsAPI } from '../services/moodLogsAPI.ts';
 import type { 
   MoodLog, 
   MoodFormData,
@@ -63,6 +64,27 @@ const EnhancedMentalHealthAgent: React.FC<EnhancedMentalHealthAgentProps> = ({
   // Enhanced Mood Tracker State
   const [currentMoodStep, setCurrentMoodStep] = useState<'form' | 'recommendations' | 'complete'>('form')
   const [currentMoodLog, setCurrentMoodLog] = useState<MoodLog | null>(null)
+
+  // Load mood logs from MongoDB on component mount and when user changes
+  useEffect(() => {
+    const loadMoodLogs = async () => {
+      if (!user?.id) {
+        console.log('No user ID available, skipping mood logs load');
+        return;
+      }
+      
+      try {
+        console.log('Loading mood logs for user:', user.id);
+        const logs = await MoodLogsAPI.getMoodLogs(user.id);
+        console.log('Loaded mood logs from MongoDB:', logs.length);
+        setMoodLogs(logs);
+      } catch (error) {
+        console.error('Failed to load mood logs from MongoDB:', error);
+      }
+    }
+    
+    loadMoodLogs();
+  }, [user?.id])
   const [currentRecommendations, setCurrentRecommendations] = useState<{
     jokes: JokeResponse[]
     images: UnsplashImage[]
@@ -259,40 +281,44 @@ const EnhancedMentalHealthAgent: React.FC<EnhancedMentalHealthAgentProps> = ({
     } : null)
   }, [currentMoodLog])
 
-  const saveMoodLog = useCallback(() => {
-    if (!currentMoodLog) return
-
-    // Add the completed mood log to history
-    setMoodLogs(prevLogs => [currentMoodLog, ...prevLogs])
-    
-    // Convert to MoodEntry format for backward compatibility
-    const moodEntry: MoodEntry = {
-      id: currentMoodLog.id,
-      type: currentMoodLog.moodType as MoodType,
-      rating: currentMoodLog.rating as MoodRating,
-      notes: currentMoodLog.description,
-      timestamp: currentMoodLog.timestamp,
-      aiResponse: `Completed ${currentMoodLog.activities.length} activities: ${currentMoodLog.activities.map(a => a.type).join(', ')}`
+  const saveMoodLog = useCallback(async () => {
+    if (!currentMoodLog || !user?.id) {
+      console.error('Cannot save mood log: missing mood log or user ID');
+      return;
     }
-    setMoodEntries(prevEntries => [moodEntry, ...prevEntries])
 
-    console.log('Mood log saved:', currentMoodLog)
-    setCurrentMoodStep('complete')
-    
-    // Reset for next mood entry
-    setTimeout(() => {
-      setCurrentMoodStep('form')
-      setCurrentMoodLog(null)
-      setCurrentRecommendations({
-        jokes: [],
-        images: [],
-        music: [],
-        games: [],
-        quotes: []
-      })
-      setShowMoreOptions(false)
-    }, 3000)
-  }, [currentMoodLog])
+    try {
+      console.log('Saving mood log to MongoDB...', currentMoodLog);
+      
+      // Save to MongoDB via API
+      const savedLog = await MoodLogsAPI.saveMoodLog(currentMoodLog, user.id);
+      console.log('✓ Mood log successfully saved to MongoDB:', savedLog);
+      
+      // Add the saved mood log to local state (for immediate UI update)
+      setMoodLogs(prevLogs => [savedLog, ...prevLogs]);
+
+      // Show success message
+      setCurrentMoodStep('complete');
+      
+      // Reset for next mood entry
+      setTimeout(() => {
+        setCurrentMoodStep('form');
+        setCurrentMoodLog(null);
+        setCurrentRecommendations({
+          jokes: [],
+          images: [],
+          music: [],
+          games: [],
+          quotes: []
+        });
+        setShowMoreOptions(false);
+      }, 3000);
+      
+    } catch (error) {
+      console.error('Failed to save mood log to MongoDB:', error);
+      alert('Failed to save mood log to database. Please try again.');
+    }
+  }, [currentMoodLog, user?.id])
 
   // Tab content renderer
   const renderTabContent = () => {
@@ -316,8 +342,8 @@ const EnhancedMentalHealthAgent: React.FC<EnhancedMentalHealthAgentProps> = ({
               </div>
               
               <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-xl p-6">
-                <h3 className="text-lg font-semibold text-purple-900 mb-2">Total Entries</h3>
-                <p className="text-purple-700">{moodLogs.length + moodEntries.length} mood entries</p>
+                <h3 className="text-lg font-semibold text-purple-900 mb-2">Total Mood Logs</h3>
+                <p className="text-purple-700">{moodLogs.length} mood logs saved in database</p>
               </div>
               
               <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-6">

@@ -11,18 +11,28 @@ export class MoodLogsAPI {
   /**
    * Save a mood log to the database
    */
-  static async saveMoodLog(moodLog: MoodLog, userId: string): Promise<{success: boolean, mood_log_id?: string, error?: string}> {
+  static async saveMoodLog(moodLog: MoodLog, userId: string): Promise<MoodLog> {
     try {
-      const response = await fetch(`${API_BASE_URL}/mood-logs?user_id=${encodeURIComponent(userId)}`, {
+      const response = await fetch(`${API_BASE_URL}/mood-logs`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
         body: JSON.stringify({
-          ...moodLog,
           user_id: userId,
-          timestamp: moodLog.timestamp instanceof Date ? moodLog.timestamp.toISOString() : moodLog.timestamp
+          mood_type: moodLog.moodType,
+          mood: moodLog.mood,
+          rating: moodLog.rating,
+          description: moodLog.description,
+          timestamp: moodLog.timestamp instanceof Date ? moodLog.timestamp.toISOString() : moodLog.timestamp,
+          factors: moodLog.factors || [],
+          activities: moodLog.activities.map(activity => ({
+            id: activity.id,
+            type: activity.type,
+            content: activity.data,  // Transform 'data' to 'content' for backend
+            timestamp: activity.timestamp instanceof Date ? activity.timestamp.toISOString() : activity.timestamp
+          }))
         })
       });
 
@@ -32,24 +42,31 @@ export class MoodLogsAPI {
       }
 
       const result = await response.json();
+      console.log('Mood log saved to MongoDB:', result);
+      
+      // Return the saved mood log from backend response
+      const savedLog = result.mood_log;
       return {
-        success: true,
-        mood_log_id: result.mood_log_id
+        ...savedLog,
+        id: savedLog._id || savedLog.id,
+        moodType: savedLog.mood_type,
+        timestamp: new Date(savedLog.timestamp),
+        activities: savedLog.activities.map((activity: any) => ({
+          ...activity,
+          timestamp: new Date(activity.timestamp)
+        }))
       };
       
     } catch (error) {
       console.error('Error saving mood log:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error occurred'
-      };
+      throw error;
     }
   }
 
   /**
    * Get mood logs for a user
    */
-  static async getMoodLogs(userId: string, limit: number = 50, skip: number = 0): Promise<{success: boolean, mood_logs?: MoodLog[], total_count?: number, error?: string}> {
+  static async getMoodLogs(userId: string, limit: number = 50, skip: number = 0): Promise<MoodLog[]> {
     try {
       const response = await fetch(`${API_BASE_URL}/mood-logs?user_id=${encodeURIComponent(userId)}&limit=${limit}&skip=${skip}`, {
         method: 'GET',
@@ -64,10 +81,13 @@ export class MoodLogsAPI {
       }
 
       const result = await response.json();
+      console.log('Mood logs retrieved from MongoDB:', result.mood_logs?.length || 0, 'logs');
       
-      // Convert timestamp strings back to Date objects
+      // Convert timestamp strings back to Date objects and map field names
       const moodLogs = result.mood_logs.map((log: any) => ({
         ...log,
+        id: log._id || log.id,
+        moodType: log.mood_type,
         timestamp: new Date(log.timestamp),
         activities: log.activities.map((activity: any) => ({
           ...activity,
@@ -75,18 +95,11 @@ export class MoodLogsAPI {
         }))
       }));
 
-      return {
-        success: true,
-        mood_logs: moodLogs,
-        total_count: result.total_count
-      };
+      return moodLogs;
       
     } catch (error) {
       console.error('Error retrieving mood logs:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error occurred'
-      };
+      return [];
     }
   }
 

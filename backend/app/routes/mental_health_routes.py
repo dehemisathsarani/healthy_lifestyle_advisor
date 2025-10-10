@@ -14,7 +14,9 @@ from ..models.mental_health_models import (
     MoodEntryModel, 
     InterventionModel, 
     UserMentalHealthProfileModel,
-    MoodAnalyticsModel
+    MoodAnalyticsModel,
+    EnhancedMoodLogModel,
+    MoodActivityModel
 )
 
 router = APIRouter(prefix="/mental-health", tags=["Mental Health"])
@@ -2017,3 +2019,153 @@ async def get_meditation_recommendation(user_id: str, mood: Optional[str] = None
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get meditation recommendation: {str(e)}")
+
+
+# ==================== MOOD LOGS ENDPOINTS - MongoDB Persistence ====================
+
+@router.post("/mood-logs")
+async def save_mood_log(mood_log: EnhancedMoodLogModel):
+    """
+    Save a new mood log to MongoDB with all activities and details
+    This stores mood logs permanently for the user
+    """
+    try:
+        db = get_database()
+        mood_logs_collection = db["mood_logs"]
+        
+        # Convert Pydantic model to dict for MongoDB
+        log_dict = mood_log.model_dump(by_alias=True, exclude={"id"})
+        
+        # Ensure timestamp is datetime object
+        if isinstance(log_dict.get("timestamp"), str):
+            log_dict["timestamp"] = datetime.fromisoformat(log_dict["timestamp"].replace("Z", "+00:00"))
+        
+        # Convert activities timestamps
+        if "activities" in log_dict and log_dict["activities"]:
+            for activity in log_dict["activities"]:
+                if isinstance(activity.get("timestamp"), str):
+                    activity["timestamp"] = datetime.fromisoformat(activity["timestamp"].replace("Z", "+00:00"))
+        
+        # Insert into MongoDB
+        result = await mood_logs_collection.insert_one(log_dict)
+        
+        # Return success response with the created ID
+        log_dict["_id"] = str(result.inserted_id)
+        log_dict["id"] = str(result.inserted_id)
+        
+        return {
+            "success": True,
+            "message": "Mood log saved successfully to MongoDB",
+            "mood_log": log_dict,
+            "mood_log_id": str(result.inserted_id)
+        }
+    
+    except Exception as e:
+        print(f"Error saving mood log to MongoDB: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to save mood log: {str(e)}")
+
+
+@router.get("/mood-logs")
+async def get_mood_logs(user_id: str, limit: int = 50, skip: int = 0):
+    """
+    Get all mood logs for a specific user from MongoDB
+    Returns logs sorted by timestamp (most recent first)
+    """
+    try:
+        db = get_database()
+        mood_logs_collection = db["mood_logs"]
+        
+        # Query mood logs by user_id with pagination, sorted by timestamp descending
+        cursor = mood_logs_collection.find({"user_id": user_id}).sort("timestamp", -1).skip(skip).limit(limit)
+        mood_logs = await cursor.to_list(length=limit)
+        
+        # Get total count for this user
+        total_count = await mood_logs_collection.count_documents({"user_id": user_id})
+        
+        # Convert ObjectId to string and add id field
+        for log in mood_logs:
+            log["_id"] = str(log["_id"])
+            log["id"] = str(log["_id"])
+            # Convert timestamps to ISO strings for JSON serialization
+            if isinstance(log.get("timestamp"), datetime):
+                log["timestamp"] = log["timestamp"].isoformat()
+            if "activities" in log:
+                for activity in log["activities"]:
+                    if isinstance(activity.get("timestamp"), datetime):
+                        activity["timestamp"] = activity["timestamp"].isoformat()
+        
+        return {
+            "success": True,
+            "mood_logs": mood_logs,
+            "total_count": total_count
+        }
+    
+    except Exception as e:
+        print(f"Error retrieving mood logs from MongoDB: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve mood logs: {str(e)}")
+
+
+@router.put("/mood-logs/{log_id}")
+async def update_mood_log(log_id: str, mood_log: EnhancedMoodLogModel):
+    """
+    Update an existing mood log in MongoDB
+    """
+    try:
+        db = get_database()
+        mood_logs_collection = db["mood_logs"]
+        
+        # Convert to dict and prepare for MongoDB
+        log_dict = mood_log.model_dump(by_alias=True, exclude={"id"})
+        
+        # Ensure timestamp is datetime
+        if isinstance(log_dict.get("timestamp"), str):
+            log_dict["timestamp"] = datetime.fromisoformat(log_dict["timestamp"].replace("Z", "+00:00"))
+        
+        # Convert activities timestamps
+        if "activities" in log_dict and log_dict["activities"]:
+            for activity in log_dict["activities"]:
+                if isinstance(activity.get("timestamp"), str):
+                    activity["timestamp"] = datetime.fromisoformat(activity["timestamp"].replace("Z", "+00:00"))
+        
+        # Update in MongoDB
+        result = await mood_logs_collection.update_one(
+            {"_id": ObjectId(log_id)},
+            {"$set": log_dict}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Mood log not found")
+        
+        return {
+            "success": True,
+            "message": "Mood log updated successfully"
+        }
+    
+    except Exception as e:
+        print(f"Error updating mood log in MongoDB: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update mood log: {str(e)}")
+
+
+@router.delete("/mood-logs/{log_id}")
+async def delete_mood_log(log_id: str):
+    """
+    Delete a mood log from MongoDB
+    """
+    try:
+        db = get_database()
+        mood_logs_collection = db["mood_logs"]
+        
+        # Delete from MongoDB
+        result = await mood_logs_collection.delete_one({"_id": ObjectId(log_id)})
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Mood log not found")
+        
+        return {
+            "success": True,
+            "message": "Mood log deleted successfully"
+        }
+    
+    except Exception as e:
+        print(f"Error deleting mood log from MongoDB: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete mood log: {str(e)}")

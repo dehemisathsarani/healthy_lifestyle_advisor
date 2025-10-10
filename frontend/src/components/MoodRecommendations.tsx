@@ -26,7 +26,7 @@ const MoodRecommendations: React.FC<MoodRecommendationsProps> = ({
 
   const handleActivityClick = (activityType: string, activity: any) => {
     onActivityComplete(activityType, activity);
-    setCompletedActivities(prev => [...prev, `${activityType}-${activity.id || activity.title}`]);
+    setCompletedActivities(prev => [...prev, `${activityType}-${activity.index ?? activity.id ?? activity.title}`]);
   };
 
   const getNextSection = (current: string): string => {
@@ -116,7 +116,7 @@ const MoodRecommendations: React.FC<MoodRecommendationsProps> = ({
           <div
             key={index}
             className="relative group cursor-pointer rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all"
-            onClick={() => handleActivityClick('image', { id: index, ...image })}
+            onClick={() => handleActivityClick('image', { index: index, ...image })}
           >
             <img
               src={image.urls?.small || image.url}
