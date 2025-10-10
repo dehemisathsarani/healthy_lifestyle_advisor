@@ -16,6 +16,7 @@ if %errorlevel% neq 0 (
 )
 
 echo.
-echo [2/2] Starting FastAPI server on port 8004...
+echo [2/2] Starting FastAPI server on port 8005...
 echo.
-python -m uvicorn backend.main:app --port 8004
+cd backend
+python -m uvicorn main:app --port 8005

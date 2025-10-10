@@ -9,21 +9,58 @@ import type {
 // API Service for Enhanced Mood Tracker
 export class EnhancedMoodTrackerAPI {
   
-  // JokesAPI for jokes (Free API)
-  static async getJokes(count: number = 3): Promise<JokeResponse[]> {
+  // JokesAPI for jokes (Free API) - now mood-aware
+  static async getJokes(count: number = 3, moodType?: string): Promise<JokeResponse[]> {
     try {
       const jokes: JokeResponse[] = []
+      
+      // Define joke categories based on mood type
+      const getJokeCategories = (mood: string) => {
+        const moodCategories: { [key: string]: string[] } = {
+          'happy': ['Programming', 'Pun', 'Misc'],
+          'excited': ['Programming', 'Pun', 'Misc'],
+          'content': ['Programming', 'Pun', 'Misc'],
+          'sad': ['Programming', 'Pun', 'Misc'], // Light-hearted jokes to cheer up
+          'anxious': ['Programming', 'Pun', 'Misc'], // Light-hearted to distract
+          'angry': ['Programming', 'Pun', 'Misc'], // Funny to diffuse tension
+          'stressed': ['Programming', 'Pun', 'Misc'], // Humor to relieve stress
+          'neutral': ['Programming', 'Pun', 'Misc'],
+          'calm': ['Programming', 'Pun', 'Misc'],
+          'overwhelmed': ['Programming', 'Pun', 'Misc'] // Light humor to simplify
+        }
+        return moodCategories[mood] || ['Programming', 'Pun', 'Misc']
+      }
+
+      const categories = moodType ? getJokeCategories(moodType) : ['Any']
+      const categoryParam = categories.join(',')
+
       for (let i = 0; i < count; i++) {
-        const response = await fetch('https://v2.jokeapi.dev/joke/Any?blacklistFlags=nsfw,religious,political,racist,sexist,explicit&type=single')
+        const url = `https://v2.jokeapi.dev/joke/${categoryParam}?blacklistFlags=nsfw,religious,political,racist,sexist,explicit&type=single`
+        const response = await fetch(url)
         const data = await response.json()
-        jokes.push({
-          id: data.id?.toString() || Date.now().toString(),
-          joke: data.joke || `${data.setup} ${data.delivery}`,
-          category: data.category || 'General',
-          type: data.type || 'single',
-          setup: data.setup,
-          delivery: data.delivery
-        })
+        
+        if (data.error) {
+          // If specific category fails, try general jokes
+          const fallbackResponse = await fetch('https://v2.jokeapi.dev/joke/Any?blacklistFlags=nsfw,religious,political,racist,sexist,explicit&type=single')
+          const fallbackData = await fallbackResponse.json()
+          jokes.push({
+            id: fallbackData.id?.toString() || Date.now().toString(),
+            joke: fallbackData.joke || `${fallbackData.setup} ${fallbackData.delivery}`,
+            category: fallbackData.category || 'General',
+            type: fallbackData.type || 'single',
+            setup: fallbackData.setup,
+            delivery: fallbackData.delivery
+          })
+        } else {
+          jokes.push({
+            id: data.id?.toString() || Date.now().toString(),
+            joke: data.joke || `${data.setup} ${data.delivery}`,
+            category: data.category || 'General',
+            type: data.type || 'single',
+            setup: data.setup,
+            delivery: data.delivery
+          })
+        }
       }
       return jokes
     } catch (error) {

@@ -219,8 +219,11 @@ const EnhancedMentalHealthAgent: React.FC<EnhancedMentalHealthAgentProps> = ({
 
   const loadMoodRecommendations = useCallback(async (mood: 'positive' | 'negative') => {
     try {
+      // Get the current mood type from the mood log for personalized jokes
+      const moodType = currentMoodLog?.moodType || 'neutral'
+      
       const [jokes, images, music, games] = await Promise.all([
-        EnhancedMoodTrackerAPI.getJokes(3),
+        EnhancedMoodTrackerAPI.getJokes(3, moodType),
         EnhancedMoodTrackerAPI.getMotivationalImages(mood === 'positive' ? 'motivation' : 'calm', 3),
         EnhancedMoodTrackerAPI.getYouTubeMusic(mood, 3),
         EnhancedMoodTrackerAPI.getFunnyGames(3)
@@ -238,7 +241,7 @@ const EnhancedMentalHealthAgent: React.FC<EnhancedMentalHealthAgentProps> = ({
     } catch (error) {
       console.error('Error loading recommendations:', error)
     }
-  }, [])
+  }, [currentMoodLog])
 
   const handleActivityComplete = useCallback((activityType: string, activityData: any) => {
     if (!currentMoodLog) return
