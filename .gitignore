@@ -1,8 +1,18 @@
 
 # Global ignores
 
-# Environment variables
+# Environment variables and credentials
 .env
+.env.*
+*.env
+google-credentials.json
+*credentials*.json
+
+# Test files
+test_*.py
+*_test.py
+test_rabbitmq*.py
+validate_*.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

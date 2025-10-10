@@ -7,6 +7,7 @@ import { DietAgentSimple as DietAgent } from '../components/DietAgentSimple'
 import { AdvancedNutritionHub } from '../components/AdvancedNutritionHub'
 import { MentalHealthAgent } from '../components/MentalHealthAgent'
 import { SecurityAgent } from '../components/SecurityAgent'
+import type { UserMentalHealthProfile } from '../services/MentalHealthSessionManager'
 
 export const ServicesPage = () => {
   const [activeAgent, setActiveAgent] = useState<'diet' | 'nutrition' | 'fitness' | 'mental' | 'security' | null>(null)
@@ -97,7 +98,19 @@ export const ServicesPage = () => {
   }
   
   if (activeAgent === 'mental') {
-    return <MentalHealthAgent onBackToServices={() => setActiveAgent(null)} />
+    // Convert UserProfile to UserMentalHealthProfile
+    const mentalHealthProfile: UserMentalHealthProfile | null = profile ? {
+      ...profile,
+      id: profile.email, // Use email as ID if no ID exists
+      age: profile.age || 25, // Default age if not provided
+      stress_level: 'moderate' as const,
+      sleep_hours: 7,
+      concerns: ['general wellbeing'],
+      preferred_activities: ['games', 'music'],
+      mood_goals: ['improve mood', 'reduce stress']
+    } : null
+    
+    return <MentalHealthAgent onBackToServices={() => setActiveAgent(null)} authenticatedUser={mentalHealthProfile} />
   }
   
   if (activeAgent === 'security') {

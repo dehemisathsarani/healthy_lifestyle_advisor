@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Deduplication Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .clear-button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .clear-button:hover {
+            background: #c82333;
+        }
+        .results {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #007bff;
+        }
+        .quote {
+            background: #e9ecef;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 3px;
+            border-left: 3px solid #6c757d;
+        }
+        .joke {
+            background: #fff3cd;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 3px;
+            border-left: 3px solid #ffc107;
+        }
+        .stats {
+            background: #d1ecf1;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #bee5eb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎭 Content Deduplication System Test</h1>
+    <p>This page tests the enhanced mood tracker's content deduplication system to ensure users never see duplicate content.</p>
+
+    <div class="test-section">
+        <h2>📝 Quotes Testing</h2>
+        <p>Test mood-specific quotes with deduplication:</p>
+        <button class="test-button" onclick="testQuotes('happy', 3)">Get Happy Quotes (3)</button>
+        <button class="test-button" onclick="testQuotes('sad', 3)">Get Sad Quotes (3)</button>
+        <button class="test-button" onclick="testQuotes('anxious', 3)">Get Anxious Quotes (3)</button>
+        <button class="test-button" onclick="testQuotes('happy', 5)">Get More Happy Quotes (5)</button>
+        <button class="clear-button" onclick="clearQuotes()">Clear Quote Tracker</button>
+        <div id="quotes-results" class="results">
+            <div class="stats">Quote Statistics: <span id="quotes-stats">No quotes loaded yet</span></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>😂 Jokes Testing</h2>
+        <p>Test mood-specific jokes with deduplication:</p>
+        <button class="test-button" onclick="testJokes('happy', 3)">Get Happy Jokes (3)</button>
+        <button class="test-button" onclick="testJokes('sad', 3)">Get Sad Jokes (3)</button>
+        <button class="test-button" onclick="testJokes('angry', 3)">Get Angry Jokes (3)</button>
+        <button class="test-button" onclick="testJokes('happy', 5)">Get More Happy Jokes (5)</button>
+        <button class="clear-button" onclick="clearJokes()">Clear Joke Tracker</button>
+        <div id="jokes-results" class="results">
+            <div class="stats">Joke Statistics: <span id="jokes-stats">No jokes loaded yet</span></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🎵 Music Testing</h2>
+        <p>Test music recommendations with deduplication:</p>
+        <button class="test-button" onclick="testMusic('positive', 3)">Get Positive Music (3)</button>
+        <button class="test-button" onclick="testMusic('negative', 3)">Get Calming Music (3)</button>
+        <button class="test-button" onclick="testMusic('positive', 4)">Get More Positive Music (4)</button>
+        <button class="clear-button" onclick="clearMusic()">Clear Music Tracker</button>
+        <div id="music-results" class="results">
+            <div class="stats">Music Statistics: <span id="music-stats">No music loaded yet</span></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🎮 Games Testing</h2>
+        <p>Test game recommendations with deduplication:</p>
+        <button class="test-button" onclick="testGames(3)">Get Games (3)</button>
+        <button class="test-button" onclick="testGames(5)">Get More Games (5)</button>
+        <button class="test-button" onclick="testGames(2)">Get Additional Games (2)</button>
+        <button class="clear-button" onclick="clearGames()">Clear Game Tracker</button>
+        <div id="games-results" class="results">
+            <div class="stats">Game Statistics: <span id="games-stats">No games loaded yet</span></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔄 Full System Test</h2>
+        <p>Test the complete system with multiple content requests:</p>
+        <button class="test-button" onclick="runFullTest()">Run Full Deduplication Test</button>
+        <button class="clear-button" onclick="resetAllTrackers()">Reset All Content Trackers</button>
+        <div id="full-test-results" class="results">
+            <div class="stats">System Test Results: <span id="full-test-stats">Not run yet</span></div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Import the Enhanced API
+        import { EnhancedMoodTrackerAPI } from './src/services/enhancedMoodTrackerAPI.js';
+        import { ContentManager } from './src/services/contentManager.js';
+
+        // Make APIs globally available for testing
+        window.EnhancedMoodTrackerAPI = EnhancedMoodTrackerAPI;
+        window.ContentManager = ContentManager;
+
+        // Test functions
+        window.testQuotes = async function(moodType, count) {
+            try {
+                const quotes = await EnhancedMoodTrackerAPI.getMotivationalQuotes(moodType, count);
+                const quotesDiv = document.getElementById('quotes-results');
+                
+                let html = `<div class="stats">Quote Statistics: ${ContentManager.getShownCount('quotes')} quotes shown</div>`;
+                html += `<h4>Fetched ${quotes.length} ${moodType} quotes:</h4>`;
+                
+                quotes.forEach((quote, index) => {
+                    html += `<div class="quote"><strong>Quote ${index + 1}:</strong> "${quote.text}" - ${quote.author}</div>`;
+                });
+                
+                quotesDiv.innerHTML = html;
+            } catch (error) {
+                document.getElementById('quotes-results').innerHTML = 
+                    `<div class="error">Error: ${error.message}</div>`;
+            }
+        };
+
+        window.testJokes = async function(moodType, count) {
+            try {
+                const jokes = await EnhancedMoodTrackerAPI.getJokes(count, moodType);
+                const jokesDiv = document.getElementById('jokes-results');
+                
+                let html = `<div class="stats">Joke Statistics: ${ContentManager.getShownCount('jokes')} jokes shown</div>`;
+                html += `<h4>Fetched ${jokes.length} ${moodType} jokes:</h4>`;
+                
+                jokes.forEach((joke, index) => {
+                    html += `<div class="joke"><strong>Joke ${index + 1}:</strong> ${joke.joke || `${joke.setup} ${joke.delivery}`}</div>`;
+                });
+                
+                jokesDiv.innerHTML = html;
+            } catch (error) {
+                document.getElementById('jokes-results').innerHTML = 
+                    `<div class="error">Error: ${error.message}</div>`;
+            }
+        };
+
+        window.testMusic = async function(mood, count) {
+            try {
+                const music = await EnhancedMoodTrackerAPI.getYouTubeMusic(mood, count);
+                const musicDiv = document.getElementById('music-results');
+                
+                let html = `<div class="stats">Music Statistics: ${ContentManager.getShownCount('music')} tracks shown</div>`;
+                html += `<h4>Fetched ${music.length} ${mood} music tracks:</h4>`;
+                
+                music.forEach((track, index) => {
+                    html += `<div class="quote"><strong>Track ${index + 1}:</strong> "${track.title}" by ${track.artist}</div>`;
+                });
+                
+                musicDiv.innerHTML = html;
+            } catch (error) {
+                document.getElementById('music-results').innerHTML = 
+                    `<div class="error">Error: ${error.message}</div>`;
+            }
+        };
+
+        window.testGames = async function(count) {
+            try {
+                const games = await EnhancedMoodTrackerAPI.getFunnyGames(count);
+                const gamesDiv = document.getElementById('games-results');
+                
+                let html = `<div class="stats">Game Statistics: ${ContentManager.getShownCount('games')} games shown</div>`;
+                html += `<h4>Fetched ${games.length} games:</h4>`;
+                
+                games.forEach((game, index) => {
+                    html += `<div class="quote"><strong>Game ${index + 1}:</strong> "${game.name}" - ${game.description} (${game.duration})</div>`;
+                });
+                
+                gamesDiv.innerHTML = html;
+            } catch (error) {
+                document.getElementById('games-results').innerHTML = 
+                    `<div class="error">Error: ${error.message}</div>`;
+            }
+        };
+
+        window.clearQuotes = function() {
+            ContentManager.clearContentTracker('quotes');
+            document.getElementById('quotes-results').innerHTML = 
+                '<div class="stats">Quote tracker cleared! No quotes shown.</div>';
+        };
+
+        window.clearJokes = function() {
+            ContentManager.clearContentTracker('jokes');
+            document.getElementById('jokes-results').innerHTML = 
+                '<div class="stats">Joke tracker cleared! No jokes shown.</div>';
+        };
+
+        window.clearMusic = function() {
+            ContentManager.clearContentTracker('music');
+            document.getElementById('music-results').innerHTML = 
+                '<div class="stats">Music tracker cleared! No music shown.</div>';
+        };
+
+        window.clearGames = function() {
+            ContentManager.clearContentTracker('games');
+            document.getElementById('games-results').innerHTML = 
+                '<div class="stats">Game tracker cleared! No games shown.</div>';
+        };
+
+        window.resetAllTrackers = function() {
+            ContentManager.resetTracker();
+            document.getElementById('quotes-results').innerHTML = 
+                '<div class="stats">Quote Statistics: 0 quotes shown</div>';
+            document.getElementById('jokes-results').innerHTML = 
+                '<div class="stats">Joke Statistics: 0 jokes shown</div>';
+            document.getElementById('music-results').innerHTML = 
+                '<div class="stats">Music Statistics: 0 tracks shown</div>';
+            document.getElementById('games-results').innerHTML = 
+                '<div class="stats">Game Statistics: 0 games shown</div>';
+            document.getElementById('full-test-results').innerHTML = 
+                '<div class="stats">All trackers reset! Ready for testing.</div>';
+        };
+
+        window.runFullTest = async function() {
+            try {
+                const resultsDiv = document.getElementById('full-test-results');
+                resultsDiv.innerHTML = '<div class="stats">Running comprehensive deduplication test...</div>';
+
+                let testResults = [];
+                
+                // Test 1: Load content multiple times and check for duplicates
+                testResults.push('🔄 Test 1: Multiple requests for same mood');
+                const quotes1 = await EnhancedMoodTrackerAPI.getMotivationalQuotes('happy', 3);
+                const quotes2 = await EnhancedMoodTrackerAPI.getMotivationalQuotes('happy', 3);
+                const quotes3 = await EnhancedMoodTrackerAPI.getMotivationalQuotes('happy', 3);
+                
+                const allQuotes = [...quotes1, ...quotes2, ...quotes3];
+                const uniqueQuoteTexts = new Set(allQuotes.map(q => q.text));
+                testResults.push(`   ✅ Quotes: ${allQuotes.length} total, ${uniqueQuoteTexts.size} unique (no duplicates: ${allQuotes.length === uniqueQuoteTexts.size})`);
+
+                // Test 2: Different moods
+                testResults.push('🔄 Test 2: Different mood content');
+                const sadQuotes = await EnhancedMoodTrackerAPI.getMotivationalQuotes('sad', 2);
+                const angryJokes = await EnhancedMoodTrackerAPI.getJokes(2, 'angry');
+                testResults.push(`   ✅ Sad quotes: ${sadQuotes.length}, Angry jokes: ${angryJokes.length}`);
+
+                // Test 3: Content tracking statistics
+                testResults.push('🔄 Test 3: Content tracking statistics');
+                testResults.push(`   📊 Quotes shown: ${ContentManager.getShownCount('quotes')}`);
+                testResults.push(`   📊 Jokes shown: ${ContentManager.getShownCount('jokes')}`);
+                testResults.push(`   📊 Music shown: ${ContentManager.getShownCount('music')}`);
+                testResults.push(`   📊 Games shown: ${ContentManager.getShownCount('games')}`);
+
+                // Test 4: Pool refresh behavior
+                testResults.push('🔄 Test 4: Testing pool refresh');
+                const shouldRefreshQuotes = ContentManager.shouldRefreshPool('quotes', 10);
+                testResults.push(`   🔄 Should refresh quotes pool (10 total): ${shouldRefreshQuotes}`);
+
+                resultsDiv.innerHTML = `
+                    <div class="stats">Full System Test Completed ✅</div>
+                    <div class="quote">
+                        <strong>Test Results:</strong><br>
+                        ${testResults.join('<br>')}
+                    </div>
+                `;
+
+            } catch (error) {
+                document.getElementById('full-test-results').innerHTML = 
+                    `<div class="error">Full test error: ${error.message}</div>`;
+            }
+        };
+    </script>
+</body>
+</html>

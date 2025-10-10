@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mental Health Agent - Visual Guide</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            font-size: 1.2em;
+            margin-bottom: 40px;
+        }
+        
+        .diagram {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 30px 0;
+            border: 3px solid #667eea;
+        }
+        
+        .diagram h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+        
+        .flow-step {
+            background: white;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 10px;
+            border-left: 5px solid #667eea;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        
+        .flow-step:hover {
+            transform: translateX(10px);
+        }
+        
+        .flow-step h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .flow-step p {
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .arrow {
+            text-align: center;
+            font-size: 2em;
+            color: #667eea;
+            margin: 10px 0;
+        }
+        
+        .tech-stack {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .tech-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            transition: transform 0.3s;
+        }
+        
+        .tech-card:hover {
+            transform: translateY(-10px);
+        }
+        
+        .tech-card h3 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+        
+        .code-example {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+        
+        .code-example .keyword {
+            color: #569cd6;
+        }
+        
+        .code-example .string {
+            color: #ce9178;
+        }
+        
+        .code-example .comment {
+            color: #6a9955;
+        }
+        
+        .mood-flow {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            margin: 30px 0;
+        }
+        
+        .mood-card {
+            background: white;
+            border: 3px solid #667eea;
+            border-radius: 15px;
+            padding: 20px;
+            width: 45%;
+            margin: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .mood-card h3 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        
+        .mood-card ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .mood-card li {
+            padding: 10px;
+            margin: 5px 0;
+            background: #f8f9fa;
+            border-radius: 5px;
+            border-left: 3px solid #667eea;
+        }
+        
+        .emoji {
+            font-size: 2em;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: bold;
+            margin: 10px;
+            transition: transform 0.3s;
+        }
+        
+        .btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #eee;
+            color: #666;
+        }
+        
+        @media (max-width: 768px) {
+            .mood-card {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧠 Mental Health Agent</h1>
+        <p class="subtitle">Mood Tracker Feature - Visual Implementation Guide</p>
+        
+        <!-- System Flow -->
+        <div class="diagram">
+            <h2>📊 Complete System Flow</h2>
+            
+            <div class="flow-step">
+                <h3>Step 1: User Input</h3>
+                <p>User types their feelings: <span class="highlight">"I'm feeling sad and lonely today"</span></p>
+                <p>Or clicks quick mood button: <span class="emoji">😢</span> Sad</p>
+            </div>
+            
+            <div class="arrow">↓</div>
+            
+            <div class="flow-step">
+                <h3>Step 2: Frontend Processing</h3>
+                <p><strong>Component:</strong> EnhancedMentalHealthAgent.tsx</p>
+                <p><strong>Action:</strong> Captures input and sends to backend API</p>
+                <p><strong>Endpoint:</strong> POST /mental-health/analyze-mood</p>
+            </div>
+            
+            <div class="arrow">↓</div>
+            
+            <div class="flow-step">
+                <h3>Step 3: Mood Detection (NLP)</h3>
+                <p><strong>Backend:</strong> mental_health_routes.py</p>
+                <p><strong>Algorithm:</strong> Keyword matching + confidence scoring</p>
+                <p><strong>Result:</strong> {mood: "sad", confidence: 0.85}</p>
+            </div>
+            
+            <div class="arrow">↓</div>
+            
+            <div class="flow-step">
+                <h3>Step 4: Content Retrieval</h3>
+                <p>🎵 Fetch YouTube track: <span class="highlight">Calming music</span></p>
+                <p>😂 Fetch joke from JokeAPI: <span class="highlight">Funny joke</span></p>
+                <p>🖼️ Fetch image from Dog/Cat API: <span class="highlight">Cute animal</span></p>
+                <p>🎮 Suggest games: <span class="highlight">Smile Challenge</span></p>
+            </div>
+            
+            <div class="arrow">↓</div>
+            
+            <div class="flow-step">
+                <h3>Step 5: Interactive Display</h3>
+                <p>Show beautiful modal with all content</p>
+                <p>Provide "Want more?" interactive buttons</p>
+                <p>Allow cycling through jokes, images, music</p>
+            </div>
+            
+            <div class="arrow">↓</div>
+            
+            <div class="flow-step">
+                <h3>Step 6: History Storage</h3>
+                <p>Save mood entry to localStorage</p>
+                <p>Track intervention effectiveness</p>
+                <p>Build mood analytics over time</p>
+            </div>
+        </div>
+        
+        <!-- Technology Stack -->
+        <div class="diagram">
+            <h2>🛠️ Technology Stack</h2>
+            <div class="tech-stack">
+                <div class="tech-card">
+                    <h3>Frontend</h3>
+                    <p>React + TypeScript</p>
+                    <p>Tailwind CSS</p>
+                    <p>Axios for API calls</p>
+                </div>
+                <div class="tech-card">
+                    <h3>Backend</h3>
+                    <p>Python + FastAPI</p>
+                    <p>NLP (Keyword-based)</p>
+                    <p>REST API</p>
+                </div>
+                <div class="tech-card">
+                    <h3>External APIs</h3>
+                    <p>JokeAPI</p>
+                    <p>Dog/Cat API</p>
+                    <p>YouTube Embed</p>
+                </div>
+                <div class="tech-card">
+                    <h3>Storage</h3>
+                    <p>localStorage</p>
+                    <p>MongoDB (optional)</p>
+                    <p>Session Management</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mood-Based Responses -->
+        <div class="diagram">
+            <h2>🎯 Mood-Based Response System</h2>
+            <div class="mood-flow">
+                <div class="mood-card">
+                    <h3><span class="emoji">😢</span> Negative Moods</h3>
+                    <p style="text-align: center; margin-bottom: 15px;">(Sad, Angry, Anxious)</p>
+                    <ul>
+                        <li>🎵 <strong>Calming Music</strong><br>"Weightless" by Marconi Union</li>
+                        <li>😂 <strong>Funny Jokes</strong><br>Interactive joke delivery</li>
+                        <li>🖼️ <strong>Cute Images</strong><br>Dog/cat pictures</li>
+                        <li>🎮 <strong>Relaxing Games</strong><br>Smile Challenge, Meditation</li>
+                    </ul>
+                </div>
+                
+                <div class="mood-card">
+                    <h3><span class="emoji">😊</span> Positive Moods</h3>
+                    <p style="text-align: center; margin-bottom: 15px;">(Happy, Excited)</p>
+                    <ul>
+                        <li>🎵 <strong>Upbeat Music</strong><br>"Happy" by Pharrell Williams</li>
+                        <li>💭 <strong>Motivational Quotes</strong><br>Inspiring messages</li>
+                        <li>🖼️ <strong>Inspiring Images</strong><br>Beautiful landscapes</li>
+                        <li>🎮 <strong>Achievement Games</strong><br>Progress-based challenges</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Code Example -->
+        <div class="diagram">
+            <h2>💻 Code Example: Mood Detection</h2>
+            <div class="code-example">
+<span class="comment"># Backend: mental_health_routes.py</span>
+
+<span class="keyword">def</span> detect_mood_from_text(text: str) -> tuple[str, float]:
+    <span class="string">"""Detect mood using keyword matching"""</span>
+    text_lower = text.lower()
+    
+    <span class="comment"># Define mood keywords</span>
+    mood_keywords = {
+        <span class="string">"sad"</span>: [<span class="string">"sad"</span>, <span class="string">"depressed"</span>, <span class="string">"lonely"</span>, <span class="string">"down"</span>],
+        <span class="string">"anxious"</span>: [<span class="string">"anxious"</span>, <span class="string">"worried"</span>, <span class="string">"nervous"</span>],
+        <span class="string">"happy"</span>: [<span class="string">"happy"</span>, <span class="string">"joyful"</span>, <span class="string">"excited"</span>, <span class="string">"great"</span>]
+    }
+    
+    <span class="comment"># Check each mood</span>
+    <span class="keyword">for</span> mood, keywords <span class="keyword">in</span> mood_keywords.items():
+        <span class="keyword">if</span> any(keyword <span class="keyword">in</span> text_lower <span class="keyword">for</span> keyword <span class="keyword">in</span> keywords):
+            confidence = 0.85  <span class="comment"># High confidence match</span>
+            <span class="keyword">return</span> mood, confidence
+    
+    <span class="keyword">return</span> <span class="string">"unclear"</span>, 0.0  <span class="comment"># No clear mood detected</span>
+            </div>
+        </div>
+        
+        <!-- API Endpoints -->
+        <div class="diagram">
+            <h2>🔌 API Endpoints</h2>
+            <div class="flow-step">
+                <h3>POST /mental-health/analyze-mood</h3>
+                <p><strong>Purpose:</strong> Detect mood from user text</p>
+                <p><strong>Input:</strong> {"text": "I'm feeling sad", "user_id": "123"}</p>
+                <p><strong>Output:</strong> {"detected_mood": "sad", "confidence": 0.85}</p>
+            </div>
+            
+            <div class="flow-step">
+                <h3>GET /mental-health/youtube/{mood}</h3>
+                <p><strong>Purpose:</strong> Get YouTube track for mood</p>
+                <p><strong>Input:</strong> mood = "sad"</p>
+                <p><strong>Output:</strong> {"title": "Weightless", "artist": "Marconi Union", "youtube_id": "..."}</p>
+            </div>
+            
+            <div class="flow-step">
+                <h3>GET /mental-health/joke</h3>
+                <p><strong>Purpose:</strong> Get random joke from JokeAPI</p>
+                <p><strong>Output:</strong> {"joke": "Why don't scientists trust atoms?...", "safe": true}</p>
+            </div>
+            
+            <div class="flow-step">
+                <h3>GET /mental-health/funny-image</h3>
+                <p><strong>Purpose:</strong> Get cute animal image</p>
+                <p><strong>Output:</strong> {"url": "https://...", "type": "dog", "caption": "Adorable pup!"}</p>
+            </div>
+        </div>
+        
+        <!-- Testing Section -->
+        <div class="diagram">
+            <h2>🧪 How to Test</h2>
+            <div class="flow-step">
+                <h3>1. Start Backend</h3>
+                <div class="code-example">
+cd backend
+python -m uvicorn main:app --reload --port 8005
+                </div>
+            </div>
+            
+            <div class="flow-step">
+                <h3>2. Start Frontend</h3>
+                <div class="code-example">
+cd frontend
+npm run dev
+                </div>
+            </div>
+            
+            <div class="flow-step">
+                <h3>3. Open Browser</h3>
+                <p>Navigate to: <span class="highlight">http://localhost:5173</span></p>
+                <p>Click on "Mental Health Agent"</p>
+            </div>
+            
+            <div class="flow-step">
+                <h3>4. Test Scenarios</h3>
+                <p>✅ Try typing: "I'm feeling sad"</p>
+                <p>✅ Try typing: "I'm feeling happy"</p>
+                <p>✅ Click "Want another joke?" button</p>
+                <p>✅ Click "Show another image" button</p>
+            </div>
+        </div>
+        
+        <!-- Key Features -->
+        <div class="diagram">
+            <h2>⭐ Key Features</h2>
+            <div class="tech-stack">
+                <div class="tech-card">
+                    <h3>🎯 NLP Detection</h3>
+                    <p>Keyword-based mood analysis with confidence scoring</p>
+                </div>
+                <div class="tech-card">
+                    <h3>🎵 Music Therapy</h3>
+                    <p>YouTube integration with mood-appropriate playlists</p>
+                </div>
+                <div class="tech-card">
+                    <h3>😂 Humor Therapy</h3>
+                    <p>JokeAPI integration with interactive loops</p>
+                </div>
+                <div class="tech-card">
+                    <h3>🖼️ Visual Therapy</h3>
+                    <p>Cute animal images from Dog/Cat APIs</p>
+                </div>
+                <div class="tech-card">
+                    <h3>🎮 Game Therapy</h3>
+                    <p>Interactive games like Smile Challenge</p>
+                </div>
+                <div class="tech-card">
+                    <h3>📊 Analytics</h3>
+                    <p>Mood tracking and history analysis</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Documentation Links -->
+        <div class="diagram">
+            <h2>📚 Documentation</h2>
+            <p style="text-align: center; margin-bottom: 20px;">
+                Read these files for complete understanding:
+            </p>
+            <div style="text-align: center;">
+                <a href="#" class="btn">MENTAL_HEALTH_MOOD_TRACKER_GUIDE.md</a>
+                <a href="#" class="btn">QUICK_START_MOOD_TRACKER.md</a>
+                <a href="#" class="btn">MENTAL_HEALTH_STUDENT_PROJECT_SUMMARY.md</a>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="footer">
+            <h3>🎓 For Your University Project</h3>
+            <p>Mental Health Agent - Mood Tracker Feature</p>
+            <p>Multi-Agent AI System for Healthy Lifestyle Advisor</p>
+            <p style="margin-top: 20px; color: #667eea;">
+                <strong>Status: ✅ Fully Implemented and Working</strong>
+            </p>
+            <p style="margin-top: 10px;">
+                Your task: Understand, test, customize, and present! 🚀
+            </p>
+        </div>
+    </div>
+</body>
+</html>

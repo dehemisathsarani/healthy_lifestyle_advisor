@@ -544,8 +544,8 @@ const HomePage = () => {
                 </div>
                 
                 <div className="grid grid-cols-7 gap-1 text-center text-sm mb-3">
-                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
-                    <div key={day} className="font-semibold text-gray-500 py-2">{day}</div>
+                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+                    <div key={index} className="font-semibold text-gray-500 py-2">{day}</div>
                   ))}
                 </div>
                 

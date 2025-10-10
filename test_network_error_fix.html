@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Error Fix Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .loading {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Network Error Fix Test</h1>
+        <p>This test simulates the enhanced joke fetching with network error handling and retry logic.</p>
+        
+        <div class="test-section">
+            <h3>🎯 Enhanced Joke API Test</h3>
+            <p>Test the improved joke fetching with timeout, retry logic, and fallback handling.</p>
+            <button onclick="testJokeAPI()">Test Enhanced Joke Fetching</button>
+            <button onclick="testWithNetworkError()">Simulate Network Error</button>
+            <button onclick="testFallbackJokes()">Test Fallback Jokes</button>
+            <div id="jokeResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Test Results Summary</h3>
+            <div id="testSummary" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        // Enhanced Joke API class with network error handling (simplified version for testing)
+        class EnhancedMoodTrackerAPI {
+            static async getJokes(count = 3, moodType) {
+                try {
+                    const jokes = [];
+                    
+                    // Enhanced fetch function with retry logic and timeout
+                    const fetchWithRetry = async (url, retries = 2) => {
+                        for (let attempt = 0; attempt <= retries; attempt++) {
+                            try {
+                                const controller = new AbortController();
+                                const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+                                const response = await fetch(url, {
+                                    signal: controller.signal,
+                                    headers: {
+                                        'Accept': 'application/json',
+                                    }
+                                });
+
+                                clearTimeout(timeoutId);
+
+                                if (!response.ok) {
+                                    throw new Error(`HTTP error! status: ${response.status}`);
+                                }
+
+                                return await response.json();
+                            } catch (error) {
+                                // Check if it's a network-related error
+                                const isNetworkError = 
+                                    error.name === 'AbortError' || 
+                                    error.name === 'TypeError' ||
+                                    error.message?.includes('network') ||
+                                    error.message?.includes('fetch') ||
+                                    error.message?.includes('ERR_NETWORK');
+
+                                if (attempt === retries || !isNetworkError) {
+                                    throw error;
+                                }
+
+                                // Wait before retry (exponential backoff)
+                                const delay = Math.pow(2, attempt) * 1000;
+                                await new Promise(resolve => setTimeout(resolve, delay));
+                            }
+                        }
+                    };
+
+                    const categories = ['Programming', 'Pun', 'Misc'];
+                    const categoryParam = categories.join(',');
+
+                    for (let i = 0; i < count; i++) {
+                        try {
+                            const url = `https://v2.jokeapi.dev/joke/${categoryParam}?blacklistFlags=nsfw,religious,political,racist,sexist,explicit&type=single`;
+                            const data = await fetchWithRetry(url);
+                            
+                            if (data.error) {
+                                // If specific category fails, try general jokes
+                                const fallbackData = await fetchWithRetry('https://v2.jokeapi.dev/joke/Any?blacklistFlags=nsfw,religious,political,racist,sexist,explicit&type=single');
+                                jokes.push({
+                                    id: fallbackData.id?.toString() || Date.now().toString(),
+                                    joke: fallbackData.joke || `${fallbackData.setup} ${fallbackData.delivery}`,
+                                    category: fallbackData.category || 'General',
+                                    type: fallbackData.type || 'single',
+                                });
+                            } else {
+                                jokes.push({
+                                    id: data.id?.toString() || Date.now().toString(),
+                                    joke: data.joke || `${data.setup} ${data.delivery}`,
+                                    category: data.category || 'General',
+                                    type: data.type || 'single',
+                                });
+                            }
+                        } catch (jokeError) {
+                            // If individual joke fetch fails, add a fallback joke
+                            const fallbackJokes = this.getFallbackJokes();
+                            const randomFallback = fallbackJokes[Math.floor(Math.random() * fallbackJokes.length)];
+                            jokes.push({
+                                ...randomFallback,
+                                id: `fallback-${Date.now()}-${i}`
+                            });
+                        }
+                    }
+                    
+                    // If no jokes were fetched successfully, return fallback jokes
+                    return jokes.length > 0 ? jokes : this.getFallbackJokes();
+                    
+                } catch (error) {
+                    console.error('Error fetching jokes:', error);
+                    return this.getFallbackJokes();
+                }
+            }
+
+            static getFallbackJokes() {
+                return [
+                    {
+                        id: '1',
+                        joke: "Why don't scientists trust atoms? Because they make up everything!",
+                        category: 'Science',
+                        type: 'single'
+                    },
+                    {
+                        id: '2',
+                        joke: "Why do programmers prefer dark mode? Because light attracts bugs!",
+                        category: 'Programming',
+                        type: 'single'
+                    },
+                    {
+                        id: '3',
+                        joke: "I told my wife she was drawing her eyebrows too high. She looked surprised.",
+                        category: 'Pun',
+                        type: 'single'
+                    },
+                    {
+                        id: '4',
+                        joke: "A SQL query goes into a bar, walks up to two tables and asks: 'Can I join you?'",
+                        category: 'Programming',
+                        type: 'single'
+                    },
+                    {
+                        id: '5',
+                        joke: "What's the best thing about a boolean? Even if you're wrong, you're only off by a bit.",
+                        category: 'Programming',
+                        type: 'single'
+                    }
+                ];
+            }
+        }
+
+        // Test functions
+        async function testJokeAPI() {
+            const resultDiv = document.getElementById('jokeResult');
+            resultDiv.className = 'result loading';
+            resultDiv.textContent = 'Testing enhanced joke API with network error handling...';
+
+            try {
+                const jokes = await EnhancedMoodTrackerAPI.getJokes(3);
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `✅ Success! Fetched ${jokes.length} jokes:\n\n` + 
+                    jokes.map((joke, i) => `${i + 1}. ${joke.joke} (${joke.category})`).join('\n\n');
+                updateTestSummary('Enhanced API Test', 'PASSED', 'Successfully fetched jokes with error handling');
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Error: ${error.message}`;
+                updateTestSummary('Enhanced API Test', 'FAILED', error.message);
+            }
+        }
+
+        async function testWithNetworkError() {
+            const resultDiv = document.getElementById('jokeResult');
+            resultDiv.className = 'result loading';
+            resultDiv.textContent = 'Simulating network error scenario...';
+
+            // Override fetch to simulate network error
+            const originalFetch = window.fetch;
+            window.fetch = async (url) => {
+                if (url.includes('jokeapi.dev')) {
+                    throw new Error('Simulated ERR_NETWORK_CHANGED error');
+                }
+                return originalFetch(url);
+            };
+
+            try {
+                const jokes = await EnhancedMoodTrackerAPI.getJokes(2);
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `✅ Network error handled gracefully! Fallback jokes provided:\n\n` + 
+                    jokes.map((joke, i) => `${i + 1}. ${joke.joke} (${joke.category})`).join('\n\n');
+                updateTestSummary('Network Error Test', 'PASSED', 'Gracefully handled network error with fallback');
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Unexpected error: ${error.message}`;
+                updateTestSummary('Network Error Test', 'FAILED', error.message);
+            } finally {
+                // Restore original fetch
+                window.fetch = originalFetch;
+            }
+        }
+
+        async function testFallbackJokes() {
+            const resultDiv = document.getElementById('jokeResult');
+            resultDiv.className = 'result loading';
+            resultDiv.textContent = 'Testing fallback jokes...';
+
+            try {
+                const jokes = EnhancedMoodTrackerAPI.getFallbackJokes();
+                resultDiv.className = 'result success';
+                resultDiv.textContent = `✅ Fallback jokes working! Available ${jokes.length} jokes:\n\n` + 
+                    jokes.map((joke, i) => `${i + 1}. ${joke.joke} (${joke.category})`).join('\n\n');
+                updateTestSummary('Fallback Test', 'PASSED', `${jokes.length} fallback jokes available`);
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ Error: ${error.message}`;
+                updateTestSummary('Fallback Test', 'FAILED', error.message);
+            }
+        }
+
+        let testResults = [];
+
+        function updateTestSummary(testName, status, details) {
+            testResults.push({ testName, status, details, timestamp: new Date().toLocaleTimeString() });
+            
+            const summaryDiv = document.getElementById('testSummary');
+            summaryDiv.className = 'result';
+            summaryDiv.innerHTML = `<h4>📋 Test Results:</h4>\n` + 
+                testResults.map(result => 
+                    `[${result.timestamp}] ${result.testName}: ${result.status}\n   ${result.details}`
+                ).join('\n\n');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateTestSummary('System', 'READY', 'Network error fix test system initialized');
+        });
+    </script>
+</body>
+</html>
