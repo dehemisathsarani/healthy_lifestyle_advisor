@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { FaRobot, FaPaperPlane, FaTimes } from 'react-icons/fa'
+import { HiCpuChip, HiPaperAirplane, HiXMark } from 'react-icons/hi2'
 
 type Message = {
   id: string
@@ -143,7 +143,7 @@ export const Chatbot = () => {
         onClick={() => setIsOpen(!isOpen)}
         className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-brand to-emerald-500 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
       >
-        {isOpen ? <FaTimes className="text-xl" /> : <FaRobot className="text-xl" />}
+        {isOpen ? <HiXMark className="text-xl" /> : <HiCpuChip className="text-xl" />}
       </button>
 
       {/* Chatbot Interface */}
@@ -152,7 +152,7 @@ export const Chatbot = () => {
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-brand to-emerald-500 text-white rounded-t-2xl">
             <div className="flex items-center gap-3">
-              <FaRobot className="text-xl" />
+              <HiCpuChip className="text-xl" />
               <div>
                 <h3 className="font-semibold">VitaCoach AI</h3>
                 <p className="text-xs text-emerald-50">Health & Fitness Assistant</p>
@@ -162,7 +162,7 @@ export const Chatbot = () => {
               onClick={() => setIsOpen(false)}
               className="text-emerald-50 hover:text-white transition-colors"
             >
-              <FaTimes />
+              <HiXMark />
             </button>
           </div>
 
@@ -235,7 +235,7 @@ export const Chatbot = () => {
                 disabled={!inputValue.trim()}
                 className="rounded-lg bg-brand px-3 py-2 text-white hover:bg-brand-dark disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                <FaPaperPlane className="text-sm" />
+                <HiPaperAirplane className="text-sm" />
               </button>
             </div>
           </div>

@@ -17,6 +17,16 @@ logger = logging.getLogger(__name__)
 # Create router for Diet Agent endpoints
 router = APIRouter(prefix="/api/diet", tags=["Diet Agent"])
 
+# Health Check Endpoint
+@router.get("/health", response_model=ApiResponse)
+async def health_check():
+    """Health check for Diet Agent API"""
+    return ApiResponse(
+        success=True,
+        message="Diet Agent API is healthy",
+        data=None
+    )
+
 # User Profile Endpoints
 @router.post("/profile", response_model=ApiResponse)
 async def create_user_profile(profile_data: UserProfileCreate):

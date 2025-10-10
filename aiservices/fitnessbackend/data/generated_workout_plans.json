@@ -1,0 +1,79 @@
+[
+  {
+    "id": "plan_test_user_workout_planner_123",
+    "user_id": "test_user_workout_planner_123",
+    "plan_name": "Sarah's 16-Week Transformation Plan",
+    "description": "A comprehensive weight loss and toning program designed for beginners",
+    "duration_weeks": 16,
+    "workouts_per_week": 3,
+    "session_duration_minutes": 45,
+    "difficulty_level": "beginner",
+    "focus_areas": [
+      "core",
+      "legs",
+      "arms"
+    ],
+    "workout_types": [
+      "cardio",
+      "strength_training",
+      "pilates"
+    ],
+    "equipment_needed": [
+      "yoga_mat",
+      "light_dumbbells",
+      "resistance_bands"
+    ],
+    "weekly_schedule": {
+      "monday": {
+        "workout_type": "cardio",
+        "focus": "full_body",
+        "exercises": [
+          "Jumping jacks",
+          "High knees",
+          "Butt kicks",
+          "Mountain climbers"
+        ],
+        "duration_minutes": 30,
+        "intensity": "moderate"
+      },
+      "wednesday": {
+        "workout_type": "strength_training",
+        "focus": "upper_body",
+        "exercises": [
+          "Wall push-ups",
+          "Dumbbell curls",
+          "Overhead press",
+          "Tricep dips"
+        ],
+        "duration_minutes": 45,
+        "sets_reps": "3 sets of 12-15 reps"
+      },
+      "friday": {
+        "workout_type": "pilates",
+        "focus": "core_legs",
+        "exercises": [
+          "Plank",
+          "Leg circles",
+          "Bridge",
+          "Dead bug"
+        ],
+        "duration_minutes": 45,
+        "intensity": "moderate"
+      }
+    },
+    "nutrition_guidelines": [
+      "Create a moderate caloric deficit of 300-400 calories daily",
+      "Focus on lean proteins, vegetables, and complex carbohydrates",
+      "Drink 8-10 glasses of water throughout the day",
+      "Eat smaller, frequent meals to maintain energy levels"
+    ],
+    "progress_tracking": [
+      "Weekly weigh-ins at the same time each week",
+      "Take progress photos every 2 weeks",
+      "Measure key body areas monthly",
+      "Track workout completion and improvements"
+    ],
+    "created_at": "2025-09-22T15:25:28.315224",
+    "updated_at": "2025-09-22T15:25:28.315228"
+  }
+]

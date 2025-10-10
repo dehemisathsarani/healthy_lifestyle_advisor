@@ -69,7 +69,7 @@ class UserProfile(BaseModel):
     daily_calorie_goal: Optional[float] = Field(None, description="Daily calorie target")
     
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
         schema_extra = {
@@ -133,7 +133,7 @@ class MealAnalysis(BaseModel):
     meal_type: Optional[str] = Field(None, description="breakfast/lunch/dinner/snack")
     
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
 
@@ -168,7 +168,7 @@ class DailyNutritionSummary(BaseModel):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
 
@@ -187,7 +187,7 @@ class NutritionGoals(BaseModel):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
 

@@ -425,3 +425,228 @@ frontend/src/pages/SimpleHomePage.tsx
 .pycache
 
 
+test_complete_flow.py
+test_diet_agent_storage.py
+verify_diet_storage.py
+test_fallback_simple.py
+test_fallback_system.py
+test_rag_conversation_storage.py
+DIET_AGENT_FINAL_STATUS.md
+DIET_AGENT_FINAL_STATUS.md
+NLP_DIET_AGENT_COMPLETE.md
+ENHANCED_FOOD_ANALYSIS_ACCURACY.md
+DIET_AGENT_MONGODB_STATUS.md
+DIET_AGENT_FINAL_STATUS.md
+NLP_DIET_AGENT_COMPLETE.md
+*.md
+*.md
+test_modern_nutrition_system.py
+test_nutrition_system.py
+test_system_health.py
+aiservices/dietaiservices/comprehensive_final_test.py
+aiservices/dietaiservices/comprehensive_enhanced_test.py
+
+# Additional files to ignore
+# ==========================
+
+# macOS specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+.AppleDouble
+.LSOverride
+
+# Package lock files (already in some areas, adding for completeness)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# AI/ML model files
+*.pt
+*.pth
+*.pkl
+*.h5
+*.pb
+*.onnx
+yolov8n.pt
+*.weights
+
+# pytest cache
+.pytest_cache/
+pytest_cache/
+
+# Environment files (additional patterns)
+.env.*
+!.env.example
+config.local.*
+secrets.json
+credentials.json
+
+# Log files (additional patterns)
+*.log
+ai_service.log
+backend_service.log
+service.log
+debug.log
+error.log
+access.log
+
+# Qodo specific (AI assistant)
+.qodo/
+
+# Docker volumes and data
+docker-volumes/
+data/
+uploads/
+temp/
+tmp/
+
+# IDE and editor specific
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+*.swp
+*.swo
+*~
+.project
+.settings/
+.metadata/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
+
+# Coverage reports
+coverage/
+.coverage
+.coverage.*
+htmlcov/
+.nyc_output/
+
+# Test outputs
+test-results/
+test-output/
+screenshots/
+videos/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*~
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Chat exports (user-generated files)
+nutrition-chat-*.json
+chat-export-*.json
+
+# Report files (user-generated)
+weekly-report-*.json
+nutrition-report-*.json
+
+# Additional patterns for your workspace
+
+# Service logs
+*.log
+backend_service.log
+ai_service.log
+
+# Test files that might be generated
+test_*.html
+*_demo.html
+mock-*.py
+
+# Temporary and cache files
+*.tmp
+*.temp
+.cache/
+.pytest_cache/
+
+# IDE and editor files
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+.vscode/extensions.json
+*.swp
+*.swo
+*~
+
+# Google Cloud credentials (security sensitive)
+google-credentials.json
+*-credentials.json
+service-account-*.json
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Compiled binaries
+*.exe
+*.dll
+*.dylib
+
+# System files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Python virtual environment
+venv/
+env/
+ENV/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Coverage reports
+coverage.xml
+*.cover
+.hypothesis/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Docker volumes and data
+docker-data/
+volumes/
+
+# AI model files (can be large)
+*.model
+*.pkl
+*.joblib
+models/
+checkpoints/
+frontend/src/DiagnosticPage.tsx
+aiservices/dietaiservices/final_integration_test.py
+aiservices/dietaiservices/enhanced_food_demo.py
+aiservices/dietaiservices/test_integration.py
+aiservices/dietaiservices/test_realistic_processor.py
+aiservices/dietaiservices/simple_validation.py
+aiservices/dietaiservices/quick_api_test.py

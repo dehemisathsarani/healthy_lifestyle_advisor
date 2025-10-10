@@ -13,6 +13,7 @@ NC='\033[0m'
 
 print_status() {
     echo -e "${BLUE}[INFO]${NC} $1"
+   
 }
 
 print_success() {

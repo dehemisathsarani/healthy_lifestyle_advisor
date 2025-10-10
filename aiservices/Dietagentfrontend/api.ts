@@ -140,6 +140,19 @@ export interface DailyNutrition {
   water_ml: number;
 }
 
+export interface HydrationSummary {
+  water_consumed: number;
+  daily_target: number;
+  remaining: number;
+  percent_complete: number;
+  reminder_message?: string;
+}
+
+export interface HydrationUpdateRequest {
+  amount_ml: number;
+  timestamp: string;
+}
+
 // API Client Class
 class APIClient {
   private backendAPI: AxiosInstance;
@@ -212,11 +225,17 @@ class APIClient {
   }
 
   // Hydration tracking
-  async updateHydration(waterAmountMl: number, userId: string = 'user-001'): Promise<any> {
+  async updateHydration(request: HydrationUpdateRequest, userId: string = 'user-001'): Promise<{ hydration_summary: HydrationSummary }> {
     const response = await this.aiAPI.post('/hydration', {
       user_id: userId,
-      water_amount_ml: waterAmountMl,
+      water_amount_ml: request.amount_ml,
+      timestamp: request.timestamp
     });
+    return response.data;
+  }
+  
+  async getHydrationReminder(userId: string = 'user-001'): Promise<HydrationSummary> {
+    const response = await this.aiAPI.get(`/hydration/${userId}`);
     return response.data;
   }
 

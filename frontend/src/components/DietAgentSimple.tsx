@@ -1,402 +1,30 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { ArrowLeft, User, Target, Camera, Apple, Calculator, Heart, Activity } from 'lucide-react'
+import { HiCpuChip } from 'react-icons/hi2'
 import SimpleProfessionalCalendar from './SimpleProfessionalCalendar'
 import NLPNutritionInsights from './NLPNutritionInsights'
 import SessionStatus from './SessionStatus'
 import QuickLogin from './QuickLogin'
+import NutritionChatbot from './NutritionChatbotEnhanced'
+import EnhancedFoodAnalysis from './EnhancedFoodAnalysisFixed'
 import { dietAgentSessionManager } from '../services/SessionManager'
 import { dietAgentEmailService } from '../services/EmailService'
-import { enhancedFoodAnalysisService, type FoodItem as EnhancedFoodItem } from '../services/enhancedFoodAnalysis'
-
-// Temporary local types and mock API to fix compilation
-type DetectedFood = {
-  name: string
-  estimated_portion: string
-  calories: number
-  protein: number
-  carbs: number
-  fat: number
-  fiber?: number
-}
-
-type UserDietProfile = {
-  id?: string
-  name: string
-  email: string
-  age: number
-  weight: number
-  height: number
-  gender: 'male' | 'female' | 'other'
-  activity_level: 'sedentary' | 'lightly_active' | 'moderately_active' | 'very_active' | 'extremely_active'
-  goal: 'weight_loss' | 'weight_gain' | 'maintain_weight' | 'muscle_gain' | 'general_health'
-  dietary_restrictions?: string[]
-  allergies?: string[]
-  // Additional fields used in the component
-  bmi?: number
-  bmr?: number
-  tdee?: number
-  daily_calorie_goal?: number
-  created_at?: string
-  updated_at?: string
-}
-
-type NutritionEntry = {
-  id: string
-  date: string
-  meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack'
-  food_description: string
-  calories: number
-  protein: number
-  carbs: number
-  fat: number
-  fiber?: number
-}
-
-type FoodAnalysisResult = {
-  _id?: string
-  user_id?: string
-  food_items: Array<{
-    name: string
-    quantity: string
-    calories: number
-    protein: number
-    carbs: number
-    fat: number
-    fiber?: number
-  }>
-  total_calories: number
-  total_protein: number
-  total_carbs: number
-  total_fat: number
-  analysis_method: 'image' | 'manual' | 'text' | 'hybrid' | 'fallback'
-  meal_type: string
-  created_at: string
-  confidence_score: number
-  image_url: string | null
-  text_description: string
-}
-
-interface FoodItem {
-  name: string
-  quantity: string
-  calories: number
-  protein: number
-  carbs: number
-  fat: number
-  fiber?: number
-}
-
-// Enhanced API with backend integration
-const dietAgentApi = {
-  checkConnection: async () => {
-    try {
-      const response = await fetch('/api/health')
-      return response.ok
-    } catch {
-      return false
-    }
-  },
-  
-  getProfileByEmail: async (email: string): Promise<UserDietProfile | null> => {
-    try {
-      const response = await fetch(`/api/profile/email/${email}`)
-      if (response.ok) {
-        return await response.json()
-      }
-      return null
-    } catch (error) {
-      console.error('Error fetching profile:', error)
-      return null
-    }
-  },
-  
-  createProfile: async (data: Omit<UserDietProfile, 'id'>): Promise<UserDietProfile> => {
-    try {
-      const response = await fetch('/api/profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      })
-      
-      if (response.ok) {
-        return await response.json()
-      } else {
-        throw new Error('Failed to create profile')
-      }
-    } catch (error) {
-      console.error('Error creating profile:', error)
-      // Fallback to mock profile
-      const mockProfile: UserDietProfile = {
-        ...data,
-        id: 'mock-' + Date.now(),
-        bmi: data.weight / ((data.height / 100) ** 2),
-        bmr: 1800,
-        tdee: 2200,
-        daily_calorie_goal: 2000,
-        created_at: new Date().toISOString()
-      }
-      return mockProfile
-    }
-  },
-  
-  addNutritionEntry: async (userId: string, entry: Omit<NutritionEntry, 'id'>): Promise<NutritionEntry> => {
-    try {
-      const response = await fetch('/api/nutrition-entry', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId, ...entry })
-      })
-      
-      if (response.ok) {
-        return await response.json()
-      } else {
-        throw new Error('Failed to add nutrition entry')
-      }
-    } catch (error) {
-      console.error('Error adding nutrition entry:', error)
-      // Fallback to local storage
-      return {
-        ...entry,
-        id: 'entry-' + Date.now()
-      }
-    }
-  },
-  
-  analyzeNutrition: async (userId: string, text?: string, image?: File): Promise<FoodAnalysisResult> => {
-    try {
-      let response: Response
-      
-      if (image) {
-        // Enhanced image analysis
-        const formData = new FormData()
-        formData.append('file', image)
-        formData.append('user_id', userId)
-        formData.append('meal_type', 'lunch')
-        if (text) {
-          formData.append('text_description', text)
-        }
-        
-        response = await fetch('/api/comprehensive-food-analysis', {
-          method: 'POST',
-          body: formData
-        })
-      } else if (text) {
-        // Text-only analysis
-        response = await fetch('/api/analyze-food-text', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            meal_description: text,
-            user_id: userId,
-            meal_type: 'lunch'
-          })
-        })
-      } else {
-        throw new Error('Either text or image must be provided')
-      }
-      
-      if (response.ok) {
-        const data = await response.json()
-        
-        // Handle comprehensive analysis response
-        if (data.image_analysis) {
-          const analysis = data.image_analysis
-          return {
-            _id: analysis.analysis_id,
-            user_id: analysis.user_id,
-            food_items: analysis.detected_foods.map((food: DetectedFood) => ({
-              name: food.name,
-              quantity: food.estimated_portion,
-              calories: food.calories,
-              protein: food.protein,
-              carbs: food.carbs,
-              fat: food.fat,
-              fiber: food.fiber || 0
-            })),
-            total_calories: analysis.total_nutrition.calories,
-            total_protein: analysis.total_nutrition.protein,
-            total_carbs: analysis.total_nutrition.carbs,
-            total_fat: analysis.total_nutrition.fat,
-            analysis_method: analysis.analysis_method,
-            meal_type: analysis.meal_type,
-            created_at: analysis.created_at,
-            confidence_score: analysis.confidence_score,
-            image_url: analysis.image_url,
-            text_description: analysis.text_description || text || 'Image analysis'
-          }
-        } else if (data.analysis) {
-          // Handle regular analysis response
-          const analysis = data.analysis
-          return {
-            _id: analysis.analysis_id,
-            user_id: analysis.user_id,
-            food_items: analysis.detected_foods.map((food: DetectedFood) => ({
-              name: food.name,
-              quantity: food.estimated_portion,
-              calories: food.calories,
-              protein: food.protein,
-              carbs: food.carbs,
-              fat: food.fat,
-              fiber: food.fiber || 0
-            })),
-            total_calories: analysis.total_nutrition.calories,
-            total_protein: analysis.total_nutrition.protein,
-            total_carbs: analysis.total_nutrition.carbs,
-            total_fat: analysis.total_nutrition.fat,
-            analysis_method: analysis.analysis_method,
-            meal_type: analysis.meal_type,
-            created_at: analysis.created_at,
-            confidence_score: analysis.confidence_score,
-            image_url: analysis.image_url,
-            text_description: analysis.text_description || text || 'Analysis'
-          }
-        } else {
-          throw new Error('Invalid response format')
-        }
-      } else {
-        throw new Error(`Analysis failed: ${response.statusText}`)
-      }
-    } catch (error) {
-      console.error('Error in nutrition analysis:', error)
-      
-      // Enhanced fallback analysis with better Sri Lankan food detection
-      return {
-        _id: 'analysis-' + Date.now(),
-        user_id: userId,
-        food_items: text ? dietAgentApi.parseLocalFoods(text) : [{
-          name: 'Unidentified Food',
-          quantity: '1 serving',
-          calories: 200,
-          protein: 10,
-          carbs: 30,
-          fat: 8,
-          fiber: 5
-        }],
-        total_calories: text ? dietAgentApi.calculateTotalFromText(text).calories : 200,
-        total_protein: text ? dietAgentApi.calculateTotalFromText(text).protein : 10,
-        total_carbs: text ? dietAgentApi.calculateTotalFromText(text).carbs : 30,
-        total_fat: text ? dietAgentApi.calculateTotalFromText(text).fat : 8,
-        analysis_method: 'fallback',
-        meal_type: 'meal',
-        created_at: new Date().toISOString(),
-        confidence_score: 0.6,
-        image_url: null,
-        text_description: text || 'Fallback analysis'
-      }
-    }
-  },
-  
-  // Enhanced local food parsing for Sri Lankan cuisine
-  parseLocalFoods: (text: string): FoodItem[] => {
-    const foodDatabase = {
-      'rice': { calories: 130, protein: 2.7, carbs: 28, fat: 0.3, fiber: 0.4 },
-      'rice and curry': { calories: 450, protein: 18, carbs: 70, fat: 12, fiber: 8 },
-      'kottu': { calories: 450, protein: 20, carbs: 40, fat: 20, fiber: 3 },
-      'chicken kottu': { calories: 520, protein: 28, carbs: 42, fat: 24, fiber: 3 },
-      'chicken curry': { calories: 200, protein: 25, carbs: 8, fat: 8, fiber: 2 },
-      'fish curry': { calories: 180, protein: 22, carbs: 6, fat: 7, fiber: 1.5 },
-      'dal curry': { calories: 160, protein: 12, carbs: 20, fat: 4, fiber: 8 },
-      'vegetable curry': { calories: 120, protein: 4, carbs: 15, fat: 6, fiber: 4 },
-      'hoppers': { calories: 90, protein: 2, carbs: 18, fat: 1.5, fiber: 1 },
-      'string hoppers': { calories: 70, protein: 2, carbs: 14, fat: 0.5, fiber: 1 },
-      'roti': { calories: 80, protein: 3, carbs: 15, fat: 1, fiber: 2 }
-    }
-    
-    const detectedFoods: FoodItem[] = []
-    const textLower = text.toLowerCase()
-    
-    Object.entries(foodDatabase).forEach(([foodName, nutrition]) => {
-      if (textLower.includes(foodName)) {
-        detectedFoods.push({
-          name: foodName.charAt(0).toUpperCase() + foodName.slice(1),
-          quantity: '1 serving',
-          calories: nutrition.calories,
-          protein: nutrition.protein,
-          carbs: nutrition.carbs,
-          fat: nutrition.fat,
-          fiber: nutrition.fiber
-        })
-      }
-    })
-    
-    return detectedFoods.length > 0 ? detectedFoods : [{
-      name: 'Mixed Meal',
-      quantity: '1 serving',
-      calories: 350,
-      protein: 15,
-      carbs: 40,
-      fat: 12,
-      fiber: 5
-    }]
-  },
-  
-  calculateTotalFromText: (text: string) => {
-    const foods = dietAgentApi.parseLocalFoods(text)
-    return {
-      calories: foods.reduce((sum, food) => sum + food.calories, 0),
-      protein: foods.reduce((sum, food) => sum + food.protein, 0),
-      carbs: foods.reduce((sum, food) => sum + food.carbs, 0),
-      fat: foods.reduce((sum, food) => sum + food.fat, 0)
-    }
-  },
-  
-  // New methods for enhanced functionality
-  getAnalysisHistory: async (userId: string, limit: number = 20) => {
-    try {
-      const response = await fetch(`/api/analysis-history/${userId}?limit=${limit}`)
-      if (response.ok) {
-        const data = await response.json()
-        return data.history || []
-      }
-      return []
-    } catch (error) {
-      console.error('Error fetching analysis history:', error)
-      return []
-    }
-  },
-  
-  getDailyNutritionWithImages: async (userId: string, date?: string) => {
-    try {
-      const dateParam = date || new Date().toISOString().split('T')[0]
-      const response = await fetch(`/api/daily-nutrition-with-images/${userId}?date=${dateParam}`)
-      if (response.ok) {
-        return await response.json()
-      }
-      return null
-    } catch (error) {
-      console.error('Error fetching daily nutrition:', error)
-      return null
-    }
-  },
-  
-  createNutritionEntryFromAnalysis: async (analysisId: string, userId: string, mealType?: string) => {
-    try {
-      const response = await fetch('/api/nutrition-entry-from-analysis', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          analysis_id: analysisId,
-          user_id: userId,
-          meal_type: mealType
-        })
-      })
-      
-      if (response.ok) {
-        return await response.json()
-      }
-      throw new Error('Failed to create nutrition entry from analysis')
-    } catch (error) {
-      console.error('Error creating nutrition entry from analysis:', error)
-      throw error
-    }
-  }
-}
+// Import the service and types separately
+import { dietAgentApi } from '../services/dietAgentApi'
+import type { UserDietProfile, NutritionEntry, FoodAnalysisResult } from '../services/dietAgentApi'
 
 interface DietAgentProps {
   onBackToServices: () => void
+  authenticatedUser?: {
+    name: string
+    email: string
+    age?: number
+    country?: string
+    mobile?: string
+  } | null
 }
 
-export const DietAgentSimple: React.FC<DietAgentProps> = ({ onBackToServices }) => {
+export const DietAgentSimple: React.FC<DietAgentProps> = ({ onBackToServices, authenticatedUser }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [user, setUser] = useState<UserDietProfile | null>(null)
   const [activeTab, setActiveTab] = useState<'dashboard' | 'profile' | 'nutrition' | 'analysis' | 'goals' | 'insights'>('dashboard')
@@ -405,6 +33,7 @@ export const DietAgentSimple: React.FC<DietAgentProps> = ({ onBackToServices }) 
   const [sessionInitialized, setSessionInitialized] = useState(false)
   const [showQuickLogin, setShowQuickLogin] = useState(false)
   const [lastUserEmail, setLastUserEmail] = useState('')
+  const [isChatbotOpen, setIsChatbotOpen] = useState(false)
 
   // Initialize session manager and user
   const initializeUser = useCallback(async () => {
@@ -462,6 +91,53 @@ export const DietAgentSimple: React.FC<DietAgentProps> = ({ onBackToServices }) 
           }
         }
       } else {
+        // Check for authenticated user from main app
+        if (authenticatedUser && authenticatedUser.email) {
+          console.log('🔐 Authenticated user detected:', authenticatedUser.name)
+          
+          // Try to find existing Diet Agent profile for this user
+          try {
+            const existingProfile = await dietAgentApi.getProfileByEmail(authenticatedUser.email)
+            if (existingProfile) {
+              // User already has a Diet Agent profile, use it
+              await dietAgentSessionManager.createSession(existingProfile)
+              setUser(existingProfile)
+              setIsAuthenticated(true)
+              setLastUserEmail(existingProfile.email)
+              loadNutritionHistoryLocal()
+              
+              const welcomeDiv = document.createElement('div')
+              welcomeDiv.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
+              welcomeDiv.innerHTML = `
+                <div>🎉 Welcome back, ${existingProfile.name}!</div>
+                <div class="text-xs mt-1">Your Diet Agent profile has been restored</div>
+              `
+              document.body.appendChild(welcomeDiv)
+              setTimeout(() => welcomeDiv.remove(), 4000)
+              
+              console.log('✅ Existing Diet Agent profile loaded for authenticated user')
+              return
+            }
+          } catch (error) {
+            console.warn('Could not check for existing profile:', error)
+          }
+          
+          // No existing Diet Agent profile, but we have authenticated user data
+          // We'll auto-populate the profile creation form
+          setLastUserEmail(authenticatedUser.email)
+          
+          const authDiv = document.createElement('div')
+          authDiv.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
+          authDiv.innerHTML = `
+            <div>🔐 Welcome, ${authenticatedUser.name}!</div>
+            <div class="text-xs mt-1">Please complete your Diet Agent profile setup</div>
+          `
+          document.body.appendChild(authDiv)
+          setTimeout(() => authDiv.remove(), 5000)
+          
+          return
+        }
+        
         // Check if we have a last used email for quick login
         const savedEmail = localStorage.getItem('dietAgentLastEmail')
         if (savedEmail) {
@@ -476,7 +152,7 @@ export const DietAgentSimple: React.FC<DietAgentProps> = ({ onBackToServices }) 
       console.error('Error initializing user:', error)
       setIsOnline(false)
     }
-  }, [sessionInitialized, setLastUserEmail])
+  }, [sessionInitialized, setLastUserEmail, authenticatedUser])
 
   useEffect(() => {
     initializeUser()
@@ -545,13 +221,20 @@ export const DietAgentSimple: React.FC<DietAgentProps> = ({ onBackToServices }) 
   }
 
   const handleCreateProfile = async (data: Omit<UserDietProfile, 'id' | 'bmi' | 'bmr' | 'tdee' | 'daily_calorie_goal'>) => {
+    console.log('🚀 Starting profile creation process...')
+    console.log('📊 Profile data:', data)
+    console.log('🌐 Online status:', isOnline)
+    
     try {
       let newProfile: UserDietProfile
       
       if (isOnline) {
+        console.log('🔄 Creating profile in database...')
         // Create profile in database
         newProfile = await dietAgentApi.createProfile(data)
+        console.log('✅ Profile created in database:', newProfile)
       } else {
+        console.log('📱 Creating profile in offline mode...')
         // Offline mode - create locally
         const metrics = calculateMetrics(data)
         newProfile = {
@@ -561,6 +244,7 @@ export const DietAgentSimple: React.FC<DietAgentProps> = ({ onBackToServices }) 
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         }
+        console.log('✅ Profile created locally:', newProfile)
       }
       
       // Create session for the new profile
@@ -617,7 +301,8 @@ export const DietAgentSimple: React.FC<DietAgentProps> = ({ onBackToServices }) 
       }
       
     } catch (error) {
-      console.error('Error creating profile:', error)
+      console.error('❌ Error creating profile:', error)
+      console.log('🔄 Falling back to local profile creation...')
       
       // Fallback to local creation with session
       const metrics = calculateMetrics(data)
@@ -628,6 +313,8 @@ export const DietAgentSimple: React.FC<DietAgentProps> = ({ onBackToServices }) 
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }
+      
+      console.log('📱 Created fallback profile:', profileWithId)
       
       // Create fallback session
       await dietAgentSessionManager.createSession(profileWithId)
@@ -759,8 +446,31 @@ export const DietAgentSimple: React.FC<DietAgentProps> = ({ onBackToServices }) 
           )}
 
           {/* Profile Creation Form */}
-          <ProfileForm onSubmit={handleCreateProfile} />
+          <ProfileForm onSubmit={handleCreateProfile} authenticatedUser={authenticatedUser} />
         </div>
+
+        {/* RAG Nutrition Chatbot - Always Available */}
+        {/* Floating Chatbot Toggle Button */}
+        {!isChatbotOpen && (
+          <button
+            onClick={() => setIsChatbotOpen(true)}
+            className="fixed bottom-6 right-6 z-40 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
+            title="Open AI Nutrition Assistant"
+          >
+            <HiCpuChip className="text-2xl" />
+          </button>
+        )}
+        
+        <NutritionChatbot 
+          user={{
+            id: 'guest',
+            email: authenticatedUser?.email || 'guest@example.com',
+            name: authenticatedUser?.name || 'Guest',
+            goal: 'general_health'
+          }}
+          isOpen={isChatbotOpen}
+          onToggle={() => setIsChatbotOpen(!isChatbotOpen)}
+        />
       </div>
     )
   }
@@ -855,7 +565,34 @@ export const DietAgentSimple: React.FC<DietAgentProps> = ({ onBackToServices }) 
           )}
           
           {activeTab === 'analysis' && (
-            <FoodAnalysis user={user} isOnline={isOnline} />
+            <EnhancedFoodAnalysis 
+              user={user} 
+              onAnalysisComplete={(result: FoodAnalysisResult) => {
+                // Handle the analysis result - add to nutrition entries
+                if (result && user?.id) {
+                  const nutritionEntry: Omit<NutritionEntry, 'id'> = {
+                    date: new Date().toISOString().split('T')[0],
+                    meal_type: result.meal_type as NutritionEntry['meal_type'],
+                    food_description: result.text_description,
+                    calories: result.total_calories,
+                    protein: result.total_protein,
+                    carbs: result.total_carbs,
+                    fat: result.total_fat,
+                    fiber: result.food_items?.reduce((sum: number, item: { fiber?: number }) => sum + (item.fiber || 0), 0) || 0
+                  }
+                  
+                  // Add to nutrition entries list
+                  setNutritionEntries(prev => [...prev, { ...nutritionEntry, id: Date.now().toString() }])
+                  
+                  // Show success message
+                  const successMessage = document.createElement('div')
+                  successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
+                  successMessage.textContent = '✓ Analysis completed and added to nutrition log!'
+                  document.body.appendChild(successMessage)
+                  setTimeout(() => successMessage.remove(), 3000)
+                }
+              }}
+            />
           )}
           
           {activeTab === 'insights' && user && (
@@ -907,16 +644,51 @@ export const DietAgentSimple: React.FC<DietAgentProps> = ({ onBackToServices }) 
           )}
         </div>
       </div>
+
+      {/* RAG Nutrition Chatbot */}
+      {/* Floating Chatbot Toggle Button */}
+      {!isChatbotOpen && (
+        <button
+          onClick={() => setIsChatbotOpen(true)}
+          className="fixed bottom-6 right-6 z-40 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110"
+          title="Open AI Nutrition Assistant"
+        >
+          <HiCpuChip className="text-2xl" />
+        </button>
+      )}
+      
+      <NutritionChatbot 
+        user={{
+          id: user?.id || lastUserEmail || 'anonymous',
+          email: user?.email || lastUserEmail || authenticatedUser?.email || '',
+          name: user?.name || authenticatedUser?.name || 'Guest',
+          goal: user?.goal || 'general_health',
+          dietary_restrictions: user?.dietary_restrictions || [],
+          current_weight: user?.weight,
+          target_weight: undefined // This will need to be added to the user profile later if needed
+        }}
+        isOpen={isChatbotOpen}
+        onToggle={() => setIsChatbotOpen(!isChatbotOpen)}
+      />
     </div>
   )
 }
 
 // Profile Form Component
-const ProfileForm: React.FC<{ onSubmit: (data: Omit<UserDietProfile, 'id' | 'bmi' | 'bmr' | 'tdee' | 'daily_calorie_goal'>) => void }> = ({ onSubmit }) => {
+const ProfileForm: React.FC<{ 
+  onSubmit: (data: Omit<UserDietProfile, 'id' | 'bmi' | 'bmr' | 'tdee' | 'daily_calorie_goal'>) => void
+  authenticatedUser?: {
+    name: string
+    email: string
+    age?: number
+    country?: string
+    mobile?: string
+  } | null
+}> = ({ onSubmit, authenticatedUser }) => {
   const [formData, setFormData] = useState<Omit<UserDietProfile, 'id' | 'bmi' | 'bmr' | 'tdee' | 'daily_calorie_goal'>>({
-    name: '',
-    email: '',
-    age: 25,
+    name: authenticatedUser?.name || '',
+    email: authenticatedUser?.email || '',
+    age: authenticatedUser?.age || 25,
     weight: 70,
     height: 170,
     gender: 'male',
@@ -1730,560 +1502,6 @@ const NutritionLog: React.FC<{
             <p>No nutrition entries yet. Start logging your meals!</p>
           </div>
         )}
-      </div>
-    </div>
-  )
-}
-
-// Food Analysis Component
-const FoodAnalysis: React.FC<{
-  user: UserDietProfile | null
-  isOnline: boolean
-}> = ({ user, isOnline }) => {
-  const [analysisText, setAnalysisText] = useState('')
-  const [analysisResult, setAnalysisResult] = useState<FoodAnalysisResult | null>(null)
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [selectedImage, setSelectedImage] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [analysisMode, setAnalysisMode] = useState<'text' | 'image'>('text')
-
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      setSelectedImage(file)
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
-
-  const removeImage = () => {
-    setSelectedImage(null)
-    setImagePreview(null)
-  }
-
-  const handleAnalysis = async () => {
-    if (analysisMode === 'text' && !analysisText.trim()) return
-    if (analysisMode === 'image' && !selectedImage) return
-    if (!user?.id && isOnline) {
-      alert('User profile required for analysis')
-      return
-    }
-    
-    setIsAnalyzing(true)
-    
-    try {
-      let result: FoodAnalysisResult
-      
-      if (isOnline && user?.id) {
-        // Use enhanced backend API
-        if (analysisMode === 'image' && selectedImage) {
-          result = await dietAgentApi.analyzeNutrition(user.id, analysisText || undefined, selectedImage)
-        } else {
-          result = await dietAgentApi.analyzeNutrition(user.id, analysisText)
-        }
-      } else {
-        // Offline mode - use fallback analysis
-        if (analysisMode === 'image' && selectedImage) {
-          result = await simulateImageAnalysis(selectedImage)
-        } else {
-          result = await simulateTextAnalysis(analysisText)
-        }
-      }
-      
-      setAnalysisResult(result)
-      
-      // Show success message with enhanced info
-      const successMessage = document.createElement('div')
-      successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
-      successMessage.innerHTML = `
-        <div class="flex items-center gap-2">
-          <span>✓ Analysis completed!</span>
-          <span class="text-xs bg-green-400 px-2 py-1 rounded">
-            ${Math.round(result.confidence_score * 100)}% confidence
-          </span>
-        </div>
-        <div class="text-xs mt-1">
-          Method: ${result.analysis_method} • Found: ${result.food_items.length} items
-        </div>
-      `
-      document.body.appendChild(successMessage)
-      setTimeout(() => successMessage.remove(), 4000)
-      
-    } catch (error) {
-      console.error('Analysis failed:', error)
-      
-      // Fallback to local analysis
-      try {
-        let result: FoodAnalysisResult
-        if (analysisMode === 'image' && selectedImage) {
-          result = await simulateImageAnalysis(selectedImage)
-        } else {
-          result = await simulateTextAnalysis(analysisText)
-        }
-        setAnalysisResult(result)
-        
-        // Show fallback message
-        const errorMessage = document.createElement('div')
-        errorMessage.className = 'fixed top-4 right-4 bg-yellow-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
-        errorMessage.textContent = '⚠️ Analysis completed locally (server unavailable)'
-        document.body.appendChild(errorMessage)
-        setTimeout(() => errorMessage.remove(), 3000)
-      } catch (fallbackError) {
-        console.error('Fallback analysis also failed:', fallbackError)
-        const errorMessage = document.createElement('div')
-        errorMessage.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
-        errorMessage.textContent = '✗ Analysis failed. Please try again.'
-        document.body.appendChild(errorMessage)
-        setTimeout(() => errorMessage.remove(), 3000)
-      }
-    } finally {
-      setIsAnalyzing(false)
-    }
-  }
-
-  const simulateImageAnalysis = async (imageFile: File): Promise<FoodAnalysisResult> => {
-    try {
-      // Use enhanced food analysis service for better accuracy
-      const analysisResult = await enhancedFoodAnalysisService.analyzeImage(imageFile, analysisText || undefined)
-      
-      if (analysisResult.success) {
-        const analysis = analysisResult.analysis
-        return {
-          _id: Date.now().toString(),
-          user_id: user?.id || "offline_user",
-          food_items: analysis.foodItems.map((item: EnhancedFoodItem) => ({
-            name: item.name,
-            quantity: item.portion,
-            calories: Math.round(item.calories),
-            protein: Math.round(item.protein * 10) / 10,
-            carbs: Math.round(item.carbs * 10) / 10,
-            fat: Math.round(item.fat * 10) / 10,
-            fiber: Math.round((item.fiber || 0) * 10) / 10
-          })),
-          total_calories: Math.round(analysis.totalNutrition.calories),
-          total_protein: Math.round(analysis.totalNutrition.protein * 10) / 10,
-          total_carbs: Math.round(analysis.totalNutrition.carbs * 10) / 10,
-          total_fat: Math.round(analysis.totalNutrition.fat * 10) / 10,
-          analysis_method: 'image',
-          meal_type: 'lunch',
-          created_at: new Date().toISOString(),
-          confidence_score: analysis.confidence,
-          image_url: URL.createObjectURL(imageFile),
-          text_description: analysis.foodItems.map((f: EnhancedFoodItem) => f.name).join(', ')
-        }
-      } else {
-        throw new Error(analysisResult.error || 'Enhanced analysis failed')
-      }
-    } catch (error) {
-      console.error('Enhanced image analysis failed, using fallback:', error)
-      
-      // Fallback to simple analysis if enhanced service fails
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      const mockFoods = [
-        { name: "Rice and Curry", quantity: "1 plate", calories: 450, protein: 18, carbs: 70, fat: 12, fiber: 8 },
-        { name: "Chicken Kottu", quantity: "1 serving", calories: 520, protein: 25, carbs: 45, fat: 22, fiber: 5 },
-        { name: "Dhal Curry", quantity: "1 cup", calories: 180, protein: 12, carbs: 25, fat: 4, fiber: 10 }
-      ]
-      
-      const selectedFoods = mockFoods.slice(0, Math.floor(Math.random() * 3) + 1)
-      
-      return {
-        _id: Date.now().toString(),
-        user_id: user?.id || "offline_user",
-        food_items: selectedFoods,
-        total_calories: selectedFoods.reduce((sum, food) => sum + food.calories, 0),
-        total_protein: selectedFoods.reduce((sum, food) => sum + food.protein, 0),
-        total_carbs: selectedFoods.reduce((sum, food) => sum + food.carbs, 0),
-        total_fat: selectedFoods.reduce((sum, food) => sum + food.fat, 0),
-        analysis_method: 'image',
-        meal_type: 'lunch',
-        created_at: new Date().toISOString(),
-        confidence_score: 0.60,
-        image_url: URL.createObjectURL(imageFile),
-        text_description: `Fallback analysis: ${selectedFoods.map(f => f.name).join(', ')}`
-      }
-    }
-  }
-
-  const simulateTextAnalysis = async (description: string): Promise<FoodAnalysisResult> => {
-    try {
-      // Use enhanced food analysis service for better accuracy
-      const analysisResult = await enhancedFoodAnalysisService.analyzeImage(
-        new File(['dummy'], 'text-analysis.txt', { type: 'text/plain' }), 
-        description
-      )
-      
-      if (analysisResult.success) {
-        const analysis = analysisResult.analysis
-        return {
-          _id: Date.now().toString(),
-          user_id: user?.id || "offline_user",
-          food_items: analysis.foodItems.map((item: EnhancedFoodItem) => ({
-            name: item.name,
-            quantity: item.portion,
-            calories: Math.round(item.calories),
-            protein: Math.round(item.protein * 10) / 10,
-            carbs: Math.round(item.carbs * 10) / 10,
-            fat: Math.round(item.fat * 10) / 10,
-            fiber: Math.round((item.fiber || 0) * 10) / 10
-          })),
-          total_calories: Math.round(analysis.totalNutrition.calories),
-          total_protein: Math.round(analysis.totalNutrition.protein * 10) / 10,
-          total_carbs: Math.round(analysis.totalNutrition.carbs * 10) / 10,
-          total_fat: Math.round(analysis.totalNutrition.fat * 10) / 10,
-          analysis_method: 'text',
-          meal_type: 'lunch',
-          created_at: new Date().toISOString(),
-          confidence_score: analysis.confidence,
-          image_url: null,
-          text_description: description
-        }
-      } else {
-        throw new Error(analysisResult.error || 'Enhanced analysis failed')
-      }
-    } catch (error) {
-      console.error('Enhanced text analysis failed, using fallback:', error)
-      
-      // Fallback to simple keyword-based analysis
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      
-      const foodKeywords = {
-        'rice': { name: "Rice", quantity: "1 cup", calories: 200, protein: 4, carbs: 45, fat: 0.5, fiber: 1 },
-        'chicken': { name: "Chicken", quantity: "100g", calories: 165, protein: 31, carbs: 0, fat: 3.6, fiber: 0 },
-        'kottu': { name: "Kottu Roti", quantity: "1 serving", calories: 450, protein: 20, carbs: 40, fat: 20, fiber: 3 },
-        'curry': { name: "Vegetable Curry", quantity: "1 cup", calories: 120, protein: 5, carbs: 15, fat: 6, fiber: 4 },
-        'dhal': { name: "Dhal", quantity: "1 cup", calories: 180, protein: 12, carbs: 25, fat: 4, fiber: 10 }
-      }
-      
-      const identifiedFoods = []
-      const lowerDescription = description.toLowerCase()
-      
-      for (const [keyword, food] of Object.entries(foodKeywords)) {
-        if (lowerDescription.includes(keyword)) {
-          identifiedFoods.push(food)
-        }
-      }
-      
-      // If no foods identified, add a generic meal
-      if (identifiedFoods.length === 0) {
-        identifiedFoods.push({
-          name: "Mixed Meal",
-          quantity: "1 serving",
-          calories: 350,
-          protein: 15,
-          carbs: 40,
-          fat: 12,
-          fiber: 5
-        })
-      }
-      
-      return {
-        _id: Date.now().toString(),
-        user_id: user?.id || "offline_user",
-        food_items: identifiedFoods,
-        total_calories: identifiedFoods.reduce((sum, food) => sum + food.calories, 0),
-        total_protein: identifiedFoods.reduce((sum, food) => sum + food.protein, 0),
-        total_carbs: identifiedFoods.reduce((sum, food) => sum + food.carbs, 0),
-        total_fat: identifiedFoods.reduce((sum, food) => sum + food.fat, 0),
-        analysis_method: 'text',
-        meal_type: 'lunch',
-        created_at: new Date().toISOString(),
-        confidence_score: 0.65,
-        image_url: null,
-        text_description: description
-      }
-    }
-  }
-
-  const addToNutritionLog = async () => {
-    if (!analysisResult || !user?.id) return
-    
-    try {
-      const nutritionEntry: Omit<NutritionEntry, 'id'> = {
-        date: new Date().toISOString().split('T')[0],
-        meal_type: analysisResult.meal_type as NutritionEntry['meal_type'],
-        food_description: analysisResult.text_description,
-        calories: analysisResult.total_calories,
-        protein: analysisResult.total_protein,
-        carbs: analysisResult.total_carbs,
-        fat: analysisResult.total_fat,
-        fiber: analysisResult.food_items.reduce((sum: number, item: FoodItem) => sum + (item.fiber || 0), 0)
-      }
-
-      if (isOnline && user.id) {
-        // Add to database
-        await dietAgentApi.addNutritionEntry(user.id, nutritionEntry)
-        
-        // Show success message
-        const successMessage = document.createElement('div')
-        successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
-        successMessage.textContent = '✓ Added to nutrition log and saved to database!'
-        document.body.appendChild(successMessage)
-        setTimeout(() => successMessage.remove(), 3000)
-      } else {
-        // Offline mode - save locally
-        const entryWithId = {
-          ...nutritionEntry,
-          id: Date.now().toString(),
-          date: new Date().toISOString()
-        }
-        
-        const existingEntries = JSON.parse(localStorage.getItem('dietAgentNutrition') || '[]')
-        const updatedEntries = [...existingEntries, entryWithId]
-        localStorage.setItem('dietAgentNutrition', JSON.stringify(updatedEntries))
-        
-        // Show success message
-        const successMessage = document.createElement('div')
-        successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
-        successMessage.textContent = '✓ Added to nutrition log (offline mode)!'
-        document.body.appendChild(successMessage)
-        setTimeout(() => successMessage.remove(), 3000)
-      }
-    } catch (error) {
-      console.error('Failed to add to nutrition log:', error)
-      
-      // Fallback to local storage
-      const entryWithId = {
-        id: Date.now().toString(),
-        date: new Date().toISOString(),
-        meal_type: analysisResult.meal_type as NutritionEntry['meal_type'],
-        food_description: analysisResult.text_description,
-        calories: analysisResult.total_calories,
-        protein: analysisResult.total_protein,
-        carbs: analysisResult.total_carbs,
-        fat: analysisResult.total_fat,
-        fiber: analysisResult.food_items.reduce((sum: number, item: FoodItem) => sum + (item.fiber || 0), 0)
-      }
-      
-      const existingEntries = JSON.parse(localStorage.getItem('dietAgentNutrition') || '[]')
-      const updatedEntries = [...existingEntries, entryWithId]
-      localStorage.setItem('dietAgentNutrition', JSON.stringify(updatedEntries))
-      
-      // Show fallback message
-      const errorMessage = document.createElement('div')
-      errorMessage.className = 'fixed top-4 right-4 bg-yellow-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'
-      errorMessage.textContent = '⚠️ Added to nutrition log locally (database unavailable)'
-      document.body.appendChild(errorMessage)
-      setTimeout(() => errorMessage.remove(), 3000)
-    }
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/50 p-6 shadow-lg">
-        <h3 className="text-xl font-bold text-gray-900 mb-6">AI Food Analysis</h3>
-        
-        {/* Analysis Mode Selector */}
-        <div className="flex space-x-2 mb-6">
-          <button
-            onClick={() => setAnalysisMode('text')}
-            className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
-              analysisMode === 'text'
-                ? 'bg-brand text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Text Description
-          </button>
-          <button
-            onClick={() => setAnalysisMode('image')}
-            className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors ${
-              analysisMode === 'image'
-                ? 'bg-brand text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Image Upload
-          </button>
-        </div>
-
-        <div className="space-y-4">
-          {analysisMode === 'text' ? (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Describe your food or meal
-              </label>
-              <textarea
-                value={analysisText}
-                onChange={(e) => setAnalysisText(e.target.value)}
-                className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand focus:border-transparent"
-                rows={4}
-                placeholder="e.g., Kottu roti with chicken, Rice and curry, Fish curry with rice..."
-              />
-            </div>
-          ) : (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Upload a photo of your meal
-              </label>
-              
-              {!imagePreview ? (
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-brand transition-colors">
-                  <Camera className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                  <p className="text-gray-600 mb-4">Click to upload or drag and drop</p>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                    id="image-upload"
-                  />
-                  <label
-                    htmlFor="image-upload"
-                    className="inline-flex items-center px-4 py-2 bg-brand text-white rounded-lg cursor-pointer hover:bg-brand-dark transition-colors"
-                  >
-                    Choose Image
-                  </label>
-                </div>
-              ) : (
-                <div className="relative">
-                  <img
-                    src={imagePreview}
-                    alt="Food preview"
-                    className="w-full h-64 object-cover rounded-lg"
-                  />
-                  <button
-                    onClick={removeImage}
-                    className="absolute top-2 right-2 bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
-                  >
-                    ×
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          <button
-            onClick={handleAnalysis}
-            disabled={
-              (analysisMode === 'text' && !analysisText.trim()) ||
-              (analysisMode === 'image' && !selectedImage) ||
-              isAnalyzing
-            }
-            className="w-full bg-brand text-white py-3 rounded-lg hover:bg-brand-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-          >
-            {isAnalyzing ? (
-              <>
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                {analysisMode === 'image' ? 'Analyzing Image...' : 'Analyzing Text...'}
-              </>
-            ) : (
-              `Analyze ${analysisMode === 'image' ? 'Image' : 'Text'}`
-            )}
-          </button>
-        </div>
-
-        {/* Analysis Results */}
-        {analysisResult && (
-          <div className="mt-6 p-6 bg-gradient-to-br from-green-50 to-blue-50 rounded-xl border border-green-200">
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="text-lg font-bold text-gray-900">Analysis Results</h4>
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600">Confidence:</span>
-                <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                  {Math.round(analysisResult.confidence_score * 100)}%
-                </span>
-              </div>
-            </div>
-
-            {/* Food Items Detected */}
-            <div className="space-y-4 mb-6">
-              <h5 className="font-semibold text-gray-900">Detected Food Items:</h5>
-              {analysisResult.food_items.map((item: FoodItem, index: number) => (
-                <div key={index} className="bg-white p-4 rounded-lg border border-gray-200">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h6 className="font-medium text-gray-900">{item.name}</h6>
-                      <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-gray-900">{item.calories} cal</p>
-                      <p className="text-xs text-gray-600">
-                        P: {item.protein}g • C: {item.carbs}g • F: {item.fat}g
-                        {item.fiber && ` • Fiber: ${item.fiber}g`}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Total Nutrition Summary */}
-            <div className="bg-white p-4 rounded-lg border border-gray-200 mb-4">
-              <h5 className="font-semibold text-gray-900 mb-3">Total Nutrition Summary:</h5>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-3 bg-red-50 rounded-lg">
-                  <p className="text-2xl font-bold text-red-600">{analysisResult.total_calories}</p>
-                  <p className="text-sm text-red-700">Calories</p>
-                </div>
-                <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <p className="text-2xl font-bold text-blue-600">{analysisResult.total_protein}g</p>
-                  <p className="text-sm text-blue-700">Protein</p>
-                </div>
-                <div className="text-center p-3 bg-yellow-50 rounded-lg">
-                  <p className="text-2xl font-bold text-yellow-600">{analysisResult.total_carbs}g</p>
-                  <p className="text-sm text-yellow-700">Carbs</p>
-                </div>
-                <div className="text-center p-3 bg-purple-50 rounded-lg">
-                  <p className="text-2xl font-bold text-purple-600">{analysisResult.total_fat}g</p>
-                  <p className="text-sm text-purple-700">Fat</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex space-x-3">
-              <button
-                onClick={addToNutritionLog}
-                className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
-              >
-                Add to Nutrition Log
-              </button>
-              <button
-                onClick={() => setAnalysisResult(null)}
-                className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-              >
-                Clear
-              </button>
-            </div>
-
-            {/* Analysis Details */}
-            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-600">
-                Analysis Method: {analysisResult.analysis_method.toUpperCase()} • 
-                Created: {new Date(analysisResult.created_at).toLocaleString()}
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Quick Analysis Examples */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-white/50 p-6 shadow-lg">
-        <h4 className="text-lg font-semibold text-gray-900 mb-4">Quick Examples</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[
-            'Kottu roti with chicken and vegetables',
-            'Rice and curry with fish',
-            'Hoppers with sambol and curry',
-            'Fried rice with chicken'
-          ].map((example, index) => (
-            <button
-              key={index}
-              onClick={() => {
-                setAnalysisMode('text')
-                setAnalysisText(example)
-              }}
-              className="p-3 text-left bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <p className="text-sm text-gray-700">{example}</p>
-            </button>
-          ))}
-        </div>
       </div>
     </div>
   )

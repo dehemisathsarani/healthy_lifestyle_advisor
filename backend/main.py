@@ -10,7 +10,7 @@ from app.core.database import (
     close_mongo_connection, 
     get_db_health, 
     verify_database,
-    get_database
+    get_database 
 )
 
 
@@ -18,6 +18,11 @@ from app.auth.router import router as auth_router
 from app.auth.users import setup_user_collection
 
 from app.routes.simple_diet_routes import router as diet_router
+from app.routes.nutrition_routes import router as nutrition_router
+from app.routes.biometric_routes import router as biometric_router
+from app.routes.enhanced_nutrition_routes import router as enhanced_nutrition_router
+from app.etl.router import router as etl_router
+from app.etl.integrated_food_vision_router import router as integrated_food_vision_router
 
 
 # Create FastAPI application with detailed configuration
@@ -53,6 +58,21 @@ app.include_router(auth_router)
 # Include Diet Agent routes
 app.include_router(diet_router)
 
+# Include Advanced Nutrition Hub routes
+app.include_router(nutrition_router)
+
+# Include Enhanced Nutrition Analysis routes
+app.include_router(enhanced_nutrition_router)
+
+# Include Biometric Management routes
+app.include_router(biometric_router, prefix="/api")
+
+# Include ETL Management routes
+app.include_router(etl_router, prefix="/api")
+
+# Include Integrated Food Vision ETL routes
+app.include_router(integrated_food_vision_router, prefix="/api")
+
 
 # Global application state
 app_state = {
@@ -66,27 +86,22 @@ async def startup_event():
     """Initialize all services on application startup"""
     print("🚀 Starting Health Agent API...")
     app_state["startup_time"] = datetime.now()
-    
-    # Connect to MongoDB with retry logic
-    max_retries = 3
-    for attempt in range(max_retries):
-        print(f"📡 Database connection attempt {attempt + 1}/{max_retries}")
-        app_state["db_connected"] = await connect_to_mongo()
-        
-        if app_state["db_connected"]:
-            break
-        elif attempt < max_retries - 1:
-            print(f"⏳ Retrying in 5 seconds...")
-            await asyncio.sleep(5)
-    
-    if app_state["db_connected"]:
-        print("✅ Application startup completed successfully")
-        print("🌐 API Documentation available at: http://localhost:8000/docs")
-        # Setup user collection with indexes
-        await setup_user_collection()
-    else:
-        print("⚠️  Application started with database connection issues")
-        print("📖 Some features may be limited without database connectivity")
+    # Attempt to connect to MongoDB. This will set app_state based on success.
+    try:
+        print("🔄 Attempting to connect to MongoDB...")
+        connected = await connect_to_mongo()
+        app_state["db_connected"] = bool(connected)
+        if connected:
+            print("✅ Database connection established")
+        else:
+            app_state["db_connected"] = False
+            print("⚠️ Database connection not established (falling back to degraded mode)")
+    except Exception as e:
+        app_state["db_connected"] = False
+        print(f"⚠️ Error while connecting to database: {e}")
+
+    print("✅ Application startup completed successfully")
+    print("🌐 API Documentation available at: http://localhost:8000/docs")
 
 @app.on_event("shutdown")
 async def shutdown_event():

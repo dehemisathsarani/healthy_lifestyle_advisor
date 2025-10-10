@@ -9,14 +9,14 @@ class Settings(BaseSettings):
     GOOGLE_APPLICATION_CREDENTIALS: Optional[str] = None
     
     # Database
-    MONGODB_URL: str = "mongodb://mongo:27017"
+    MONGODB_URL: str = "mongodb://localhost:27017"
     DATABASE_NAME: str = "healthy_lifestyle"
     
     # Redis
     REDIS_URL: str = "redis://redis:6379"
     
-    # RabbitMQ
-    RABBITMQ_URL: str = "amqp://guest:guest@rabbitmq:5672/"
+    # RabbitMQ  
+    RABBITMQ_URL: str = "amqp://guest:guest@localhost:5672/"
     DIET_QUEUE: str = "diet_processing"
     NUTRITION_QUEUE: str = "nutrition_analysis"
     IMAGE_QUEUE: str = "image_processing"
