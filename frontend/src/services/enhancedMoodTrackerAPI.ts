@@ -31,38 +31,90 @@ export class EnhancedMoodTrackerAPI {
         return moodCategories[mood] || ['Programming', 'Pun', 'Misc']
       }
 
+      // Enhanced fetch function with retry logic and timeout
+      const fetchWithRetry = async (url: string, retries: number = 2): Promise<any> => {
+        for (let attempt = 0; attempt <= retries; attempt++) {
+          try {
+            const controller = new AbortController()
+            const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
+
+            const response = await fetch(url, {
+              signal: controller.signal,
+              headers: {
+                'Accept': 'application/json',
+              }
+            })
+
+            clearTimeout(timeoutId)
+
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`)
+            }
+
+            return await response.json()
+          } catch (error: any) {
+            // Check if it's a network-related error
+            const isNetworkError = 
+              error.name === 'AbortError' || 
+              error.name === 'TypeError' ||
+              error.message?.includes('network') ||
+              error.message?.includes('fetch') ||
+              error.message?.includes('ERR_NETWORK')
+
+            if (attempt === retries || !isNetworkError) {
+              throw error
+            }
+
+            // Wait before retry (exponential backoff)
+            const delay = Math.pow(2, attempt) * 1000
+            await new Promise(resolve => setTimeout(resolve, delay))
+          }
+        }
+      }
+
       const categories = moodType ? getJokeCategories(moodType) : ['Any']
       const categoryParam = categories.join(',')
 
       for (let i = 0; i < count; i++) {
-        const url = `https://v2.jokeapi.dev/joke/${categoryParam}?blacklistFlags=nsfw,religious,political,racist,sexist,explicit&type=single`
-        const response = await fetch(url)
-        const data = await response.json()
-        
-        if (data.error) {
-          // If specific category fails, try general jokes
-          const fallbackResponse = await fetch('https://v2.jokeapi.dev/joke/Any?blacklistFlags=nsfw,religious,political,racist,sexist,explicit&type=single')
-          const fallbackData = await fallbackResponse.json()
+        try {
+          const url = `https://v2.jokeapi.dev/joke/${categoryParam}?blacklistFlags=nsfw,religious,political,racist,sexist,explicit&type=single`
+          const data = await fetchWithRetry(url)
+          
+          if (data.error) {
+            // If specific category fails, try general jokes
+            const fallbackData = await fetchWithRetry('https://v2.jokeapi.dev/joke/Any?blacklistFlags=nsfw,religious,political,racist,sexist,explicit&type=single')
+            jokes.push({
+              id: fallbackData.id?.toString() || Date.now().toString(),
+              joke: fallbackData.joke || `${fallbackData.setup} ${fallbackData.delivery}`,
+              category: fallbackData.category || 'General',
+              type: fallbackData.type || 'single',
+              setup: fallbackData.setup,
+              delivery: fallbackData.delivery
+            })
+          } else {
+            jokes.push({
+              id: data.id?.toString() || Date.now().toString(),
+              joke: data.joke || `${data.setup} ${data.delivery}`,
+              category: data.category || 'General',
+              type: data.type || 'single',
+              setup: data.setup,
+              delivery: data.delivery
+            })
+          }
+        } catch (jokeError) {
+          // If individual joke fetch fails, add a fallback joke
+          const fallbackJokes = this.getFallbackJokes()
+          const randomFallback = fallbackJokes[Math.floor(Math.random() * fallbackJokes.length)]
           jokes.push({
-            id: fallbackData.id?.toString() || Date.now().toString(),
-            joke: fallbackData.joke || `${fallbackData.setup} ${fallbackData.delivery}`,
-            category: fallbackData.category || 'General',
-            type: fallbackData.type || 'single',
-            setup: fallbackData.setup,
-            delivery: fallbackData.delivery
-          })
-        } else {
-          jokes.push({
-            id: data.id?.toString() || Date.now().toString(),
-            joke: data.joke || `${data.setup} ${data.delivery}`,
-            category: data.category || 'General',
-            type: data.type || 'single',
-            setup: data.setup,
-            delivery: data.delivery
+            ...randomFallback,
+            id: `fallback-${Date.now()}-${i}`
           })
         }
       }
-      return jokes
+      
+      // If no jokes were fetched successfully, return fallback jokes
+      return jokes.length > 0 ? jokes : this.getFallbackJokes()
+      
     } catch (error) {
       console.error('Error fetching jokes:', error)
       return this.getFallbackJokes()
@@ -123,6 +175,48 @@ export class EnhancedMoodTrackerAPI {
         id: '3',
         joke: "Why did the scarecrow win an award? He was outstanding in his field!",
         category: 'Pun',
+        type: 'single'
+      },
+      {
+        id: '4',
+        joke: "Why do programmers prefer dark mode? Because light attracts bugs!",
+        category: 'Programming',
+        type: 'single'
+      },
+      {
+        id: '5',
+        joke: "A SQL query goes into a bar, walks up to two tables and asks: 'Can I join you?'",
+        category: 'Programming',
+        type: 'single'
+      },
+      {
+        id: '6',
+        joke: "What's the best thing about a boolean? Even if you're wrong, you're only off by a bit.",
+        category: 'Programming',
+        type: 'single'
+      },
+      {
+        id: '7',
+        joke: "I'm reading a book about anti-gravity. It's impossible to put down!",
+        category: 'Pun',
+        type: 'single'
+      },
+      {
+        id: '8',
+        joke: "Why don't eggs tell jokes? They'd crack each other up!",
+        category: 'Pun',
+        type: 'single'
+      },
+      {
+        id: '9',
+        joke: "How do you organize a space party? You planet!",
+        category: 'Pun',
+        type: 'single'
+      },
+      {
+        id: '10',
+        joke: "Why did the math book look so sad? Because it had too many problems!",
+        category: 'Math',
         type: 'single'
       }
     ]
