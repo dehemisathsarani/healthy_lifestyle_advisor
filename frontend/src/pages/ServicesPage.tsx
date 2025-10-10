@@ -5,7 +5,6 @@ import { Navbar } from '../components/Navbar'
 import { Chatbot } from '../components/Chatbot'
 import { DietAgentSimple as DietAgent } from '../components/DietAgentSimple'
 import { AdvancedNutritionHub } from '../components/AdvancedNutritionHub'
-import { FitnessAgent } from '../components/FitnessAgent'
 import { MentalHealthAgent } from '../components/MentalHealthAgent'
 import { SecurityAgent } from '../components/SecurityAgent'
 
@@ -34,6 +33,13 @@ export const ServicesPage = () => {
     }
   }
 
+  // Function to launch Fitness Hub (opens separate fitness frontend)
+  const handleFitnessHubLaunch = () => {
+    // Open the fitness frontend in a new window (connects to fitness backend on port 8002)
+    const fitnessUrl = 'http://localhost:5174'
+    window.open(fitnessUrl, '_blank', 'noopener,noreferrer')
+  }
+
   const services = [
     { 
       title: 'Advanced Nutrition Hub', 
@@ -49,7 +55,7 @@ export const ServicesPage = () => {
     { 
       title: 'Fitness Planner', 
       desc: 'Personalized workout routines, progress tracking, and fitness goal management with AI-powered recommendations.',
-      action: () => setActiveAgent('fitness'),
+      action: handleFitnessHubLaunch,
       buttonText: 'Launch Fitness Hub',
       available: true,
       category: 'fitness',
@@ -88,10 +94,6 @@ export const ServicesPage = () => {
   
   if (activeAgent === 'diet') {
     return <DietAgent onBackToServices={() => setActiveAgent(null)} authenticatedUser={profile} />
-  }
-  
-  if (activeAgent === 'fitness') {
-    return <FitnessAgent onBackToServices={() => setActiveAgent(null)} />
   }
   
   if (activeAgent === 'mental') {

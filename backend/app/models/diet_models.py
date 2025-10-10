@@ -1,23 +1,28 @@
-from pydantic import BaseModel, Field, EmailStr, validator
+from pydantic import BaseModel, Field, EmailStr, field_validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from enum import Enum
 from bson import ObjectId
 
-class PyObjectId(ObjectId):
+class PyObjectId(str):
     @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
+    def __get_pydantic_core_schema__(cls, source_type, handler):
+        from pydantic_core import core_schema
+        return core_schema.union_schema([
+            core_schema.is_instance_schema(ObjectId),
+            core_schema.chain_schema([
+                core_schema.str_schema(),
+                core_schema.no_info_plain_validator_function(cls.validate),
+            ])
+        ])
     
     @classmethod
     def validate(cls, v):
-        if not ObjectId.is_valid(v):
-            raise ValueError("Invalid objectid")
-        return ObjectId(v)
-    
-    @classmethod
-    def __modify_schema__(cls, field_schema):
-        field_schema.update(type="string")
+        if isinstance(v, ObjectId):
+            return str(v)
+        if isinstance(v, str) and ObjectId.is_valid(v):
+            return str(ObjectId(v))
+        raise ValueError("Invalid ObjectId")
 
 class GenderEnum(str, Enum):
     MALE = "male"
@@ -87,7 +92,8 @@ class UserProfile(BaseModel):
             }
         }
     
-    @validator('updated_at', pre=True, always=True)
+    @field_validator('updated_at', mode='before')
+    @classmethod
     def set_updated_at(cls, v):
         return datetime.utcnow()
 

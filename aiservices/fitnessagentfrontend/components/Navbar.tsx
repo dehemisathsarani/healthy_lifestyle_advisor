@@ -9,11 +9,35 @@ const Navbar: React.FC = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
+  const handleBackToServices = () => {
+    // Navigate back to the main webapp services page
+    window.location.href = 'http://localhost:3000/services';
+  };
+
   return (
     <nav className="bg-white shadow-md">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center py-4">
-          <div className="flex items-center">
+          <div className="flex items-center space-x-4">
+            {/* Back to Services Button */}
+            <button
+              onClick={handleBackToServices}
+              className="flex items-center text-gray-600 hover:text-indigo-600 transition-colors duration-200 group"
+              title="Back to Services"
+            >
+              <svg 
+                className="h-6 w-6 transform group-hover:-translate-x-1 transition-transform duration-200" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span className="ml-2 font-medium hidden sm:inline">Services</span>
+            </button>
+
+            <div className="h-6 w-px bg-gray-300"></div>
+
             <Link to="/" className="flex items-center">
               <svg className="h-8 w-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
