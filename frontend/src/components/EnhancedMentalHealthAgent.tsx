@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import { Brain, Heart, Flower2, ArrowLeft, Clock, User, Leaf } from 'lucide-react'
-import { EnhancedMoodTrackerAPI } from '../services/enhancedMoodTrackerAPI.ts';
-import { MoodLogsAPI } from '../services/moodLogsAPI.ts';
+import { EnhancedMoodTrackerAPI } from '../services/enhancedMoodTrackerAPI';
+import { MoodLogsAPI } from '../services/moodLogsAPI';
 import type { 
   MoodLog, 
   MoodFormData,
@@ -10,9 +10,9 @@ import type {
   YouTubeVideo,
   GameRecommendation,
   MoodActivity
-} from '../types/enhancedMoodTracker.ts';
-import MoodForm from './MoodForm.tsx';
-import MoodRecommendations from './MoodRecommendations.tsx';
+} from '../types/enhancedMoodTracker';
+import MoodForm from './MoodForm';
+import MoodRecommendations from './MoodRecommendations';
 
 // Types and interfaces remain the same
 type MoodRating = 1 | 2 | 3 | 4 | 5
