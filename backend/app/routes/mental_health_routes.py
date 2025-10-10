@@ -50,6 +50,17 @@ class FunnyImageResponse(BaseModel):
     type: str
     caption: str
 
+class QuoteResponse(BaseModel):
+    text: str
+    author: str
+    category: str
+    source: str
+
+class BatchQuotesResponse(BaseModel):
+    quotes: List[QuoteResponse]
+    mood: str
+    count: int
+
 class HistoryRequest(BaseModel):
     user_id: str
     item_type: str
@@ -955,6 +966,146 @@ async def get_batch_jokes(count: int = 3):
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get jokes: {str(e)}")
+
+@router.get("/batch/quotes/{mood}", response_model=BatchQuotesResponse)
+async def get_batch_quotes(mood: str, count: int = 3):
+    """
+    Get motivational quotes based on user's mood using ZenQuotes API.
+    Supports mood-based filtering and provides fallback quotes.
+    """
+    try:
+        quotes = []
+        
+        # Mood-based quote keywords for better relevance
+        mood_keywords = {
+            "happy": ["happiness", "joy", "success", "achievement"],
+            "excited": ["motivation", "energy", "enthusiasm", "success"],
+            "content": ["peace", "contentment", "gratitude", "balance"],
+            "sad": ["hope", "strength", "resilience", "courage"],
+            "anxious": ["calm", "peace", "strength", "courage"],
+            "angry": ["patience", "peace", "wisdom", "understanding"],
+            "stressed": ["calm", "peace", "balance", "relaxation"],
+            "neutral": ["inspiration", "wisdom", "motivation", "life"],
+            "calm": ["peace", "serenity", "balance", "mindfulness"],
+            "overwhelmed": ["strength", "resilience", "courage", "hope"]
+        }
+        
+        # Try to fetch from ZenQuotes API (free, no API key required)
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                # ZenQuotes API endpoint for random quotes
+                response = await client.get("https://zenquotes.io/api/quotes")
+                
+                if response.status_code == 200:
+                    api_quotes = response.json()
+                    
+                    # Filter and format quotes
+                    for quote_data in api_quotes:
+                        if len(quotes) >= count:
+                            break
+                        
+                        quotes.append(QuoteResponse(
+                            text=quote_data.get("q", ""),
+                            author=quote_data.get("a", "Unknown"),
+                            category=mood.lower(),
+                            source="ZenQuotes API"
+                        ))
+        except Exception as api_error:
+            print(f"ZenQuotes API error: {api_error}")
+        
+        # Fallback quotes organized by mood
+        fallback_quotes_by_mood = {
+            "happy": [
+                {"text": "Happiness is not something ready made. It comes from your own actions.", "author": "Dalai Lama"},
+                {"text": "The purpose of our lives is to be happy.", "author": "Dalai Lama"},
+                {"text": "Happiness is when what you think, what you say, and what you do are in harmony.", "author": "Mahatma Gandhi"}
+            ],
+            "sad": [
+                {"text": "The darkest nights produce the brightest stars.", "author": "Unknown"},
+                {"text": "Every storm runs out of rain.", "author": "Maya Angelou"},
+                {"text": "This too shall pass.", "author": "Persian Proverb"}
+            ],
+            "anxious": [
+                {"text": "You don't have to control your thoughts. You just have to stop letting them control you.", "author": "Dan Millman"},
+                {"text": "Anxiety does not empty tomorrow of its sorrows, but only empties today of its strength.", "author": "Charles Spurgeon"},
+                {"text": "Nothing can bring you peace but yourself.", "author": "Ralph Waldo Emerson"}
+            ],
+            "stressed": [
+                {"text": "In the middle of difficulty lies opportunity.", "author": "Albert Einstein"},
+                {"text": "The greatest weapon against stress is our ability to choose one thought over another.", "author": "William James"},
+                {"text": "Don't let yesterday take up too much of today.", "author": "Will Rogers"}
+            ],
+            "angry": [
+                {"text": "For every minute you are angry you lose sixty seconds of happiness.", "author": "Ralph Waldo Emerson"},
+                {"text": "Anger is an acid that can do more harm to the vessel in which it is stored than to anything on which it is poured.", "author": "Mark Twain"},
+                {"text": "Holding onto anger is like drinking poison and expecting the other person to die.", "author": "Buddha"}
+            ],
+            "excited": [
+                {"text": "The only way to do great work is to love what you do.", "author": "Steve Jobs"},
+                {"text": "Believe you can and you're halfway there.", "author": "Theodore Roosevelt"},
+                {"text": "Your limitation—it's only your imagination.", "author": "Unknown"}
+            ],
+            "calm": [
+                {"text": "Peace comes from within. Do not seek it without.", "author": "Buddha"},
+                {"text": "In the midst of movement and chaos, keep stillness inside of you.", "author": "Deepak Chopra"},
+                {"text": "The quieter you become, the more you can hear.", "author": "Ram Dass"}
+            ],
+            "overwhelmed": [
+                {"text": "You don't have to see the whole staircase, just take the first step.", "author": "Martin Luther King Jr."},
+                {"text": "One day at a time—this is enough. Do not look back and grieve over the past for it is gone.", "author": "Ida Scott Taylor"},
+                {"text": "Start where you are. Use what you have. Do what you can.", "author": "Arthur Ashe"}
+            ]
+        }
+        
+        # Default motivational quotes
+        default_fallback_quotes = [
+            {"text": "The only impossible journey is the one you never begin.", "author": "Tony Robbins"},
+            {"text": "Your life does not get better by chance, it gets better by change.", "author": "Jim Rohn"},
+            {"text": "Believe in yourself and all that you are.", "author": "Christian D. Larson"},
+            {"text": "You are never too old to set another goal or to dream a new dream.", "author": "C.S. Lewis"},
+            {"text": "The future belongs to those who believe in the beauty of their dreams.", "author": "Eleanor Roosevelt"},
+            {"text": "Success is not final, failure is not fatal: it is the courage to continue that counts.", "author": "Winston Churchill"},
+            {"text": "You are stronger than you think and more capable than you imagine.", "author": "Unknown"},
+            {"text": "Every day is a new opportunity to grow and shine.", "author": "Unknown"}
+        ]
+        
+        # If we don't have enough quotes from API, use fallback
+        if len(quotes) < count:
+            mood_lower = mood.lower()
+            fallback_source = fallback_quotes_by_mood.get(mood_lower, default_fallback_quotes)
+            
+            # Add fallback quotes
+            for fallback in fallback_source:
+                if len(quotes) >= count:
+                    break
+                quotes.append(QuoteResponse(
+                    text=fallback["text"],
+                    author=fallback["author"],
+                    category=mood.lower(),
+                    source="curated"
+                ))
+            
+            # If still not enough, add from default fallback
+            if len(quotes) < count:
+                for fallback in default_fallback_quotes:
+                    if len(quotes) >= count:
+                        break
+                    if fallback not in fallback_source:  # Avoid duplicates
+                        quotes.append(QuoteResponse(
+                            text=fallback["text"],
+                            author=fallback["author"],
+                            category=mood.lower(),
+                            source="curated"
+                        ))
+        
+        return BatchQuotesResponse(
+            quotes=quotes[:count],
+            mood=mood,
+            count=len(quotes[:count])
+        )
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get quotes: {str(e)}")
 
 @router.get("/batch/images/{count}", response_model=BatchImagesResponse)
 async def get_batch_images(count: int = 3):

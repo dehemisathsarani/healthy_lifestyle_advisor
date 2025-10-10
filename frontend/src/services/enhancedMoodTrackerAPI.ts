@@ -328,17 +328,109 @@ export class EnhancedMoodTrackerAPI {
     ]
   }
 
-  // Motivational quotes
-  static getMotivationalQuotes(): string[] {
-    return [
-      "You are stronger than you think and more capable than you imagine.",
-      "Every day is a new opportunity to grow and shine.",
-      "Your positive mindset is your superpower.",
-      "Believe in yourself and all that you are.",
-      "You've overcome challenges before, and you'll do it again.",
-      "Your happiness matters, and you deserve to feel joy.",
-      "Progress, not perfection, is what matters.",
-      "You are exactly where you need to be right now."
-    ]
+  // Motivational quotes with mood-based API integration
+  static async getMotivationalQuotes(moodType?: string, count: number = 3): Promise<{ text: string; author: string }[]> {
+    try {
+      // Enhanced fetch with retry logic (similar to jokes)
+      const fetchWithRetry = async (url: string, retries: number = 2): Promise<any> => {
+        for (let attempt = 0; attempt <= retries; attempt++) {
+          try {
+            const controller = new AbortController()
+            const timeoutId = setTimeout(() => controller.abort(), 5000)
+
+            const response = await fetch(url, {
+              signal: controller.signal,
+              headers: {
+                'Accept': 'application/json',
+              }
+            })
+
+            clearTimeout(timeoutId)
+
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`)
+            }
+
+            return await response.json()
+          } catch (error: any) {
+            const isNetworkError = 
+              error.name === 'AbortError' || 
+              error.name === 'TypeError' ||
+              error.message?.includes('network') ||
+              error.message?.includes('fetch')
+
+            if (attempt === retries || !isNetworkError) {
+              throw error
+            }
+
+            const delay = Math.pow(2, attempt) * 1000
+            await new Promise(resolve => setTimeout(resolve, delay))
+          }
+        }
+      }
+
+      const mood = moodType || 'neutral'
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8005'
+      const url = `${backendUrl}/mental-health/batch/quotes/${mood}?count=${count}`
+      
+      const data = await fetchWithRetry(url)
+      
+      if (data && data.quotes && Array.isArray(data.quotes)) {
+        return data.quotes.map((q: any) => ({
+          text: q.text,
+          author: q.author
+        }))
+      }
+      
+      // If API returns empty, use fallback
+      return this.getFallbackQuotes(mood)
+      
+    } catch (error) {
+      console.error('Error fetching quotes:', error)
+      return this.getFallbackQuotes(moodType)
+    }
+  }
+
+  // Fallback quotes when API is unavailable
+  private static getFallbackQuotes(moodType?: string): { text: string; author: string }[] {
+    const fallbackQuotes = {
+      happy: [
+        { text: "Happiness is not something ready made. It comes from your own actions.", author: "Dalai Lama" },
+        { text: "The purpose of our lives is to be happy.", author: "Dalai Lama" },
+        { text: "Happiness is when what you think, what you say, and what you do are in harmony.", author: "Mahatma Gandhi" }
+      ],
+      sad: [
+        { text: "The darkest nights produce the brightest stars.", author: "Unknown" },
+        { text: "Every storm runs out of rain.", author: "Maya Angelou" },
+        { text: "This too shall pass.", author: "Persian Proverb" }
+      ],
+      anxious: [
+        { text: "You don't have to control your thoughts. You just have to stop letting them control you.", author: "Dan Millman" },
+        { text: "Nothing can bring you peace but yourself.", author: "Ralph Waldo Emerson" },
+        { text: "Anxiety does not empty tomorrow of its sorrows, but only empties today of its strength.", author: "Charles Spurgeon" }
+      ],
+      stressed: [
+        { text: "In the middle of difficulty lies opportunity.", author: "Albert Einstein" },
+        { text: "The greatest weapon against stress is our ability to choose one thought over another.", author: "William James" },
+        { text: "Don't let yesterday take up too much of today.", author: "Will Rogers" }
+      ],
+      angry: [
+        { text: "For every minute you are angry you lose sixty seconds of happiness.", author: "Ralph Waldo Emerson" },
+        { text: "Holding onto anger is like drinking poison and expecting the other person to die.", author: "Buddha" },
+        { text: "Anger is an acid that can do more harm to the vessel in which it is stored than to anything on which it is poured.", author: "Mark Twain" }
+      ],
+      default: [
+        { text: "The only impossible journey is the one you never begin.", author: "Tony Robbins" },
+        { text: "Your life does not get better by chance, it gets better by change.", author: "Jim Rohn" },
+        { text: "Believe in yourself and all that you are.", author: "Christian D. Larson" },
+        { text: "You are stronger than you think and more capable than you imagine.", author: "Unknown" },
+        { text: "Every day is a new opportunity to grow and shine.", author: "Unknown" }
+      ]
+    }
+
+    const mood = moodType?.toLowerCase() || 'default'
+    const moodQuotes = fallbackQuotes[mood as keyof typeof fallbackQuotes] || fallbackQuotes.default
+    
+    return moodQuotes
   }
 }

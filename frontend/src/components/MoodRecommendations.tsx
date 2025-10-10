@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Music, Gamepad2, Image, Quote, ExternalLink, RefreshCw, CheckCircle, ChevronRight } from 'lucide-react';
+import { Music, Gamepad2, Image, Quote, ExternalLink, CheckCircle, ChevronRight } from 'lucide-react';
 
 interface MoodRecommendationsProps {
   mood: 'positive' | 'negative';
@@ -11,7 +11,6 @@ interface MoodRecommendationsProps {
     quotes?: any[];
   };
   onActivityComplete: (activityType: string, activity: any) => void;
-  onMoreContent: () => void;
   onComplete: () => void;
   showMoreOptions: boolean;
 }
@@ -20,7 +19,6 @@ const MoodRecommendations: React.FC<MoodRecommendationsProps> = ({
   mood,
   recommendations,
   onActivityComplete,
-  onMoreContent,
   onComplete
 }) => {
   const [currentSection, setCurrentSection] = useState<string>('jokes');
@@ -47,13 +45,6 @@ const MoodRecommendations: React.FC<MoodRecommendationsProps> = ({
           <Quote className="w-6 h-6 mr-2 text-yellow-500" />
           Jokes to Brighten Your Day
         </h3>
-        <button
-          onClick={() => onMoreContent()}
-          className="text-sm text-purple-600 hover:text-purple-800 flex items-center"
-        >
-          <RefreshCw className="w-4 h-4 mr-1" />
-          More Jokes
-        </button>
       </div>
       <div className="grid gap-4">
         {recommendations.jokes?.slice(0, 3).map((joke, index) => (
@@ -87,13 +78,6 @@ const MoodRecommendations: React.FC<MoodRecommendationsProps> = ({
           <Quote className="w-6 h-6 mr-2 text-blue-500" />
           Motivational Quotes
         </h3>
-        <button
-          onClick={() => onMoreContent()}
-          className="text-sm text-purple-600 hover:text-purple-800 flex items-center"
-        >
-          <RefreshCw className="w-4 h-4 mr-1" />
-          More Quotes
-        </button>
       </div>
       <div className="grid gap-4">
         {(recommendations.quotes || [
@@ -126,13 +110,6 @@ const MoodRecommendations: React.FC<MoodRecommendationsProps> = ({
           <Image className="w-6 h-6 mr-2 text-green-500" />
           {mood === 'positive' ? 'Inspiring Images' : 'Calming Images'}
         </h3>
-        <button
-          onClick={() => onMoreContent()}
-          className="text-sm text-purple-600 hover:text-purple-800 flex items-center"
-        >
-          <RefreshCw className="w-4 h-4 mr-1" />
-          More Images
-        </button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {recommendations.images?.slice(0, 6).map((image, index) => (
@@ -172,13 +149,6 @@ const MoodRecommendations: React.FC<MoodRecommendationsProps> = ({
           <Music className="w-6 h-6 mr-2 text-purple-500" />
           {mood === 'positive' ? 'Uplifting Music' : 'Calming Music'}
         </h3>
-        <button
-          onClick={() => onMoreContent()}
-          className="text-sm text-purple-600 hover:text-purple-800 flex items-center"
-        >
-          <RefreshCw className="w-4 h-4 mr-1" />
-          More Music
-        </button>
       </div>
       <div className="grid gap-4">
         {recommendations.music?.slice(0, 4).map((song, index) => (
@@ -225,13 +195,6 @@ const MoodRecommendations: React.FC<MoodRecommendationsProps> = ({
           <Gamepad2 className="w-6 h-6 mr-2 text-red-500" />
           Fun Games to Play
         </h3>
-        <button
-          onClick={() => onMoreContent()}
-          className="text-sm text-purple-600 hover:text-purple-800 flex items-center"
-        >
-          <RefreshCw className="w-4 h-4 mr-1" />
-          More Games
-        </button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {recommendations.games?.slice(0, 4).map((game, index) => (

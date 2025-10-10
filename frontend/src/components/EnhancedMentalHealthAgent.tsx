@@ -68,7 +68,7 @@ const EnhancedMentalHealthAgent: React.FC<EnhancedMentalHealthAgentProps> = ({
     images: UnsplashImage[]
     music: YouTubeVideo[]
     games: GameRecommendation[]
-    quotes: string[]
+    quotes: { text: string; author: string }[]
   }>({
     jokes: [],
     images: [],
@@ -219,17 +219,16 @@ const EnhancedMentalHealthAgent: React.FC<EnhancedMentalHealthAgentProps> = ({
 
   const loadMoodRecommendations = useCallback(async (mood: 'positive' | 'negative') => {
     try {
-      // Get the current mood type from the mood log for personalized jokes
+      // Get the current mood type from the mood log for personalized content
       const moodType = currentMoodLog?.moodType || 'neutral'
       
-      const [jokes, images, music, games] = await Promise.all([
+      const [jokes, images, music, games, quotes] = await Promise.all([
         EnhancedMoodTrackerAPI.getJokes(3, moodType),
         EnhancedMoodTrackerAPI.getMotivationalImages(mood === 'positive' ? 'motivation' : 'calm', 3),
         EnhancedMoodTrackerAPI.getYouTubeMusic(mood, 3),
-        EnhancedMoodTrackerAPI.getFunnyGames(3)
+        EnhancedMoodTrackerAPI.getFunnyGames(3),
+        EnhancedMoodTrackerAPI.getMotivationalQuotes(moodType, 3)
       ])
-
-      const quotes = EnhancedMoodTrackerAPI.getMotivationalQuotes()
 
       setCurrentRecommendations({
         jokes,
@@ -388,7 +387,6 @@ const EnhancedMentalHealthAgent: React.FC<EnhancedMentalHealthAgentProps> = ({
                   mood={currentMoodLog.mood}
                   recommendations={currentRecommendations}
                   onActivityComplete={handleActivityComplete}
-                  onMoreContent={() => setShowMoreOptions(true)}
                   onComplete={saveMoodLog}
                   showMoreOptions={showMoreOptions}
                 />
