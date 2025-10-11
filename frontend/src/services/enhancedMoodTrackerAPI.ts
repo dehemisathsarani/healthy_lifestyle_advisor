@@ -370,7 +370,7 @@ export class EnhancedMoodTrackerAPI {
       }
 
       const mood = moodType || 'neutral'
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8005'
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
       const url = `${backendUrl}/mental-health/batch/quotes/${mood}?count=${count}`
       
       const data = await fetchWithRetry(url)
