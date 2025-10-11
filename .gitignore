@@ -660,3 +660,5 @@ aiservices/dietaiservices/test_integration.py
 aiservices/dietaiservices/test_realistic_processor.py
 aiservices/dietaiservices/simple_validation.py
 aiservices/dietaiservices/quick_api_test.py
+image.png
+backend/.env

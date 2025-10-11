@@ -452,14 +452,29 @@ class EnhancedAdvancedFoodAnalysisService {
 
   private async tryRealTimeAPI(input: any): Promise<EnhancedNutritionAnalysis | null> {
     try {
+      // 🚀 Priority 1: Try YOLOv8 + Tesseract (most accurate for images)
+      if (input.imageFile) {
+        try {
+          console.log('🎯 Attempting YOLOv8 + Tesseract analysis...')
+          const yoloResult = await this.tryYOLOAnalysis(input)
+          if (yoloResult && yoloResult.confidence > 0.7) {
+            console.log('✅ YOLOv8 analysis successful!')
+            return yoloResult
+          }
+        } catch (error) {
+          console.warn('⚠️ YOLOv8 analysis failed, trying standard API:', error)
+        }
+      }
+
+      // Priority 2: Standard backend API
       const formData = new FormData()
       
       if (input.imageFile) {
-        formData.append('image', input.imageFile)
+        formData.append('image_file', input.imageFile)  // ✅ Fixed: backend expects 'image_file'
       }
       
       if (input.text) {
-        formData.append('text', input.text)
+        formData.append('text_input', input.text)  // ✅ Fixed: backend expects 'text_input'
       }
 
       if (input.userContext) {
@@ -480,6 +495,105 @@ class EnhancedAdvancedFoodAnalysisService {
     }
     
     return null
+  }
+
+  private async tryYOLOAnalysis(input: any): Promise<EnhancedNutritionAnalysis | null> {
+    try {
+      const formData = new FormData()
+      formData.append('image', input.imageFile)
+      
+      if (input.text) {
+        formData.append('text_description', input.text)
+      }
+      
+      formData.append('meal_type', input.userContext?.mealType || 'lunch')
+      
+      if (input.userContext?.userId) {
+        formData.append('user_id', input.userContext.userId)
+      }
+
+      const response = await fetch('http://localhost:8001/analyze-food-yolo', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (!response.ok) {
+        throw new Error(`YOLO API error: ${response.status}`)
+      }
+
+      const result = await response.json()
+      
+      if (result.success && result.analysis) {
+        return this.parseYOLOResponse(result.analysis)
+      }
+    } catch (error) {
+      console.warn('YOLO analysis failed:', error)
+    }
+    
+    return null
+  }
+
+  private parseYOLOResponse(yoloData: any): EnhancedNutritionAnalysis {
+    const detectedFoods = yoloData.detected_foods || []
+    
+    const foodItems: EnhancedFoodItem[] = detectedFoods.map((food: any) => ({
+      id: Math.random().toString(36).substr(2, 9),
+      name: food.name,
+      category: food.food_category || 'other',
+      subcategory: food.food_category || 'unknown',
+      cuisine: food.cultural_origin || 'international',
+      calories: food.calories || 0,
+      protein: food.protein || 0,
+      carbs: food.carbs || 0,
+      fat: food.fat || 0,
+      fiber: food.fiber || 0,
+      sodium: food.sodium || 0,
+      sugar: food.sugar || 0,
+      vitamins: {},
+      minerals: {},
+      portion: food.estimated_portion || '100g',
+      portionWeight: parseFloat(food.estimated_portion) || 100,
+      confidence: food.confidence || 0.85,
+      components: food.ocr_text ? [food.ocr_text] : [],
+      cookingMethod: food.detection_method || 'yolo',
+      healthScore: 7.5
+    }))
+
+    const totalNutrition = foodItems.reduce((acc, item) => ({
+      calories: acc.calories + item.calories,
+      protein: acc.protein + item.protein,
+      carbs: acc.carbs + item.carbs,
+      fat: acc.fat + item.fat,
+      fiber: acc.fiber + item.fiber,
+      sodium: acc.sodium + item.sodium,
+      sugar: acc.sugar + item.sugar,
+      vitamins: {},
+      minerals: {}
+    }), {
+      calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, sodium: 0, sugar: 0,
+      vitamins: {}, minerals: {}
+    })
+
+    const avgConfidence = foodItems.length > 0 
+      ? foodItems.reduce((sum, f) => sum + f.confidence, 0) / foodItems.length 
+      : 0.85
+
+    return {
+      foodItems,
+      totalNutrition,
+      confidence: avgConfidence,
+      analysisMethod: 'yolov8-tesseract-hybrid',
+      detectionMethods: ['yolo_vision', 'tesseract_ocr', 'nutrition_database'],
+      recommendations: [
+        `Detected ${foodItems.length} food item(s) using YOLOv8 + Tesseract`,
+        'Analysis based on 50+ accurate food database'
+      ],
+      improvements: [],
+      unknownFoods: [],
+      healthScore: 7.5,
+      balanceScore: 7.0,
+      sustainabilityScore: 6.0
+    }
   }
 
   private async performEnhancedLocalAnalysis(input: any): Promise<EnhancedNutritionAnalysis> {
@@ -658,9 +772,12 @@ class EnhancedAdvancedFoodAnalysisService {
         if (aiVisionResult.confidence > 0.6) {
           console.log('✅ AI Vision analysis successful')
           return aiVisionResult
+        } else {
+          console.log('ℹ️ AI Vision confidence too low, using traditional analysis')
         }
       } catch (error) {
-        console.warn('⚠️ AI Vision failed, falling back to traditional analysis:', error)
+        console.warn('⚠️ AI Vision not available, falling back to traditional analysis:', error instanceof Error ? error.message : error)
+        // Continue to fallback - don't re-throw
       }
     }
     
@@ -1326,7 +1443,12 @@ class EnhancedAdvancedFoodAnalysisService {
       // Check AI Vision status
       const aiStatus = await this.checkAIVisionStatus()
       if (!aiStatus.ai_vision_available) {
-        throw new Error('AI Vision services not available')
+        console.log('ℹ️ AI Vision services not available, skipping advanced detection')
+        // Return empty result instead of throwing - let caller handle fallback
+        return {
+          foods: [],
+          confidence: 0
+        }
       }
       
       // Call the comprehensive AI vision endpoint
@@ -1390,7 +1512,11 @@ class EnhancedAdvancedFoodAnalysisService {
       
     } catch (error) {
       console.error('❌ AI Vision analysis failed:', error)
-      throw error
+      // Return empty result instead of throwing - graceful degradation
+      return {
+        foods: [],
+        confidence: 0
+      }
     }
   }
 
@@ -1401,6 +1527,19 @@ class EnhancedAdvancedFoodAnalysisService {
     try {
       const statusUrl = this.config.aiVisionEndpoint.replace('/ai-vision-analyze', '/ai-vision-status')
       const response = await fetch(statusUrl)
+      
+      // If endpoint doesn't exist (404), return unavailable status
+      if (!response.ok) {
+        console.log('ℹ️ AI Vision status endpoint not available (404) - services assumed unavailable')
+        return {
+          ai_vision_available: false,
+          yolo_available: false,
+          tensorflow_available: false,
+          opencv_available: false,
+          models_loaded: false
+        }
+      }
+      
       const status = await response.json()
       
       console.log('🔍 AI Vision Status:', {

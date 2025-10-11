@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react'
-import { ArrowLeft, Camera, FileText, BarChart3, Brain, TrendingUp, Target, CheckCircle, Heart, MessageCircle, Send, Bot, User as UserIcon, Download, Trash2 } from 'lucide-react'
+import { ArrowLeft, Camera, FileText, BarChart3, Brain, TrendingUp, Target, CheckCircle, Heart, MessageCircle, Send, Bot, User as UserIcon, Download, Trash2, Sparkles } from 'lucide-react'
 import { useAuth } from '../auth/AuthContext'
 import { nutritionApi } from '../services/nutritionApi'
 import NutritionalProfileSetup, { type NutritionalProfileData } from './NutritionalProfileSetup'
@@ -613,7 +613,7 @@ What would you like to explore about nutrition today?`,
   // Load nutrition logs from API
   const loadNutritionLogs = useCallback(async () => {
     try {
-      const response = await nutritionApi.getNutritionLogs()
+      const response = await nutritionApi.getNutritionLogs(1, 50)
       setNutritionLogs(response)
       console.log('✅ Loaded nutrition logs from database:', response.length)
     } catch (error) {
@@ -628,6 +628,25 @@ What would you like to explore about nutrition today?`,
       loadNutritionLogs()
     }
   }, [isAuthenticated, activeTab, loadNutritionLogs])
+
+  // Real-time polling for nutrition logs updates (every 30 seconds)
+  useEffect(() => {
+    if (!isAuthenticated) return
+
+    // Initial load
+    loadNutritionLogs()
+
+    // Set up polling interval
+    const pollInterval = setInterval(() => {
+      console.log('🔄 Auto-refreshing nutrition logs...')
+      loadNutritionLogs()
+    }, 30000) // 30 seconds
+
+    // Cleanup interval on unmount
+    return () => {
+      clearInterval(pollInterval)
+    }
+  }, [isAuthenticated, loadNutritionLogs])
 
   // Sample food database for text analysis
   const foodDatabase = {
@@ -772,25 +791,8 @@ What would you like to explore about nutrition today?`,
       return response
     } catch (error) {
       console.error('Image analysis error:', error)
-      // Final fallback to mock results
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      return [
-        {
-          id: Math.random().toString(36).substr(2, 9),
-          name: 'Rice',
-          quantity: '200g',
-          nutrition: { calories: 260, protein: 5, carbs: 55, fat: 1 },
-          confidence: 0.92
-        },
-        {
-          id: Math.random().toString(36).substr(2, 9),
-          name: 'Chicken Curry',
-          quantity: '150g',
-          nutrition: { calories: 250, protein: 18, carbs: 10, fat: 15 },
-          confidence: 0.88
-        }
-      ]
+      // IMPORTANT: Show error message instead of fake data
+      throw new Error('Unable to analyze image. Please ensure:\n1. Backend services are running (start_backend.bat)\n2. Image is clear and contains food\n3. Try adding a text description to help with analysis')
     }
   }, [enhancedFoodAnalysis, nutritionalProfile, textInput])
 
@@ -918,13 +920,33 @@ What would you like to explore about nutrition today?`,
 
   // Save to nutrition log using API
   const saveToNutritionLog = async () => {
-    if (!analysisResult) return
+    if (!analysisResult || analysisResult.length === 0) {
+      alert('No food items to save. Please analyze food first.')
+      return
+    }
 
     try {
       setIsLoading(true)
       
+      // Check if user is authenticated using auth context only
+      if (!isAuthenticated || !profile?.email) {
+        setIsLoading(false)
+        alert('⚠️ Please log in to save nutrition logs.\n\nYou need to be logged in to save your nutrition data to the database.\n\nPlease log in or create an account to continue.')
+        console.error('❌ Authentication check failed:', { 
+          isAuthenticated, 
+          hasProfile: !!profile, 
+          hasEmail: !!profile?.email 
+        })
+        return
+      }
+
+      console.log('💾 Preparing to save nutrition log...')
+      console.log('📊 Analysis result:', analysisResult)
+      console.log('👤 User:', profile.email)
+      console.log('✅ Authentication verified:', { isAuthenticated, email: profile.email })
+      
       const response = await nutritionApi.createNutritionLog({
-        user_id: profile?.email || 'demo-user',
+        user_id: profile.email, // Now guaranteed to exist
         date: new Date().toISOString().split('T')[0],
         meals: analysisResult,
         meal_type: 'lunch', // Default, could be made configurable
@@ -938,6 +960,7 @@ What would you like to explore about nutrition today?`,
       })
 
       console.log('✅ Nutrition log saved to database:', response)
+      alert('✅ Nutrition log saved successfully!')
       
       // Refresh nutrition logs
       await loadNutritionLogs()
@@ -949,24 +972,50 @@ What would you like to explore about nutrition today?`,
       setTextInput('')
       setImageFile(undefined)
       setAiInsights([])
+      
+      console.log('✅ All done! Switched to logs tab.')
     } catch (error) {
       console.error('❌ Error saving nutrition log:', error)
-      alert('Failed to save nutrition log. Please try again.')
+      console.error('❌ Error type:', error instanceof Error ? error.constructor.name : typeof error)
+      console.error('❌ Error message:', error instanceof Error ? error.message : String(error))
+      console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+      alert(`Failed to save nutrition log: ${error instanceof Error ? error.message : 'Unknown error'}`)
     } finally {
       setIsLoading(false)
     }
   }
 
-  // Generate weekly report using API
+  // Generate weekly report using API with NLP
   const generateWeeklyReport = async () => {
     setIsLoading(true)
     try {
-      console.log('🔄 Generating weekly report...')
+      console.log('🔄 Generating NLP-powered weekly report...')
       
-      const response = await nutritionApi.generateWeeklyReport()
+      // Call new NLP-powered endpoint
+      const response = await fetch('http://localhost:8001/generate-weekly-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: profile?.email || nutritionalProfile?.name || 'demo-user',
+          days: 7,
+          include_insights: true
+        })
+      })
       
-      setWeeklyReport(response)
-      console.log('✅ Weekly report generated:', response)
+      if (!response.ok) {
+        throw new Error(`Report generation failed: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        setWeeklyReport(data)
+        console.log('✅ NLP-powered weekly report generated:', data)
+      } else {
+        throw new Error(data.message || 'Failed to generate report')
+      }
+      
+      return
     } catch (error) {
       console.error('❌ Failed to generate weekly report:', error)
       
@@ -1198,41 +1247,146 @@ What would you like to explore about nutrition today?`,
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Upload food image:
+                      Upload food image (Auto-analyzes on upload):
                     </label>
                     <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center">
                       <input
                         type="file"
                         accept="image/*"
-                        onChange={(e) => setImageFile(e.target.files?.[0])}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0]
+                          if (file) {
+                            setImageFile(file)
+                            // Automatically trigger analysis after image is selected
+                            console.log('🚀 Auto-analyzing uploaded image:', file.name)
+                            setAnalysisMode('image')
+                            
+                            // Small delay to ensure state is updated
+                            setTimeout(async () => {
+                              setIsAnalyzing(true)
+                              try {
+                                const results = await analyzeImageFood(file)
+                                setAnalysisResult(results)
+                                
+                                // Try to get enhanced insights from image analysis
+                                try {
+                                  const enhancedResult = await enhancedFoodAnalysis.analyzeFood({
+                                    imageFile: file,
+                                    text: textInput.trim() || undefined,
+                                    userContext: { profile: nutritionalProfile },
+                                    realTimeMode: true
+                                  })
+                                  
+                                  // Generate DYNAMIC AI insights based on user's meal history
+                                  const enhancedInsights = []
+                                  enhancedInsights.push(`🎯 Analysis confidence: ${(enhancedResult.confidence * 100).toFixed(1)}%`)
+                                  enhancedInsights.push(`🔬 Method: ${enhancedResult.analysisMethod} (YOLOv8 + Tesseract + OpenCV)`)
+                                  
+                                  if (enhancedResult.healthScore !== undefined) {
+                                    enhancedInsights.push(`💚 Health score: ${enhancedResult.healthScore.toFixed(1)}/10`)
+                                  }
+                                  if (enhancedResult.balanceScore !== undefined) {
+                                    enhancedInsights.push(`⚖️ Balance score: ${enhancedResult.balanceScore.toFixed(1)}/10`)
+                                  }
+                                  if (enhancedResult.sustainabilityScore !== undefined) {
+                                    enhancedInsights.push(`🌱 Sustainability: ${enhancedResult.sustainabilityScore.toFixed(1)}/10`)
+                                  }
+                                  
+                                  // DYNAMIC INSIGHTS based on user's recent meals
+                                  if (nutritionLogs.length > 0) {
+                                    const recentCalories = nutritionLogs.slice(0, 3).reduce((sum, log) => sum + log.total_nutrition.calories, 0) / Math.min(3, nutritionLogs.length)
+                                    const currentCalories = results.reduce((sum, food) => sum + food.nutrition.calories, 0)
+                                    
+                                    if (currentCalories > recentCalories * 1.3) {
+                                      enhancedInsights.push(`⚠️ This meal is 30% higher in calories than your recent average`)
+                                    } else if (currentCalories < recentCalories * 0.7) {
+                                      enhancedInsights.push(`✅ This is a lighter meal compared to your usual intake`)
+                                    }
+                                    
+                                    const recentProtein = nutritionLogs.slice(0, 3).reduce((sum, log) => sum + log.total_nutrition.protein, 0) / Math.min(3, nutritionLogs.length)
+                                    const currentProtein = results.reduce((sum, food) => sum + food.nutrition.protein, 0)
+                                    
+                                    if (currentProtein < recentProtein * 0.7) {
+                                      enhancedInsights.push(`💪 Consider adding more protein - this meal has less than your usual`)
+                                    }
+                                    
+                                    enhancedInsights.push(`📊 Based on ${nutritionLogs.length} previous meals in your log`)
+                                  }
+                                  
+                                  if (enhancedResult.recommendations.length > 0) {
+                                    enhancedInsights.push(...enhancedResult.recommendations.map(r => `💡 ${r}`))
+                                  }
+                                  
+                                  setAiInsights(enhancedInsights)
+                                } catch (error) {
+                                  console.log('Enhanced image insights generation failed:', error)
+                                  generateAIInsights(results)
+                                }
+                                
+                                console.log('✅ Auto-analysis complete!')
+                              } catch (error) {
+                                console.error('❌ Auto-analysis failed:', error)
+                              } finally {
+                                setIsAnalyzing(false)
+                              }
+                            }, 300)
+                          }
+                        }}
                         className="hidden"
                         id="image-upload"
+                        disabled={isAnalyzing}
                       />
-                      <label htmlFor="image-upload" className="cursor-pointer">
+                      <label htmlFor="image-upload" className={`cursor-pointer ${isAnalyzing ? 'opacity-50 cursor-not-allowed' : ''}`}>
                         <Camera className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                        <p className="text-gray-600">Click to upload or drag and drop</p>
-                        <p className="text-xs text-gray-500 mt-1">PNG, JPG, GIF up to 10MB</p>
+                        <p className="text-gray-600">
+                          {isAnalyzing ? '🔄 Analyzing...' : 'Click to upload or drag and drop'}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {isAnalyzing ? 'Please wait while we analyze your food' : 'PNG, JPG, GIF up to 10MB'}
+                        </p>
                       </label>
-                      {imageFile && (
-                        <p className="text-sm text-emerald-600 mt-2">Selected: {imageFile.name}</p>
+                      {imageFile && !isAnalyzing && (
+                        <p className="text-sm text-emerald-600 mt-2">✅ Analyzed: {imageFile.name}</p>
+                      )}
+                      {isAnalyzing && (
+                        <div className="mt-4">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto"></div>
+                          <p className="text-sm text-gray-600 mt-2">Analyzing your food...</p>
+                        </div>
                       )}
                     </div>
                   </div>
                   
-                  <button
-                    onClick={handleAnalysis}
-                    disabled={!imageFile || isAnalyzing}
-                    className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold py-4 px-6 rounded-xl hover:from-emerald-600 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-                  >
-                    {isAnalyzing ? (
-                      <div className="flex items-center justify-center space-x-2">
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                        <span>Processing Image...</span>
+                  {/* Optional text description to enhance analysis */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Additional description (optional):
+                    </label>
+                    <textarea
+                      value={textInput}
+                      onChange={(e) => setTextInput(e.target.value)}
+                      placeholder="e.g., 'rice with curry and vegetables' - helps improve accuracy"
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                      rows={2}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      💡 Tip: Add text description before uploading for better accuracy
+                    </p>
+                  </div>
+                  
+                  {/* Info banner about auto-analysis */}
+                  <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
+                    <div className="flex items-start space-x-3">
+                      <div className="text-2xl">⚡</div>
+                      <div>
+                        <h4 className="font-semibold text-blue-900 mb-1">Automatic Analysis Enabled</h4>
+                        <p className="text-sm text-blue-700">
+                          Your food will be analyzed automatically as soon as you upload an image. 
+                          No need to click any buttons - just upload and wait for results!
+                        </p>
                       </div>
-                    ) : (
-                      'Analyze Image'
-                    )}
-                  </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -1364,57 +1518,138 @@ What would you like to explore about nutrition today?`,
         {activeTab === 'logs' && (
           <div className="space-y-8">
             <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-xl">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
-                <FileText className="w-6 h-6 mr-2 text-green-600" />
-                📝 Nutrition Logs
-              </h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 flex items-center">
+                  <FileText className="w-6 h-6 mr-2 text-green-600" />
+                  📝 Nutrition Logs
+                </h2>
+                <div className="flex items-center space-x-3">
+                  {/* Real-time indicator */}
+                  <div className="flex items-center space-x-2 bg-green-100 px-3 py-1.5 rounded-full">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-xs font-medium text-green-700">Live Updates</span>
+                  </div>
+                  {/* Refresh button */}
+                  <button
+                    onClick={loadNutritionLogs}
+                    disabled={isLoading}
+                    className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-xl hover:from-green-600 hover:to-emerald-700 disabled:opacity-50 transition-all"
+                  >
+                    <svg className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    <span className="text-sm font-medium">Refresh</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Summary Stats */}
+              {nutritionLogs.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                  <div className="bg-gradient-to-r from-orange-50 to-red-50 p-4 rounded-xl border border-orange-200 text-center">
+                    <div className="text-2xl font-bold text-orange-600">
+                      {nutritionLogs.reduce((sum, log) => sum + log.total_nutrition.calories, 0).toFixed(0)}
+                    </div>
+                    <div className="text-xs text-gray-600">Total Calories</div>
+                  </div>
+                  <div className="bg-gradient-to-r from-red-50 to-pink-50 p-4 rounded-xl border border-red-200 text-center">
+                    <div className="text-2xl font-bold text-red-600">
+                      {nutritionLogs.reduce((sum, log) => sum + log.total_nutrition.protein, 0).toFixed(0)}g
+                    </div>
+                    <div className="text-xs text-gray-600">Total Protein</div>
+                  </div>
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-200 text-center">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {nutritionLogs.reduce((sum, log) => sum + log.total_nutrition.carbs, 0).toFixed(0)}g
+                    </div>
+                    <div className="text-xs text-gray-600">Total Carbs</div>
+                  </div>
+                  <div className="bg-gradient-to-r from-yellow-50 to-amber-50 p-4 rounded-xl border border-yellow-200 text-center">
+                    <div className="text-2xl font-bold text-yellow-600">
+                      {nutritionLogs.reduce((sum, log) => sum + log.total_nutrition.fat, 0).toFixed(0)}g
+                    </div>
+                    <div className="text-xs text-gray-600">Total Fat</div>
+                  </div>
+                </div>
+              )}
 
               {nutritionLogs.length > 0 ? (
                 <div className="space-y-4">
                   {nutritionLogs.map((log) => (
-                    <div key={log.id} className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200">
+                    <div key={log.id} className="bg-gradient-to-r from-green-50 to-emerald-50 p-6 rounded-xl border border-green-200 hover:shadow-lg transition-shadow">
                       <div className="flex items-center justify-between mb-4">
                         <div>
-                          <h3 className="font-semibold text-gray-900">{log.date}</h3>
-                          <span className="text-sm text-gray-600 capitalize">{log.meal_type}</span>
+                          <h3 className="font-semibold text-gray-900 flex items-center">
+                            📅 {new Date(log.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                          </h3>
+                          <span className="text-sm text-gray-600 capitalize bg-white px-3 py-1 rounded-full inline-block mt-1">
+                            🍽️ {log.meal_type}
+                          </span>
                         </div>
                         <div className="text-right">
-                          <div className="text-lg font-bold text-orange-600">{log.total_nutrition.calories} kcal</div>
-                          <div className="text-sm text-gray-600">Total</div>
+                          <div className="text-2xl font-bold text-orange-600">{log.total_nutrition.calories.toFixed(0)} kcal</div>
+                          <div className="text-xs text-gray-600">Total Energy</div>
                         </div>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                        <div className="text-center p-3 bg-white/60 rounded-lg">
-                          <div className="font-semibold text-red-600">{log.total_nutrition.protein}g</div>
+                        <div className="text-center p-3 bg-white/60 rounded-lg hover:bg-white transition-colors">
+                          <div className="font-semibold text-red-600 text-lg">{log.total_nutrition.protein.toFixed(1)}g</div>
                           <div className="text-xs text-gray-600">Protein</div>
                         </div>
-                        <div className="text-center p-3 bg-white/60 rounded-lg">
-                          <div className="font-semibold text-blue-600">{log.total_nutrition.carbs}g</div>
+                        <div className="text-center p-3 bg-white/60 rounded-lg hover:bg-white transition-colors">
+                          <div className="font-semibold text-blue-600 text-lg">{log.total_nutrition.carbs.toFixed(1)}g</div>
                           <div className="text-xs text-gray-600">Carbs</div>
                         </div>
-                        <div className="text-center p-3 bg-white/60 rounded-lg">
-                          <div className="font-semibold text-yellow-600">{log.total_nutrition.fat}g</div>
+                        <div className="text-center p-3 bg-white/60 rounded-lg hover:bg-white transition-colors">
+                          <div className="font-semibold text-yellow-600 text-lg">{log.total_nutrition.fat.toFixed(1)}g</div>
                           <div className="text-xs text-gray-600">Fat</div>
                         </div>
                       </div>
 
-                      <div className="text-sm text-gray-700">
-                        <strong>Foods:</strong> {log.meals.map(meal => meal.name).join(', ')}
+                      {/* Food items detailed list */}
+                      <div className="bg-white/80 p-4 rounded-lg mb-3">
+                        <h4 className="font-semibold text-gray-800 mb-2 text-sm">🍴 Food Items ({log.meals.length}):</h4>
+                        <div className="space-y-2">
+                          {log.meals.map((meal, idx) => (
+                            <div key={meal.id || idx} className="flex items-center justify-between text-sm border-b border-gray-100 pb-2 last:border-0">
+                              <div className="flex items-center space-x-2">
+                                <span className="text-gray-700 font-medium">{meal.name}</span>
+                                <span className="text-gray-500 text-xs">({meal.quantity})</span>
+                              </div>
+                              <div className="text-xs text-gray-600">
+                                {meal.nutrition.calories.toFixed(0)} kcal
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
+
                       {log.notes && (
-                        <div className="text-sm text-gray-600 mt-2">
-                          <strong>Notes:</strong> {log.notes}
+                        <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                          <strong className="text-gray-800">📝 Notes:</strong> {log.notes}
                         </div>
                       )}
+
+                      {/* Timestamp */}
+                      <div className="text-xs text-gray-500 mt-3 text-right">
+                        Added: {new Date(log.created_at).toLocaleString()}
+                      </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12">
-                  <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No nutrition logs yet</h3>
-                  <p className="text-gray-600">Start analyzing food to build your nutrition history.</p>
+                <div className="text-center py-16">
+                  <FileText className="w-20 h-20 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-xl font-medium text-gray-900 mb-2">No nutrition logs yet</h3>
+                  <p className="text-gray-600 mb-4">Start analyzing food to build your nutrition history.</p>
+                  <button
+                    onClick={() => setActiveTab('analysis')}
+                    className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all inline-flex items-center space-x-2"
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    <span>Analyze Food Now</span>
+                  </button>
                 </div>
               )}
             </div>

@@ -85,17 +85,66 @@ export class NutritionApiService {
     }
   }
 
-  // Save nutrition log
+  // Save nutrition log to backend API
   async saveNutritionLog(log: Omit<NutritionLog, 'id' | 'created_at'>): Promise<NutritionLog> {
     try {
-      const savedLog: NutritionLog = {
-        ...log,
-        id: Math.random().toString(36).substr(2, 9),
-        created_at: new Date().toISOString()
+      const token = sessionStorage.getItem('access_token')
+      if (!token) {
+        throw new Error('No authentication token found')
       }
-      return savedLog
+
+      // Transform the log data to match backend SimpleNutritionEntry schema
+      // Save each meal item as a separate entry in the backend
+      const savedMeals: any[] = []
+      
+      for (const meal of log.meals) {
+        const entryData = {
+          user_id: log.user_id,
+          date: log.date,
+          meal_type: log.meal_type,
+          food_description: meal.name,
+          calories: meal.nutrition.calories,
+          protein: meal.nutrition.protein,
+          carbs: meal.nutrition.carbs,
+          fat: meal.nutrition.fat,
+          fiber: meal.nutrition.fiber || 0
+        }
+
+        console.log('💾 Saving nutrition entry:', entryData)
+
+        const response = await fetch(`${this.baseUrl}/api/diet/nutrition-entry`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(entryData),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          console.error('❌ Backend error:', errorData)
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const data = await response.json()
+        console.log('✅ Saved nutrition entry to database:', data)
+        savedMeals.push(data)
+      }
+      
+      // Return the saved log with proper structure
+      return {
+        id: savedMeals[0]?.data?.id || savedMeals[0]?.data?._id || String(Date.now()),
+        ...log,
+        created_at: savedMeals[0]?.data?.created_at || new Date().toISOString()
+      }
     } catch (error) {
-      console.error('Failed to save nutrition log:', error)
+      console.error('❌ Failed to save nutrition log:', error)
+      console.error('❌ Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        error
+      })
       throw error
     }
   }
@@ -104,30 +153,137 @@ export class NutritionApiService {
     return this.saveNutritionLog(log)
   }
 
-  // Get nutrition logs
-  async getNutritionLogs(): Promise<NutritionLog[]> {
+  // Get nutrition logs from backend API
+  async getNutritionLogs(page: number = 1, perPage: number = 50): Promise<NutritionLog[]> {
     try {
-      return [
+      const token = sessionStorage.getItem('access_token')
+      if (!token) {
+        console.warn('No authentication token found')
+        return []
+      }
+
+      // Get user info
+      const userResponse = await fetch(`${this.baseUrl}/auth/me`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      const userData = await userResponse.json()
+      const userId = userData.email || userData.id || 'unknown'
+
+      console.log('📥 Fetching nutrition logs for user:', userId)
+
+      const response = await fetch(
+        `${this.baseUrl}/api/diet/nutrition-entries/${userId}?limit=${perPage}`,
         {
-          id: '1',
-          user_id: '1',
-          date: new Date().toISOString().split('T')[0],
-          meal_type: 'breakfast',
-          meals: [
-            {
-              id: '1',
-              name: 'Oatmeal',
-              quantity: '1 cup',
-              nutrition: { calories: 150, protein: 5, carbs: 27, fat: 3 },
-              confidence: 0.9
-            }
-          ],
-          total_nutrition: { calories: 150, protein: 5, carbs: 27, fat: 3 },
-          created_at: new Date().toISOString()
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
         }
-      ]
+      )
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log('✅ Fetched nutrition entries from database:', data)
+      
+      // Transform backend entries to NutritionLog format
+      // Group entries by date and meal_type
+      const groupedEntries: { [key: string]: any[] } = {}
+      
+      if (data.data && Array.isArray(data.data)) {
+        data.data.forEach((entry: any) => {
+          const key = `${entry.date}_${entry.meal_type}`
+          if (!groupedEntries[key]) {
+            groupedEntries[key] = []
+          }
+          groupedEntries[key].push(entry)
+        })
+      }
+
+      // Convert grouped entries to NutritionLog format
+      const logs: NutritionLog[] = Object.entries(groupedEntries).map(([key, entries]) => {
+        const firstEntry = entries[0]
+        const meals: FoodItem[] = entries.map(entry => ({
+          id: entry._id || entry.id || String(Date.now()),
+          name: entry.food_description || entry.food_name || 'Unknown',
+          quantity: '1 serving',
+          nutrition: {
+            calories: entry.calories,
+            protein: entry.protein,
+            carbs: entry.carbs,
+            fat: entry.fat,
+            fiber: entry.fiber,
+            sugar: entry.sugar,
+            sodium: entry.sodium
+          },
+          confidence: 0.95
+        }))
+
+        const total_nutrition: NutritionData = {
+          calories: entries.reduce((sum, e) => sum + (e.calories || 0), 0),
+          protein: entries.reduce((sum, e) => sum + (e.protein || 0), 0),
+          carbs: entries.reduce((sum, e) => sum + (e.carbs || 0), 0),
+          fat: entries.reduce((sum, e) => sum + (e.fat || 0), 0),
+          fiber: entries.reduce((sum, e) => sum + (e.fiber || 0), 0),
+          sugar: entries.reduce((sum, e) => sum + (e.sugar || 0), 0),
+          sodium: entries.reduce((sum, e) => sum + (e.sodium || 0), 0)
+        }
+
+        return {
+          id: firstEntry._id || firstEntry.id || String(Date.now()),
+          user_id: firstEntry.user_id,
+          date: firstEntry.date,
+          meal_type: firstEntry.meal_type,
+          meals,
+          total_nutrition,
+          notes: firstEntry.notes || '',
+          created_at: firstEntry.created_at || new Date().toISOString()
+        }
+      })
+
+      // Sort by date and time, newest first
+      logs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      
+      return logs
     } catch (error) {
-      console.error('Failed to get nutrition logs:', error)
+      console.error('❌ Failed to get nutrition logs from API:', error)
+      // Return empty array on error instead of mock data
+      return []
+    }
+  }
+
+  // Get nutrition logs with date range
+  async getNutritionLogsByDateRange(startDate?: string, endDate?: string, page: number = 1, perPage: number = 50): Promise<NutritionLog[]> {
+    try {
+      const token = sessionStorage.getItem('access_token')
+      if (!token) {
+        console.warn('No authentication token found')
+        return []
+      }
+
+      let url = `${this.baseUrl}/api/nutrition/logs?page=${page}&per_page=${perPage}`
+      if (startDate) url += `&start_date=${startDate}`
+      if (endDate) url += `&end_date=${endDate}`
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      return data.logs || []
+    } catch (error) {
+      console.error('❌ Failed to get nutrition logs by date range:', error)
       return []
     }
   }

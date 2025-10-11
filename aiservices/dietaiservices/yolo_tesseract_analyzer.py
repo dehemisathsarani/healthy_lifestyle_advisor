@@ -278,6 +278,21 @@ class YOLOTesseractFoodAnalyzer:
     async def _extract_text_tesseract(self, image: np.ndarray) -> str:
         """Extract text from image using enhanced Tesseract OCR with multiple configurations."""
         try:
+            # Check if Tesseract is available
+            try:
+                # Test Tesseract installation
+                import subprocess
+                subprocess.run(['tesseract', '--version'], capture_output=True, timeout=5)
+                tesseract_available = True
+            except (FileNotFoundError, subprocess.TimeoutExpired, subprocess.SubprocessError):
+                tesseract_available = False
+                logger.warning("⚠️ TESSERACT NOT AVAILABLE: Skipping OCR text extraction")
+            
+            if not tesseract_available:
+                # Return empty string if Tesseract is not available
+                logger.info("🔄 FALLBACK: Using YOLO-only analysis (Tesseract OCR disabled)")
+                return ""
+            
             # Convert BGR to RGB for PIL
             image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
             pil_image = Image.fromarray(image_rgb)
@@ -322,6 +337,7 @@ class YOLOTesseractFoodAnalyzer:
             
         except Exception as e:
             logger.error(f"❌ TESSERACT FAILED: {e}")
+            logger.info("🔄 FALLBACK: Continuing with YOLO-only analysis")
             return ""
 
     def _enhance_image_for_ocr(self, image: Image.Image) -> Image.Image:

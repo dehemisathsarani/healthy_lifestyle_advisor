@@ -9,8 +9,8 @@ class Settings(BaseSettings):
     GOOGLE_APPLICATION_CREDENTIALS: Optional[str] = None
     
     # Database
-    MONGODB_URL: str = "mongodb://localhost:27017"
-    DATABASE_NAME: str = "healthy_lifestyle"
+    MONGODB_URL: str = "mongodb+srv://Admin:X1bzjS2IGHrNHFgS@healthagent.ucnrbse.mongodb.net/HealthAgent"
+    DATABASE_NAME: str = "HealthAgent"
     
     # Redis
     REDIS_URL: str = "redis://localhost:6379"
@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
     
     # Feature Toggles (for local development)
-    DISABLE_GOOGLE_VISION: bool = False
+    DISABLE_GOOGLE_VISION: bool = True  # ✅ Disabled - Use YOLOv8 + Tesseract instead
     DISABLE_RABBITMQ: bool = False
     USE_MOCK_GOOGLE_VISION: bool = False
     USE_SIMPLE_MQ: bool = False

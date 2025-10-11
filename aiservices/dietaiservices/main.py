@@ -27,7 +27,7 @@ from nlp_insights import (
 )
 from enhanced_image_processor import EnhancedFoodVisionAnalyzer, ImageAnalysisResult
 from advanced_food_analyzer import AdvancedFoodAnalyzer
-from rag_chatbot import diet_rag_chatbot, ChatMessage
+from enhanced_rag_chatbot import enhanced_diet_rag_chatbot, ChatMessage
 from enhanced_image_processor import EnhancedFoodVisionAnalyzer, ImageAnalysisResult
 from advanced_food_analyzer import AdvancedFoodAnalyzer
 
@@ -114,6 +114,8 @@ class ChatResponse(BaseModel):
     response: str
     timestamp: datetime
     context_type: str
+    confidence_score: Optional[float] = None
+    sources_used: Optional[List[str]] = None
 
 class ConversationHistoryRequest(BaseModel):
     user_id: str
@@ -126,14 +128,27 @@ class NutritionRecommendationsRequest(BaseModel):
 @app.on_event("startup")
 async def startup_event():
     """Initialize connections on startup."""
-    global rabbitmq_connection, rabbitmq_channel, db_client, db, image_processor, advanced_food_analyzer
+    global rabbitmq_connection, rabbitmq_channel, db_client, db, image_processor, advanced_food_analyzer, yolo_analyzer
     
     try:
         # Connect to MongoDB
         db_client = motor.motor_asyncio.AsyncIOMotorClient(settings.MONGODB_URL)
         db = db_client[settings.DATABASE_NAME]
         
-        # Initialize enhanced image processor
+        # ✅ Initialize YOLOv8 + Tesseract analyzer (Primary - No Google Vision)
+        logger.info("🚀 Initializing YOLOv8 + Tesseract food analyzer...")
+        try:
+            from yolo_tesseract_analyzer import YOLOTesseractFoodAnalyzer
+            yolo_analyzer = YOLOTesseractFoodAnalyzer(
+                mongodb_client=db_client,
+                db_name=settings.DATABASE_NAME
+            )
+            logger.info("✅ YOLOv8 + Tesseract analyzer initialized successfully")
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize YOLO analyzer: {e}")
+            yolo_analyzer = None
+        
+        # Initialize enhanced image processor (Google Vision DISABLED via settings)
         image_processor = EnhancedFoodVisionAnalyzer(db_client, settings.DATABASE_NAME)
         
         # Initialize advanced food analyzer
@@ -328,11 +343,11 @@ async def chat_with_diet_assistant(request: ChatRequest):
         logger.info(f"Processing chat request for user: {request.user_id}")
         
         # Initialize chatbot if needed
-        if not diet_rag_chatbot.knowledge_base_initialized:
-            await diet_rag_chatbot.initialize()
+        if not enhanced_diet_rag_chatbot.knowledge_base_initialized:
+            await enhanced_diet_rag_chatbot.initialize()
         
         # Process chat message
-        chat_message = await diet_rag_chatbot.chat(
+        chat_message = await enhanced_diet_rag_chatbot.chat(
             user_id=request.user_id,
             message=request.message,
             context_type=request.context_type
@@ -344,7 +359,9 @@ async def chat_with_diet_assistant(request: ChatRequest):
             message=chat_message.message,
             response=chat_message.response,
             timestamp=chat_message.timestamp,
-            context_type=chat_message.context_type
+            context_type=chat_message.context_type,
+            confidence_score=chat_message.confidence_score,
+            sources_used=chat_message.sources_used
         )
         
     except Exception as e:
@@ -360,11 +377,11 @@ async def get_chat_history(user_id: str, limit: int = 10):
         logger.info(f"Getting chat history for user: {user_id}")
         
         # Initialize chatbot if needed
-        if not diet_rag_chatbot.knowledge_base_initialized:
-            await diet_rag_chatbot.initialize()
+        if not enhanced_diet_rag_chatbot.knowledge_base_initialized:
+            await enhanced_diet_rag_chatbot.initialize()
         
         # Get conversation history
-        history = await diet_rag_chatbot.get_conversation_history(user_id, limit)
+        history = await enhanced_diet_rag_chatbot.get_conversation_history(user_id, limit)
         
         return {
             "user_id": user_id,
@@ -394,11 +411,11 @@ async def get_personalized_recommendations(request: NutritionRecommendationsRequ
         logger.info(f"Getting recommendations for user: {request.user_id}")
         
         # Initialize chatbot if needed
-        if not diet_rag_chatbot.knowledge_base_initialized:
-            await diet_rag_chatbot.initialize()
+        if not enhanced_diet_rag_chatbot.knowledge_base_initialized:
+            await enhanced_diet_rag_chatbot.initialize()
         
         # Get personalized recommendations
-        recommendations = await diet_rag_chatbot.get_nutrition_recommendations(request.user_id)
+        recommendations = await enhanced_diet_rag_chatbot.get_nutrition_recommendations(request.user_id)
         
         return {
             "user_id": request.user_id,
@@ -425,8 +442,8 @@ async def context_aware_chat(
         logger.info(f"Processing context-aware chat for user: {user_id}")
         
         # Initialize chatbot if needed
-        if not diet_rag_chatbot.knowledge_base_initialized:
-            await diet_rag_chatbot.initialize()
+        if not enhanced_diet_rag_chatbot.knowledge_base_initialized:
+            await enhanced_diet_rag_chatbot.initialize()
         
         # Determine context type based on message content
         context_type = "general"
@@ -440,7 +457,7 @@ async def context_aware_chat(
             context_type = "health_goal"
         
         # Process chat with enhanced context
-        chat_message = await diet_rag_chatbot.chat(
+        chat_message = await enhanced_diet_rag_chatbot.chat(
             user_id=user_id,
             message=message,
             context_type=context_type
@@ -453,6 +470,8 @@ async def context_aware_chat(
             "response": chat_message.response,
             "timestamp": chat_message.timestamp,
             "context_type": chat_message.context_type,
+            "confidence_score": chat_message.confidence_score,
+            "sources_used": chat_message.sources_used,
             "context_used": {
                 "user_profile": bool(chat_message.user_profile),
                 "nutrition_context": bool(chat_message.nutrition_context)
@@ -470,11 +489,11 @@ async def get_suggested_questions(user_id: str):
     """
     try:
         # Initialize chatbot if needed
-        if not diet_rag_chatbot.knowledge_base_initialized:
-            await diet_rag_chatbot.initialize()
+        if not enhanced_diet_rag_chatbot.knowledge_base_initialized:
+            await enhanced_diet_rag_chatbot.initialize()
         
         # Get user context
-        user_profile, nutrition_context = await diet_rag_chatbot.get_user_context(user_id)
+        user_profile, nutrition_context = await enhanced_diet_rag_chatbot.get_user_context(user_id)
         
         # Generate suggested questions based on user data
         suggestions = []
@@ -535,10 +554,10 @@ async def get_chatbot_health():
     """
     try:
         # Initialize chatbot if needed
-        if not diet_rag_chatbot.knowledge_base_initialized:
-            await diet_rag_chatbot.initialize()
+        if not enhanced_diet_rag_chatbot.knowledge_base_initialized:
+            await enhanced_diet_rag_chatbot.initialize()
         
-        health_status = await diet_rag_chatbot.get_health_status()
+        health_status = await enhanced_diet_rag_chatbot.get_health_status()
         
         return {
             "status": "healthy" if health_status.get("chatbot_initialized") else "degraded",
@@ -563,10 +582,10 @@ async def get_nutrition_recommendations(user_id: str):
         logger.info(f"Getting nutrition recommendations for user: {user_id}")
         
         # Initialize chatbot if needed
-        if not diet_rag_chatbot.knowledge_base_initialized:
-            await diet_rag_chatbot.initialize()
+        if not enhanced_diet_rag_chatbot.knowledge_base_initialized:
+            await enhanced_diet_rag_chatbot.initialize()
         
-        recommendations = await diet_rag_chatbot.get_enhanced_nutrition_recommendations(user_id)
+        recommendations = await enhanced_diet_rag_chatbot.get_enhanced_nutrition_recommendations(user_id)
         
         return {
             "user_id": user_id,
@@ -578,6 +597,249 @@ async def get_nutrition_recommendations(user_id: str):
     except Exception as e:
         logger.error(f"Error getting recommendations: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get recommendations: {str(e)}")
+
+
+# ==================== YOLOv8 + Tesseract Food Analysis ====================
+
+# Global YOLO analyzer instance
+yolo_analyzer = None
+
+@app.post("/analyze-food-yolo")
+async def analyze_food_with_yolo(
+    image: UploadFile = File(...),
+    text_description: Optional[str] = None,
+    meal_type: str = "lunch",
+    user_id: Optional[str] = None
+):
+    """
+    🎯 Analyze food with YOLOv8 object detection + Tesseract OCR
+    
+    This endpoint uses local AI models for accurate food recognition:
+    - YOLOv8: Visual object detection (80+ food categories)
+    - Tesseract OCR: Text extraction from labels/packaging
+    - Hybrid Intelligence: Combines vision + OCR + user text
+    
+    Returns individual food items with accurate nutrition from 50+ food database
+    """
+    global yolo_analyzer
+    
+    try:
+        # Initialize YOLO analyzer if not already done
+        if yolo_analyzer is None:
+            logger.info("🚀 Initializing YOLOv8 + Tesseract analyzer...")
+            from yolo_tesseract_analyzer import YOLOTesseractFoodAnalyzer
+            yolo_analyzer = YOLOTesseractFoodAnalyzer(
+                mongodb_client=db_client,
+                db_name=settings.DATABASE_NAME
+            )
+            logger.info("✅ YOLO analyzer initialized successfully")
+        
+        # Read image data
+        image_data = await image.read()
+        
+        # Analyze with YOLO + Tesseract
+        logger.info(f"🔍 Analyzing food image: {image.filename}")
+        result = await yolo_analyzer.analyze_food_image_yolo(
+            image_data=image_data,
+            user_id=user_id or "anonymous",
+            text_description=text_description,
+            meal_type=meal_type
+        )
+        
+        logger.info(f"✅ Analysis complete: Found {len(result.get('detected_foods', []))} food items")
+        
+        return {
+            "success": True,
+            "analysis": result,
+            "method": "yolov8-tesseract-hybrid",
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ YOLO analysis error: {e}", exc_info=True)
+        
+        # Provide helpful error message
+        error_message = str(e)
+        if "YOLO" in error_message or "model" in error_message.lower():
+            error_message = "YOLOv8 model not found. Please run: pip install ultralytics"
+        elif "tesseract" in error_message.lower():
+            error_message = "Tesseract OCR not installed. Please install Tesseract from: https://github.com/UB-Mannheim/tesseract/wiki"
+        
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Food analysis failed: {error_message}"
+        )
+
+
+@app.get("/yolo-status")
+async def check_yolo_status():
+    """Check if YOLOv8 + Tesseract analyzer is available"""
+    global yolo_analyzer
+    
+    try:
+        if yolo_analyzer is None:
+            from yolo_tesseract_analyzer import YOLOTesseractFoodAnalyzer
+            yolo_analyzer = YOLOTesseractFoodAnalyzer(
+                mongodb_client=db_client,
+                db_name=settings.DATABASE_NAME
+            )
+        
+        return {
+            "yolo_available": True,
+            "tesseract_available": True,
+            "status": "ready",
+            "message": "YOLOv8 + Tesseract food analyzer is ready"
+        }
+    except Exception as e:
+        return {
+            "yolo_available": False,
+            "tesseract_available": False,
+            "status": "error",
+            "message": str(e)
+        }
+
+
+# ==================== NLP Weekly Summary Generation ====================
+
+@app.post("/generate-weekly-report")
+async def generate_weekly_report_nlp(
+    user_id: str,
+    days: int = 7,
+    include_insights: bool = True
+):
+    """
+    📊 Generate NLP-powered weekly nutrition summary
+    
+    Uses NLP techniques to:
+    - Analyze 7-10 days of nutrition logs from MongoDB
+    - Extract patterns and trends
+    - Generate natural language insights
+    - Provide personalized recommendations
+    """
+    try:
+        logger.info(f"🔍 Generating weekly report for user: {user_id}")
+        
+        # Get nutrition logs from MongoDB (last N days)
+        nutrition_logs_collection = db["nutrition_logs"]
+        
+        # Calculate date range
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=days)
+        
+        # Query MongoDB
+        cursor = nutrition_logs_collection.find({
+            "user_id": user_id,
+            "date": {
+                "$gte": start_date.isoformat(),
+                "$lte": end_date.isoformat()
+            }
+        }).sort("date", -1).limit(10)  # Get up to 10 logs
+        
+        logs = await cursor.to_list(length=10)
+        
+        if not logs:
+            return {
+                "success": False,
+                "message": "No nutrition data found for the specified period",
+                "logs_count": 0
+            }
+        
+        logger.info(f"📋 Found {len(logs)} nutrition logs")
+        
+        # Prepare data for NLP analysis
+        nutrition_data = []
+        for log in logs:
+            nutrition_data.append(DayNutritionData(
+                date=log.get("date", ""),
+                total_calories=log.get("total_nutrition", {}).get("calories", 0),
+                protein=log.get("total_nutrition", {}).get("protein", 0),
+                carbs=log.get("total_nutrition", {}).get("carbs", 0),
+                fat=log.get("total_nutrition", {}).get("fat", 0),
+                fiber=log.get("total_nutrition", {}).get("fiber", 0),
+                meals=log.get("meals", [])
+            ))
+        
+        # Generate NLP-powered weekly report
+        logger.info("🤖 Generating NLP insights...")
+        report = await nlp_diet_agent.generate_weekly_report(
+            user_id=user_id,
+            nutrition_data=nutrition_data,
+            days=days
+        )
+        
+        logger.info("✅ Weekly report generated successfully")
+        
+        # Calculate additional metrics
+        total_calories = sum([log.get("total_nutrition", {}).get("calories", 0) for log in logs])
+        avg_calories = total_calories / len(logs) if logs else 0
+        
+        total_protein = sum([log.get("total_nutrition", {}).get("protein", 0) for log in logs])
+        avg_protein = total_protein / len(logs) if logs else 0
+        
+        # Build response
+        return {
+            "success": True,
+            "period": f"{start_date.strftime('%Y-%m-%d')} to {end_date.strftime('%Y-%m-%d')}",
+            "logs_count": len(logs),
+            "summary": report.get("summary", ""),
+            "average_daily_calories": round(avg_calories, 1),
+            "average_daily_protein": round(avg_protein, 1),
+            "insights": report.get("insights", []),
+            "recommendations": report.get("recommendations", []),
+            "health_score": report.get("health_score", 75),
+            "nutrition_trends": {
+                "calories": [log.get("total_nutrition", {}).get("calories", 0) for log in logs],
+                "protein": [log.get("total_nutrition", {}).get("protein", 0) for log in logs],
+                "carbs": [log.get("total_nutrition", {}).get("carbs", 0) for log in logs],
+                "fat": [log.get("total_nutrition", {}).get("fat", 0) for log in logs]
+            },
+            "generated_at": datetime.now().isoformat(),
+            "analysis_method": "nlp_enhanced"
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Weekly report generation error: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate weekly report: {str(e)}"
+        )
+
+
+@app.get("/nutrition-logs/{user_id}")
+async def get_nutrition_logs(
+    user_id: str,
+    limit: int = 10,
+    skip: int = 0
+):
+    """
+    📋 Get nutrition logs from MongoDB
+    
+    Returns recent nutrition logs for analysis and display
+    """
+    try:
+        nutrition_logs_collection = db["nutrition_logs"]
+        
+        cursor = nutrition_logs_collection.find({
+            "user_id": user_id
+        }).sort("date", -1).skip(skip).limit(limit)
+        
+        logs = await cursor.to_list(length=limit)
+        
+        # Convert ObjectId to string
+        for log in logs:
+            if "_id" in log:
+                log["_id"] = str(log["_id"])
+        
+        return {
+            "success": True,
+            "logs": logs,
+            "count": len(logs)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error fetching nutrition logs: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 if __name__ == "__main__":
     import uvicorn
