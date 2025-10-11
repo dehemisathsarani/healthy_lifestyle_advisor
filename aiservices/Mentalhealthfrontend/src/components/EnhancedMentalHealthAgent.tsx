@@ -31,7 +31,7 @@ interface EnhancedMentalHealthAgentProps {
 }
 
 // Meditation types and content
-type MeditationType = 'breathing' | 'mindfulness' | 'guided' | 'body-scan' | 'visualization' | 'nature-sounds'
+type MeditationType = 'breathing' | 'mindfulness' | 'guided' | 'body-scan' | 'visualization' | 'nature-sounds' | 'morning-focus' | 'sleep-winddown' | 'loving-kindness'
 
 interface MeditationContent {
   id: string
@@ -163,6 +163,60 @@ const EnhancedMentalHealthAgent: React.FC<EnhancedMentalHealthAgentProps> = ({
         'Allow your mind to wander naturally',
         'Return to the sounds when you notice thinking',
         'Enjoy this time of natural connection'
+      ],
+      completed: false,
+      progress: 0
+    },
+    {
+      id: '7',
+      type: 'morning-focus',
+      title: 'Morning Focus',
+      description: 'Start your day with clarity and intention',
+      duration: 7,
+      instructions: [
+        'Sit upright with your feet flat on the floor',
+        'Take three deep breaths to center yourself',
+        'Set an intention for your day ahead',
+        'Visualize yourself moving through the day with ease',
+        'Notice any areas that need extra attention',
+        'Affirm your capability to handle whatever comes',
+        'Carry this focused energy into your morning'
+      ],
+      completed: false,
+      progress: 0
+    },
+    {
+      id: '8',
+      type: 'sleep-winddown',
+      title: 'Sleep Wind-down',
+      description: 'Gentle transition to peaceful sleep',
+      duration: 10,
+      instructions: [
+        'Lie down in your bed and get comfortable',
+        'Let your body sink into the mattress',
+        'Release the events and thoughts of the day',
+        'Breathe slowly and naturally',
+        'Scan your body and release any remaining tension',
+        'Allow your mind to become quiet and still',
+        'Let sleep come naturally when you\'re ready'
+      ],
+      completed: false,
+      progress: 0
+    },
+    {
+      id: '9',
+      type: 'loving-kindness',
+      title: 'Loving-Kindness',
+      description: 'Cultivate compassion for yourself and others',
+      duration: 12,
+      instructions: [
+        'Sit comfortably and close your eyes',
+        'Begin by sending love and kindness to yourself',
+        'Repeat: "May I be happy, may I be healthy, may I be at peace"',
+        'Extend these wishes to someone you love',
+        'Include someone neutral in your life',
+        'Send loving-kindness to someone difficult',
+        'Expand to include all beings everywhere'
       ],
       completed: false,
       progress: 0
