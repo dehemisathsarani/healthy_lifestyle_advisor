@@ -1,5 +1,5 @@
 import { useAuth } from '../auth/AuthContext'
-import { FaDumbbell, FaRunning, FaAppleAlt, FaHeartbeat, FaBed, FaTint, FaCalendarAlt, FaClock } from 'react-icons/fa'
+import { HiCpuChip, HiPlay, HiCake, HiStop, HiHome, HiEyeDropper, HiCalendar, HiClock } from 'react-icons/hi2'
 
 export const ProfilePage = () => {
   const { profile, userName } = useAuth()
@@ -47,9 +47,9 @@ export const ProfilePage = () => {
 
   // Fitness tracking
   const fitnessData = [
-    { type: 'Strength Training', hours: 4.5, sessions: 3, icon: FaDumbbell, color: 'bg-purple-500' },
-    { type: 'Cardio', hours: 3.2, sessions: 4, icon: FaRunning, color: 'bg-red-500' },
-    { type: 'Flexibility', hours: 2.1, sessions: 5, icon: FaHeartbeat, color: 'bg-blue-500' },
+    { type: 'Strength Training', hours: 4.5, sessions: 3, icon: HiCpuChip, color: 'bg-purple-500' },
+    { type: 'Cardio', hours: 3.2, sessions: 4, icon: HiPlay, color: 'bg-red-500' },
+    { type: 'Flexibility', hours: 2.1, sessions: 5, icon: HiStop, color: 'bg-blue-500' },
   ]
 
   // Weekly workout schedule
@@ -96,7 +96,7 @@ export const ProfilePage = () => {
       {/* Nutrition Tracking */}
       <section className="rounded-2xl border bg-white p-6 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
-          <FaAppleAlt className="text-2xl text-emerald-500" />
+          <HiCake className="text-2xl text-emerald-500" />
           <h2 className="text-2xl font-bold">Nutrition Tracking</h2>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -119,7 +119,7 @@ export const ProfilePage = () => {
       {/* Weekly Meal Plan */}
       <section className="rounded-2xl border bg-white p-6 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
-          <FaCalendarAlt className="text-2xl text-orange-500" />
+          <HiCalendar className="text-2xl text-orange-500" />
           <h2 className="text-2xl font-bold">Weekly Meal Plan</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -149,7 +149,7 @@ export const ProfilePage = () => {
       {/* Fitness Overview */}
       <section className="rounded-2xl border bg-white p-6 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
-          <FaDumbbell className="text-2xl text-purple-500" />
+          <HiCpuChip className="text-2xl text-purple-500" />
           <h2 className="text-2xl font-bold">Fitness Overview</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -174,7 +174,7 @@ export const ProfilePage = () => {
       {/* Weekly Workout Schedule */}
       <section className="rounded-2xl border bg-white p-6 shadow-sm">
         <div className="flex items-center gap-3 mb-6">
-          <FaClock className="text-2xl text-blue-500" />
+          <HiClock className="text-2xl text-blue-500" />
           <h2 className="text-2xl font-bold">Weekly Schedule</h2>
         </div>
         <div className="grid grid-cols-7 gap-2">
@@ -195,7 +195,7 @@ export const ProfilePage = () => {
       <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="rounded-2xl border bg-white p-6 shadow-sm">
           <div className="flex items-center gap-3 mb-4">
-            <FaBed className="text-2xl text-indigo-500" />
+            <HiHome className="text-2xl text-indigo-500" />
             <h3 className="text-xl font-bold">Sleep & Recovery</h3>
           </div>
           <div className="space-y-3">
@@ -216,7 +216,7 @@ export const ProfilePage = () => {
 
         <div className="rounded-2xl border bg-white p-6 shadow-sm">
           <div className="flex items-center gap-3 mb-4">
-            <FaTint className="text-2xl text-blue-500" />
+            <HiEyeDropper className="text-2xl text-blue-500" />
             <h3 className="text-xl font-bold">Hydration & Wellness</h3>
           </div>
           <div className="space-y-3">

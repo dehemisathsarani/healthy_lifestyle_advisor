@@ -17,7 +17,7 @@ from app.core.database import (
     close_mongo_connection, 
     get_db_health, 
     verify_database,
-    get_database
+    get_database 
 )
 
 
@@ -25,9 +25,19 @@ from app.auth.router import router as auth_router
 from app.auth.users import setup_user_collection
 
 from app.routes.simple_diet_routes import router as diet_router
+
 from app.routes.security_routes import router as security_router
 from app.routes.enhanced_security_routes import router as enhanced_security_router
 from app.routes.three_step_otp_routes import router as three_step_otp_router
+
+from app.routes.nutrition_routes import router as nutrition_router
+from app.routes.biometric_routes import router as biometric_router
+from app.routes.enhanced_nutrition_routes import router as enhanced_nutrition_router
+from app.routes.mental_health_routes import router as mental_health_router
+from app.routes.diet_messaging_routes import router as diet_messaging_router
+from app.etl.router import router as etl_router
+from app.etl.integrated_food_vision_router import router as integrated_food_vision_router
+
 
 
 # Create FastAPI application with detailed configuration
@@ -63,6 +73,7 @@ app.include_router(auth_router)
 # Include Diet Agent routes
 app.include_router(diet_router)
 
+
 # Include Data & Security Agent routes
 app.include_router(security_router)
 
@@ -71,6 +82,28 @@ app.include_router(enhanced_security_router)
 
 # Include Three-Step OTP routes for enhanced security workflow
 app.include_router(three_step_otp_router)
+
+# Include Advanced Nutrition Hub routes
+app.include_router(nutrition_router)
+
+# Include Enhanced Nutrition Analysis routes
+app.include_router(enhanced_nutrition_router)
+
+# Include Mental Health Agent routes (with /api prefix to match frontend)
+app.include_router(mental_health_router, prefix="/api")
+
+# Include Biometric Management routes
+app.include_router(biometric_router, prefix="/api")
+
+# Include Diet Agent RabbitMQ Messaging routes
+app.include_router(diet_messaging_router)
+
+# Include ETL Management routes
+app.include_router(etl_router, prefix="/api")
+
+# Include Integrated Food Vision ETL routes
+app.include_router(integrated_food_vision_router, prefix="/api")
+
 
 
 # Global application state

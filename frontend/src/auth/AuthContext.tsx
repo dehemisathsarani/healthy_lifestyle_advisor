@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useRef, useCallback } from 'react'
-import jwt_decode from 'jwt-decode'
+import { jwtDecode } from 'jwt-decode'
 import { getAccessToken, setTokens, clearTokens } from './tokenStore'
 import { login as apiLogin, register as apiRegister, getMe } from '../lib/api'
 import SessionTimeoutAlert from '../components/SessionTimeoutModal'
@@ -122,7 +122,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const saved = getAccessToken()
     if (saved) {
       try {
-        const decoded = jwt_decode<DecodedToken>(saved)
+        const decoded = jwtDecode<DecodedToken>(saved)
         if (!decoded.exp || decoded.exp * 1000 > Date.now()) {
           setToken(saved)
           setUserName(decoded.name || decoded.email || decoded.sub || 'User')
@@ -138,7 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginWithJwt = (newToken: string) => {
     try {
-      const decoded = jwt_decode<DecodedToken>(newToken)
+      const decoded = jwtDecode<DecodedToken>(newToken)
       setToken(newToken)
       setUserName(decoded.name || decoded.email || decoded.sub || 'User')
       setTokens({ accessToken: newToken })
@@ -171,7 +171,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await apiLogin(email, password)
     const saved = getAccessToken()
     if (saved) {
-      const decoded = jwt_decode<DecodedToken>(saved)
+      const decoded = jwtDecode<DecodedToken>(saved)
       setToken(saved)
       setUserName(decoded.name || decoded.email || decoded.sub || 'User')
       const u = await getMe()
@@ -200,7 +200,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const directProfile = await apiRegister(name, email, password, extra)
     const saved = getAccessToken()
     if (saved) {
-      const decoded = jwt_decode<DecodedToken>(saved)
+      const decoded = jwtDecode<DecodedToken>(saved)
       setToken(saved)
       setUserName(decoded.name || decoded.email || decoded.sub || 'User')
       if (directProfile) {

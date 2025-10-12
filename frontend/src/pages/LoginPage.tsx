@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import { FaEnvelope, FaLock, FaArrowRight, FaHome, FaUser } from 'react-icons/fa'
+import { HiEnvelope, HiLockClosed, HiArrowRight, HiHome, HiUser } from 'react-icons/hi2'
 
 export const LoginPage = () => {
   const { login } = useAuth()
@@ -18,7 +18,14 @@ export const LoginPage = () => {
       if (event.origin !== window.location.origin) return
       if (event.data?.type === 'oauth-success') {
         setOauthInProgress(false)
-        navigate('/dashboard', { replace: true })
+        // Check for redirect after successful OAuth login
+        const redirectTo = sessionStorage.getItem('redirectTo')
+        if (redirectTo) {
+          sessionStorage.removeItem('redirectTo')
+          navigate(redirectTo, { replace: true })
+        } else {
+          navigate('/dashboard', { replace: true })
+        }
       } else if (event.data?.type === 'oauth-error') {
         setOauthInProgress(false)
         setError('OAuth sign-in failed')
@@ -37,7 +44,7 @@ export const LoginPage = () => {
       if (loginMethod === 'name') {
         // Check localStorage for saved user profiles to find email by name
         const savedProfiles = JSON.parse(localStorage.getItem('userProfiles') || '[]')
-        const foundProfile = savedProfiles.find((profile: any) => 
+        const foundProfile = savedProfiles.find((profile: { name: string; email: string }) => 
           profile.name.toLowerCase() === name.toLowerCase()
         )
         
@@ -50,8 +57,16 @@ export const LoginPage = () => {
       } else {
         await login(email, password)
       }
-      navigate('/dashboard')
-    } catch (err) {
+      
+      // Check for redirect after successful login
+      const redirectTo = sessionStorage.getItem('redirectTo')
+      if (redirectTo) {
+        sessionStorage.removeItem('redirectTo')
+        navigate(redirectTo)
+      } else {
+        navigate('/dashboard')
+      }
+    } catch {
       setError('Invalid credentials')
     }
   }
@@ -91,7 +106,7 @@ export const LoginPage = () => {
             className="group flex items-center justify-center w-10 h-10 rounded-full bg-white/80 hover:bg-white border border-gray-200 hover:border-emerald-300 shadow-sm hover:shadow-md transition-all duration-200"
             title="Go to Homepage"
           >
-            <FaHome className="text-gray-600 hover:text-emerald-600 transition-colors duration-200 group-hover:scale-110" />
+            <HiHome className="text-gray-600 hover:text-emerald-600 transition-colors duration-200 group-hover:scale-110" />
           </button>
         </div>
         
@@ -110,7 +125,7 @@ export const LoginPage = () => {
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              <FaEnvelope className="inline w-4 h-4 mr-2" />
+              <HiEnvelope className="inline w-4 h-4 mr-2" />
               Email
             </button>
             <button
@@ -122,7 +137,7 @@ export const LoginPage = () => {
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              <FaUser className="inline w-4 h-4 mr-2" />
+              <HiUser className="inline w-4 h-4 mr-2" />
               Name
             </button>
           </div>
@@ -132,7 +147,7 @@ export const LoginPage = () => {
               <div>
                 <label className="block text-sm font-medium">Email</label>
                 <div className="mt-1 flex items-center gap-2 rounded-md border px-3 py-2 focus-within:ring-2 focus-within:ring-brand">
-                  <FaEnvelope className="text-gray-400" />
+                  <HiEnvelope className="text-gray-400" />
                   <input 
                     value={email} 
                     onChange={(e) => setEmail(e.target.value)} 
@@ -147,7 +162,7 @@ export const LoginPage = () => {
               <div>
                 <label className="block text-sm font-medium">Name</label>
                 <div className="mt-1 flex items-center gap-2 rounded-md border px-3 py-2 focus-within:ring-2 focus-within:ring-brand">
-                  <FaUser className="text-gray-400" />
+                  <HiUser className="text-gray-400" />
                   <input 
                     value={name} 
                     onChange={(e) => setName(e.target.value)} 
@@ -165,14 +180,14 @@ export const LoginPage = () => {
             <div>
               <label className="block text-sm font-medium">Password</label>
               <div className="mt-1 flex items-center gap-2 rounded-md border px-3 py-2 focus-within:ring-2 focus-within:ring-brand">
-                <FaLock className="text-gray-400" />
+                <HiLockClosed className="text-gray-400" />
                 <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" required className="w-full bg-transparent outline-none" placeholder="••••••••" />
               </div>
             </div>
             {error && <p className="text-sm text-red-600">{error}</p>}
             <button disabled={oauthInProgress} className="group relative w-full overflow-hidden rounded-md bg-brand px-4 py-2 text-white shadow transition-transform active:scale-[.99] disabled:opacity-70 disabled:cursor-not-allowed">
               <span className="relative z-10 inline-flex items-center justify-center gap-2">
-                Sign in <FaArrowRight className="transition-transform group-hover:translate-x-0.5" />
+                Sign in <HiArrowRight className="transition-transform group-hover:translate-x-0.5" />
               </span>
               <span className="absolute inset-0 -z-0 bg-gradient-to-r from-emerald-400/0 via-white/20 to-emerald-400/0 opacity-0 transition-opacity group-hover:opacity-100" />
             </button>
@@ -195,7 +210,7 @@ export const LoginPage = () => {
                 onClick={() => navigate('/')}
                 className="flex items-center gap-2 text-gray-600 hover:text-emerald-600 font-medium transition-colors duration-200 group"
               >
-                <FaHome className="group-hover:scale-110 transition-transform duration-200" />
+                <HiHome className="group-hover:scale-110 transition-transform duration-200" />
                 Back to Home
               </button>
             </div>

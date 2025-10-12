@@ -2,13 +2,13 @@ import React, { useState } from 'react'
 import { DayPicker } from 'react-day-picker'
 import 'react-day-picker/dist/style.css'
 import { 
-  FaCalendarAlt, 
-  FaPlus, 
-  FaAppleAlt, 
-  FaDumbbell, 
-  FaBrain, 
-  FaCheckCircle
-} from 'react-icons/fa'
+  HiCalendar, 
+  HiPlus, 
+  HiCake, 
+  HiCpuChip, 
+  HiAcademicCap, 
+  HiCheckCircle
+} from 'react-icons/hi2'
 
 type EventType = 'meal' | 'workout' | 'wellness' | 'health'
 
@@ -87,11 +87,11 @@ export const Calendar: React.FC<CalendarProps> = ({
 
   const getEventTypeIcon = (type: EventType) => {
     switch (type) {
-      case 'meal': return <FaAppleAlt className="text-green-500" />
-      case 'workout': return <FaDumbbell className="text-purple-500" />
-      case 'wellness': return <FaBrain className="text-blue-500" />
-      case 'health': return <FaCheckCircle className="text-red-500" />
-      default: return <FaCalendarAlt className="text-gray-500" />
+      case 'meal': return <HiCake className="text-green-500" />
+      case 'workout': return <HiCpuChip className="text-purple-500" />
+      case 'wellness': return <HiAcademicCap className="text-blue-500" />
+      case 'health': return <HiCheckCircle className="text-red-500" />
+      default: return <HiCalendar className="text-gray-500" />
     }
   }
 
@@ -147,14 +147,14 @@ export const Calendar: React.FC<CalendarProps> = ({
       <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-            <FaCalendarAlt className="mr-2 text-brand" />
+            <HiCalendar className="mr-2 text-brand" />
             Health Calendar
           </h3>
           <button
             onClick={() => setShowAddEvent(!showAddEvent)}
             className="text-brand hover:text-brand-dark transition-colors"
           >
-            <FaPlus />
+            <HiPlus />
           </button>
         </div>
         
@@ -200,14 +200,14 @@ export const Calendar: React.FC<CalendarProps> = ({
     <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-lg">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-900 flex items-center">
-          <FaCalendarAlt className="mr-3 text-brand" />
+          <HiCalendar className="mr-3 text-brand" />
           Health & Wellness Calendar
         </h2>
         <button
           onClick={() => setShowAddEvent(!showAddEvent)}
           className="bg-brand text-white px-4 py-2 rounded-lg hover:bg-brand-dark transition-colors flex items-center space-x-2"
         >
-          <FaPlus />
+          <HiPlus />
           <span>Add Event</span>
         </button>
       </div>
@@ -219,7 +219,7 @@ export const Calendar: React.FC<CalendarProps> = ({
             <DayPicker
               mode="single"
               selected={selected}
-              onSelect={(date: Date | undefined) => date && handleDayClick(date)}
+              onSelect={(date) => date && handleDayClick(date)}
               showOutsideDays
               className="rdp-full"
               components={{

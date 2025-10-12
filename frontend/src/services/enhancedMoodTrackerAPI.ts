@@ -1,0 +1,436 @@
+// Enhanced Mood Tracker API Service
+import type {
+  JokeResponse,
+  UnsplashImage,
+  YouTubeVideo,
+  GameRecommendation
+} from '../types/enhancedMoodTracker.ts';
+
+// API Service for Enhanced Mood Tracker
+export class EnhancedMoodTrackerAPI {
+  
+  // JokesAPI for jokes (Free API) - now mood-aware
+  static async getJokes(count: number = 3, moodType?: string): Promise<JokeResponse[]> {
+    try {
+      const jokes: JokeResponse[] = []
+      
+      // Define joke categories based on mood type
+      const getJokeCategories = (mood: string) => {
+        const moodCategories: { [key: string]: string[] } = {
+          'happy': ['Programming', 'Pun', 'Misc'],
+          'excited': ['Programming', 'Pun', 'Misc'],
+          'content': ['Programming', 'Pun', 'Misc'],
+          'sad': ['Programming', 'Pun', 'Misc'], // Light-hearted jokes to cheer up
+          'anxious': ['Programming', 'Pun', 'Misc'], // Light-hearted to distract
+          'angry': ['Programming', 'Pun', 'Misc'], // Funny to diffuse tension
+          'stressed': ['Programming', 'Pun', 'Misc'], // Humor to relieve stress
+          'neutral': ['Programming', 'Pun', 'Misc'],
+          'calm': ['Programming', 'Pun', 'Misc'],
+          'overwhelmed': ['Programming', 'Pun', 'Misc'] // Light humor to simplify
+        }
+        return moodCategories[mood] || ['Programming', 'Pun', 'Misc']
+      }
+
+      // Enhanced fetch function with retry logic and timeout
+      const fetchWithRetry = async (url: string, retries: number = 2): Promise<any> => {
+        for (let attempt = 0; attempt <= retries; attempt++) {
+          try {
+            const controller = new AbortController()
+            const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
+
+            const response = await fetch(url, {
+              signal: controller.signal,
+              headers: {
+                'Accept': 'application/json',
+              }
+            })
+
+            clearTimeout(timeoutId)
+
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`)
+            }
+
+            return await response.json()
+          } catch (error: any) {
+            // Check if it's a network-related error
+            const isNetworkError = 
+              error.name === 'AbortError' || 
+              error.name === 'TypeError' ||
+              error.message?.includes('network') ||
+              error.message?.includes('fetch') ||
+              error.message?.includes('ERR_NETWORK')
+
+            if (attempt === retries || !isNetworkError) {
+              throw error
+            }
+
+            // Wait before retry (exponential backoff)
+            const delay = Math.pow(2, attempt) * 1000
+            await new Promise(resolve => setTimeout(resolve, delay))
+          }
+        }
+      }
+
+      const categories = moodType ? getJokeCategories(moodType) : ['Any']
+      const categoryParam = categories.join(',')
+
+      for (let i = 0; i < count; i++) {
+        try {
+          const url = `https://v2.jokeapi.dev/joke/${categoryParam}?blacklistFlags=nsfw,religious,political,racist,sexist,explicit&type=single`
+          const data = await fetchWithRetry(url)
+          
+          if (data.error) {
+            // If specific category fails, try general jokes
+            const fallbackData = await fetchWithRetry('https://v2.jokeapi.dev/joke/Any?blacklistFlags=nsfw,religious,political,racist,sexist,explicit&type=single')
+            jokes.push({
+              id: fallbackData.id?.toString() || Date.now().toString(),
+              joke: fallbackData.joke || `${fallbackData.setup} ${fallbackData.delivery}`,
+              category: fallbackData.category || 'General',
+              type: fallbackData.type || 'single',
+              setup: fallbackData.setup,
+              delivery: fallbackData.delivery
+            })
+          } else {
+            jokes.push({
+              id: data.id?.toString() || Date.now().toString(),
+              joke: data.joke || `${data.setup} ${data.delivery}`,
+              category: data.category || 'General',
+              type: data.type || 'single',
+              setup: data.setup,
+              delivery: data.delivery
+            })
+          }
+        } catch (jokeError) {
+          // If individual joke fetch fails, add a fallback joke
+          const fallbackJokes = this.getFallbackJokes()
+          const randomFallback = fallbackJokes[Math.floor(Math.random() * fallbackJokes.length)]
+          jokes.push({
+            ...randomFallback,
+            id: `fallback-${Date.now()}-${i}`
+          })
+        }
+      }
+      
+      // If no jokes were fetched successfully, return fallback jokes
+      return jokes.length > 0 ? jokes : this.getFallbackJokes()
+      
+    } catch (error) {
+      console.error('Error fetching jokes:', error)
+      return this.getFallbackJokes()
+    }
+  }
+
+  // Unsplash API for motivational images (requires API key)
+  static async getMotivationalImages(query: string, _count: number = 3): Promise<UnsplashImage[]> {
+    try {
+      // Note: In production, you'd need an Unsplash API key
+      // For now, using sample data
+      return this.getFallbackImages(query)
+    } catch (error) {
+      console.error('Error fetching images:', error)
+      return this.getFallbackImages(query)
+    }
+  }
+
+  // YouTube Data API for music recommendations
+  static async getYouTubeMusic(mood: 'positive' | 'negative', _count: number = 3): Promise<YouTubeVideo[]> {
+    try {
+      // const query = mood === 'positive' ? 'happy motivational music' : 'calming relaxing music'
+      // Note: In production, you'd need YouTube Data API key
+      // For now, using curated playlist data
+      return this.getFallbackMusic(mood)
+    } catch (error) {
+      console.error('Error fetching YouTube music:', error)
+      return this.getFallbackMusic(mood)
+    }
+  }
+
+  // Game recommendations
+  static async getFunnyGames(_count: number = 3): Promise<GameRecommendation[]> {
+    try {
+      return this.getFallbackGames()
+    } catch (error) {
+      console.error('Error fetching games:', error)
+      return this.getFallbackGames()
+    }
+  }
+
+  // Fallback data when APIs are unavailable
+  private static getFallbackJokes(): JokeResponse[] {
+    return [
+      {
+        id: '1',
+        joke: "Why don't scientists trust atoms? Because they make up everything!",
+        category: 'Science',
+        type: 'single'
+      },
+      {
+        id: '2',
+        joke: "I told my wife she was drawing her eyebrows too high. She looked surprised.",
+        category: 'Pun',
+        type: 'single'
+      },
+      {
+        id: '3',
+        joke: "Why did the scarecrow win an award? He was outstanding in his field!",
+        category: 'Pun',
+        type: 'single'
+      },
+      {
+        id: '4',
+        joke: "Why do programmers prefer dark mode? Because light attracts bugs!",
+        category: 'Programming',
+        type: 'single'
+      },
+      {
+        id: '5',
+        joke: "A SQL query goes into a bar, walks up to two tables and asks: 'Can I join you?'",
+        category: 'Programming',
+        type: 'single'
+      },
+      {
+        id: '6',
+        joke: "What's the best thing about a boolean? Even if you're wrong, you're only off by a bit.",
+        category: 'Programming',
+        type: 'single'
+      },
+      {
+        id: '7',
+        joke: "I'm reading a book about anti-gravity. It's impossible to put down!",
+        category: 'Pun',
+        type: 'single'
+      },
+      {
+        id: '8',
+        joke: "Why don't eggs tell jokes? They'd crack each other up!",
+        category: 'Pun',
+        type: 'single'
+      },
+      {
+        id: '9',
+        joke: "How do you organize a space party? You planet!",
+        category: 'Pun',
+        type: 'single'
+      },
+      {
+        id: '10',
+        joke: "Why did the math book look so sad? Because it had too many problems!",
+        category: 'Math',
+        type: 'single'
+      }
+    ]
+  }
+
+  private static getFallbackImages(_query: string): UnsplashImage[] {
+    const baseImages = [
+      {
+        id: '1',
+        urls: {
+          small: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400',
+          regular: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800',
+          full: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4'
+        },
+        alt_description: 'Mountain landscape',
+        description: 'Beautiful mountain scenery',
+        user: { name: 'Nature Photographer' }
+      },
+      {
+        id: '2',
+        urls: {
+          small: 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=400',
+          regular: 'https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=800',
+          full: 'https://images.unsplash.com/photo-1518837695005-2083093ee35b'
+        },
+        alt_description: 'Sunrise over water',
+        description: 'Peaceful sunrise',
+        user: { name: 'Sunrise Captures' }
+      },
+      {
+        id: '3',
+        urls: {
+          small: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400',
+          regular: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800',
+          full: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e'
+        },
+        alt_description: 'Forest path',
+        description: 'Serene forest pathway',
+        user: { name: 'Forest Explorer' }
+      }
+    ]
+    return baseImages
+  }
+
+  private static getFallbackMusic(mood: 'positive' | 'negative'): YouTubeVideo[] {
+    if (mood === 'positive') {
+      return [
+        {
+          id: '1',
+          title: 'Happy Upbeat Music - Feel Good Playlist',
+          artist: 'Happy Vibes Music',
+          description: 'Energizing music to boost your mood',
+          url: 'https://youtube.com/watch?v=dQw4w9WgXcQ'
+        },
+        {
+          id: '2',
+          title: 'Motivational Background Music',
+          artist: 'Motivation Station',
+          description: 'Inspiring instrumental music',
+          url: 'https://youtube.com/watch?v=dQw4w9WgXcQ'
+        }
+      ]
+    } else {
+      return [
+        {
+          id: '3',
+          title: 'Relaxing Piano Music - Calm & Peaceful',
+          artist: 'Peaceful Sounds',
+          description: 'Soothing piano melodies for relaxation',
+          url: 'https://youtube.com/watch?v=dQw4w9WgXcQ'
+        },
+        {
+          id: '4',
+          title: 'Nature Sounds - Rain & Thunder',
+          artist: 'Nature Therapy',
+          description: 'Calming nature sounds for stress relief',
+          url: 'https://youtube.com/watch?v=dQw4w9WgXcQ'
+        }
+      ]
+    }
+  }
+
+  private static getFallbackGames(): GameRecommendation[] {
+    return [
+      {
+        id: '1',
+        name: 'Quick Draw!',
+        description: 'Fun drawing game that will make you laugh',
+        category: 'Creative',
+        duration: '5-10 min',
+        url: 'https://quickdraw.withgoogle.com/'
+      },
+      {
+        id: '2',
+        name: 'Wordle',
+        description: 'Daily word puzzle game',
+        category: 'Puzzle',
+        duration: '5 min',
+        url: 'https://www.nytimes.com/games/wordle/index.html'
+      },
+      {
+        id: '3',
+        name: '2048',
+        description: 'Addictive number puzzle game',
+        category: 'Puzzle',
+        duration: '10-15 min',
+        url: 'https://play2048.co/'
+      }
+    ]
+  }
+
+  // Motivational quotes with mood-based API integration
+  static async getMotivationalQuotes(moodType?: string, count: number = 3): Promise<{ text: string; author: string }[]> {
+    try {
+      // Enhanced fetch with retry logic (similar to jokes)
+      const fetchWithRetry = async (url: string, retries: number = 2): Promise<any> => {
+        for (let attempt = 0; attempt <= retries; attempt++) {
+          try {
+            const controller = new AbortController()
+            const timeoutId = setTimeout(() => controller.abort(), 5000)
+
+            const response = await fetch(url, {
+              signal: controller.signal,
+              headers: {
+                'Accept': 'application/json',
+              }
+            })
+
+            clearTimeout(timeoutId)
+
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`)
+            }
+
+            return await response.json()
+          } catch (error: any) {
+            const isNetworkError = 
+              error.name === 'AbortError' || 
+              error.name === 'TypeError' ||
+              error.message?.includes('network') ||
+              error.message?.includes('fetch')
+
+            if (attempt === retries || !isNetworkError) {
+              throw error
+            }
+
+            const delay = Math.pow(2, attempt) * 1000
+            await new Promise(resolve => setTimeout(resolve, delay))
+          }
+        }
+      }
+
+      const mood = moodType || 'neutral'
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+      const url = `${backendUrl}/mental-health/batch/quotes/${mood}?count=${count}`
+      
+      const data = await fetchWithRetry(url)
+      
+      if (data && data.quotes && Array.isArray(data.quotes)) {
+        return data.quotes.map((q: any) => ({
+          text: q.text,
+          author: q.author
+        }))
+      }
+      
+      // If API returns empty, use fallback
+      return this.getFallbackQuotes(mood)
+      
+    } catch (error) {
+      console.error('Error fetching quotes:', error)
+      return this.getFallbackQuotes(moodType)
+    }
+  }
+
+  // Fallback quotes when API is unavailable
+  private static getFallbackQuotes(moodType?: string): { text: string; author: string }[] {
+    const fallbackQuotes = {
+      happy: [
+        { text: "Happiness is not something ready made. It comes from your own actions.", author: "Dalai Lama" },
+        { text: "The purpose of our lives is to be happy.", author: "Dalai Lama" },
+        { text: "Happiness is when what you think, what you say, and what you do are in harmony.", author: "Mahatma Gandhi" }
+      ],
+      sad: [
+        { text: "The darkest nights produce the brightest stars.", author: "Unknown" },
+        { text: "Every storm runs out of rain.", author: "Maya Angelou" },
+        { text: "This too shall pass.", author: "Persian Proverb" }
+      ],
+      anxious: [
+        { text: "You don't have to control your thoughts. You just have to stop letting them control you.", author: "Dan Millman" },
+        { text: "Nothing can bring you peace but yourself.", author: "Ralph Waldo Emerson" },
+        { text: "Anxiety does not empty tomorrow of its sorrows, but only empties today of its strength.", author: "Charles Spurgeon" }
+      ],
+      stressed: [
+        { text: "In the middle of difficulty lies opportunity.", author: "Albert Einstein" },
+        { text: "The greatest weapon against stress is our ability to choose one thought over another.", author: "William James" },
+        { text: "Don't let yesterday take up too much of today.", author: "Will Rogers" }
+      ],
+      angry: [
+        { text: "For every minute you are angry you lose sixty seconds of happiness.", author: "Ralph Waldo Emerson" },
+        { text: "Holding onto anger is like drinking poison and expecting the other person to die.", author: "Buddha" },
+        { text: "Anger is an acid that can do more harm to the vessel in which it is stored than to anything on which it is poured.", author: "Mark Twain" }
+      ],
+      default: [
+        { text: "The only impossible journey is the one you never begin.", author: "Tony Robbins" },
+        { text: "Your life does not get better by chance, it gets better by change.", author: "Jim Rohn" },
+        { text: "Believe in yourself and all that you are.", author: "Christian D. Larson" },
+        { text: "You are stronger than you think and more capable than you imagine.", author: "Unknown" },
+        { text: "Every day is a new opportunity to grow and shine.", author: "Unknown" }
+      ]
+    }
+
+    const mood = moodType?.toLowerCase() || 'default'
+    const moodQuotes = fallbackQuotes[mood as keyof typeof fallbackQuotes] || fallbackQuotes.default
+    
+    return moodQuotes
+  }
+}

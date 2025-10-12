@@ -23,6 +23,7 @@ import motor.motor_asyncio
 import json
 import uuid
 from bson import ObjectId
+from settings import settings
 
 from nutrition import BMICalculator, TDEECalculator
 
@@ -58,14 +59,23 @@ class ImageAnalysisResult(BaseModel):
 class EnhancedFoodVisionAnalyzer:
     def __init__(self, mongodb_client: motor.motor_asyncio.AsyncIOMotorClient, db_name: str):
         # Initialize Google Vision client
-        try:
-            self.vision_client = vision.ImageAnnotatorClient()
-            self.vision_available = True
-            logger.info("Google Vision API initialized successfully")
-        except Exception as e:
-            logger.warning(f"Google Vision API not available: {e}")
+        if settings.DISABLE_GOOGLE_VISION:
+            logger.info("Google Vision API disabled for local development")
             self.vision_client = None
             self.vision_available = False
+        elif settings.USE_MOCK_GOOGLE_VISION:
+            logger.info("Using mock Google Vision API for local development")
+            self.vision_client = None
+            self.vision_available = True  # We'll use fallback methods
+        else:
+            try:
+                self.vision_client = vision.ImageAnnotatorClient()
+                self.vision_available = True
+                logger.info("Google Vision API initialized successfully")
+            except Exception as e:
+                logger.warning(f"Google Vision API not available, using mock service: {e}")
+                self.vision_client = None
+                self.vision_available = True  # Use fallback
         
         # Initialize MongoDB and GridFS
         self.db = mongodb_client[db_name]

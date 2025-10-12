@@ -1,9 +1,51 @@
 import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import { Navbar } from '../components/Navbar'
 import { Chatbot } from '../components/Chatbot'
 
 const HomePage = () => {
   const navigate = useNavigate()
+  const [scrollY, setScrollY] = useState(0)
+  const [currentTestimonial, setCurrentTestimonial] = useState(0)
+  
+  const testimonials = [
+    {
+      name: "Sarah Chen",
+      role: "Fitness Enthusiast",
+      avatar: "👩‍💼",
+      text: "VitaCoach AI helped me lose 20 pounds and build healthy habits that stick. The personalized meal plans are incredible!",
+      rating: 5
+    },
+    {
+      name: "Marcus Rodriguez",
+      role: "Busy Professional",
+      avatar: "👨‍💻",
+      text: "Finally found a health app that adapts to my crazy schedule. The AI suggestions are spot-on every time.",
+      rating: 5
+    },
+    {
+      name: "Emma Thompson",
+      role: "New Mom",
+      avatar: "👩‍🍼",
+      text: "The nutrition tracking made managing my post-pregnancy health journey so much easier. Love the intelligent insights!",
+      rating: 5
+    }
+  ]
+  
+  // Handle scroll for parallax effects
+  useEffect(() => {
+    const handleScroll = () => setScrollY(window.scrollY)
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // Auto-rotate testimonials
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length)
+    }, 5000)
+    return () => clearInterval(timer)
+  }, [testimonials.length])
   
   const handleGetStarted = () => {
     navigate('/services')
@@ -18,96 +60,172 @@ const HomePage = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <div className="relative bg-gradient-to-br from-emerald-500 via-cyan-600 to-blue-700 overflow-hidden">
-        {/* Animated Background Elements */}
+      <div className="relative bg-gradient-to-br from-emerald-500 via-cyan-600 to-blue-700 overflow-hidden min-h-screen flex items-center">
+        {/* Enhanced Animated Background */}
         <div className="absolute inset-0">
-          <div className="absolute top-10 left-10 w-20 h-20 bg-white/10 rounded-full animate-pulse"></div>
-          <div className="absolute top-32 right-20 w-16 h-16 bg-white/5 rounded-full animate-bounce"></div>
-          <div className="absolute bottom-20 left-1/4 w-12 h-12 bg-white/10 rounded-full animate-pulse delay-300"></div>
-          <div className="absolute bottom-32 right-1/3 w-24 h-24 bg-white/5 rounded-full animate-bounce delay-500"></div>
+          {/* Floating orbs with parallax */}
+          <div 
+            className="absolute top-10 left-10 w-20 h-20 bg-white/10 rounded-full animate-pulse blur-sm"
+            style={{ transform: `translateY(${scrollY * 0.1}px)` }}
+          ></div>
+          <div 
+            className="absolute top-32 right-20 w-16 h-16 bg-white/5 rounded-full animate-bounce blur-sm"
+            style={{ transform: `translateY(${scrollY * 0.15}px)` }}
+          ></div>
+          <div 
+            className="absolute bottom-20 left-1/4 w-12 h-12 bg-white/10 rounded-full animate-pulse delay-300 blur-sm"
+            style={{ transform: `translateY(${scrollY * -0.1}px)` }}
+          ></div>
+          <div 
+            className="absolute bottom-32 right-1/3 w-24 h-24 bg-white/5 rounded-full animate-bounce delay-500 blur-sm"
+            style={{ transform: `translateY(${scrollY * -0.2}px)` }}
+          ></div>
+          
+          {/* Gradient mesh overlay */}
+          <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/20 via-transparent to-pink-500/20 animate-pulse"></div>
+          
+          {/* Geometric patterns */}
+          <div className="absolute top-1/4 left-1/4 w-32 h-32 border border-white/10 rotate-45 animate-spin-slow"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-24 h-24 border border-white/5 rotate-12 animate-reverse-spin"></div>
         </div>
         
-        <div className="relative px-6 lg:px-8">
+        <div className="relative px-6 lg:px-8 w-full">
           <div className="mx-auto max-w-4xl py-24 sm:py-32 lg:py-40">
+            {/* Enhanced announcement badge */}
             <div className="hidden sm:mb-8 sm:flex sm:justify-center">
-              <div className="relative rounded-full px-4 py-2 text-sm leading-6 text-white ring-1 ring-white/20 hover:ring-white/30 backdrop-blur-sm bg-white/10 transition-all duration-300 hover:scale-105">
-                <span className="animate-pulse text-yellow-300">✨</span> Meet your advisor: VitaCoach AI{' '}
-                <a href="#" className="font-semibold text-white">
-                  <span className="absolute inset-0" aria-hidden="true" />
-                  Read more <span aria-hidden="true">→</span>
-                </a>
+              <div className="group relative rounded-full px-6 py-3 text-sm leading-6 text-white ring-1 ring-white/20 hover:ring-white/30 backdrop-blur-md bg-white/10 transition-all duration-300 hover:scale-105 hover:bg-white/15">
+                <span className="flex items-center">
+                  <span className="animate-pulse text-yellow-300 mr-2">✨</span> 
+                  <span className="bg-gradient-to-r from-yellow-200 to-orange-200 bg-clip-text text-transparent font-semibold">
+                    NEW: VitaCoach AI 2.0 with Enhanced RAG System
+                  </span>
+                  <a href="#" className="font-semibold text-white ml-2 group-hover:text-yellow-200 transition-colors">
+                    <span className="absolute inset-0" aria-hidden="true" />
+                    Learn more <span aria-hidden="true" className="group-hover:translate-x-1 inline-block transition-transform">→</span>
+                  </a>
+                </span>
               </div>
             </div>
+            
             <div className="text-center">
-              <div className="mb-6 flex justify-center">
-                <div className="flex space-x-2 text-6xl animate-bounce">
-                  <span className="animate-pulse delay-100">💪</span>
-                  <span className="animate-pulse delay-200">🥗</span>
-                  <span className="animate-pulse delay-300">🧘</span>
+              {/* Enhanced emoji animation */}
+              <div className="mb-8 flex justify-center">
+                <div className="flex space-x-4 text-7xl">
+                  <span className="animate-bounce delay-100 hover:scale-125 transition-transform cursor-pointer">💪</span>
+                  <span className="animate-bounce delay-200 hover:scale-125 transition-transform cursor-pointer">🥗</span>
+                  <span className="animate-bounce delay-300 hover:scale-125 transition-transform cursor-pointer">🧘</span>
+                  <span className="animate-bounce delay-400 hover:scale-125 transition-transform cursor-pointer">📱</span>
                 </div>
               </div>
-              <h1 className="text-5xl font-bold tracking-tight text-white sm:text-7xl mb-6 animate-fade-in">
-                <span className="bg-gradient-to-r from-white to-emerald-100 bg-clip-text text-transparent">
-                  Health, Fitness, and Food
+              
+              {/* Enhanced title with gradient text and animations */}
+              <h1 className="text-5xl font-extrabold tracking-tight text-white sm:text-7xl mb-6">
+                <span className="block bg-gradient-to-r from-white via-emerald-100 to-cyan-100 bg-clip-text text-transparent animate-gradient-x">
+                  Your Personal Health
                 </span>
-                <br />
-                <span className="text-3xl sm:text-5xl text-emerald-100">
-                  — Tailored for You
+                <span className="block bg-gradient-to-r from-emerald-200 via-cyan-200 to-blue-200 bg-clip-text text-transparent text-4xl sm:text-6xl mt-2 animate-gradient-x-reverse">
+                  Ecosystem Powered by AI
                 </span>
               </h1>
-              <p className="mt-6 text-xl leading-8 text-emerald-100 max-w-3xl mx-auto">
-                🤖 VitaCoach AI crafts personalized daily plans across training, nutrition, and wellness, 
-                perfectly aligned with your goals and busy schedule.
+              
+              {/* Enhanced description */}
+              <p className="mt-8 text-xl leading-8 text-emerald-100 max-w-3xl mx-auto backdrop-blur-sm bg-white/5 rounded-2xl p-6 border border-white/10">
+                <span className="text-2xl mr-2">🤖</span>
+                VitaCoach AI 2.0 combines advanced machine learning with personalized health insights 
+                to create your perfect wellness blueprint. From AI-powered nutrition analysis to 
+                intelligent workout scheduling — your health journey, optimized.
               </p>
               
-              {/* Stats Preview */}
-              <div className="mt-8 flex justify-center space-x-8 text-white/90">
-                <div className="text-center">
-                  <div className="text-2xl font-bold">10k+</div>
-                  <div className="text-sm text-emerald-200">Happy Users</div>
+              {/* Enhanced stats with animations */}
+              <div className="mt-12 grid grid-cols-3 gap-8 text-white/90">
+                <div className="group text-center transform hover:scale-110 transition-all duration-300 cursor-pointer">
+                  <div className="text-3xl font-bold bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent">50k+</div>
+                  <div className="text-sm text-emerald-200 group-hover:text-white transition-colors">Transformed Lives</div>
+                  <div className="w-16 h-1 bg-gradient-to-r from-yellow-400 to-orange-400 mx-auto mt-2 rounded-full"></div>
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold">1M+</div>
-                  <div className="text-sm text-emerald-200">Meals Tracked</div>
+                <div className="group text-center transform hover:scale-110 transition-all duration-300 cursor-pointer">
+                  <div className="text-3xl font-bold bg-gradient-to-r from-green-300 to-emerald-300 bg-clip-text text-transparent">2M+</div>
+                  <div className="text-sm text-emerald-200 group-hover:text-white transition-colors">Meals Analyzed</div>
+                  <div className="w-16 h-1 bg-gradient-to-r from-green-400 to-emerald-400 mx-auto mt-2 rounded-full"></div>
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold">500k+</div>
-                  <div className="text-sm text-emerald-200">Workouts Completed</div>
+                <div className="group text-center transform hover:scale-110 transition-all duration-300 cursor-pointer">
+                  <div className="text-3xl font-bold bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent">1M+</div>
+                  <div className="text-sm text-emerald-200 group-hover:text-white transition-colors">Workouts Completed</div>
+                  <div className="w-16 h-1 bg-gradient-to-r from-blue-400 to-cyan-400 mx-auto mt-2 rounded-full"></div>
                 </div>
               </div>
 
-              <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+              {/* Enhanced CTA buttons */}
+              <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-6">
                 <button
                   onClick={handleGetStarted}
-                  className="group relative rounded-xl bg-white px-8 py-4 text-lg font-semibold text-emerald-600 shadow-lg hover:bg-emerald-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white transition-all duration-200 hover:scale-105 hover:shadow-xl"
+                  className="group relative overflow-hidden rounded-2xl bg-gradient-to-r from-white to-emerald-50 px-10 py-5 text-lg font-bold text-emerald-600 shadow-2xl hover:shadow-3xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white transition-all duration-300 hover:scale-105 hover:-translate-y-1"
                 >
-                  <span className="flex items-center">
-                    🚀 Start Your Journey Free
-                    <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
+                  <span className="relative flex items-center z-10">
+                    <span className="text-2xl mr-3">🚀</span>
+                    Start Your AI Health Journey
+                    <span className="ml-3 group-hover:translate-x-2 transition-transform duration-200">→</span>
                   </span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-cyan-600 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
                 </button>
+                
                 <button
                   onClick={handleLearnMore}
-                  className="group flex items-center text-lg font-semibold leading-6 text-white hover:text-emerald-100 border-2 border-white/30 px-8 py-4 rounded-xl hover:bg-white/10 backdrop-blur-sm transition-all duration-200 hover:scale-105"
+                  className="group flex items-center text-lg font-semibold leading-6 text-white hover:text-emerald-100 border-2 border-white/30 px-8 py-5 rounded-2xl hover:bg-white/15 backdrop-blur-md transition-all duration-300 hover:scale-105 hover:-translate-y-1 hover:border-white/50"
                 >
-                  <span className="mr-2">📹</span>
-                  Watch Demo
-                  <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
+                  <span className="text-2xl mr-3">🎬</span>
+                  Watch AI Demo
+                  <span className="ml-3 group-hover:translate-x-2 transition-transform duration-200">→</span>
                 </button>
               </div>
 
-              {/* Trust Indicators */}
-              <div className="mt-12 flex flex-col items-center">
-                <p className="text-emerald-200 text-sm mb-4">Trusted by health enthusiasts worldwide</p>
-                <div className="flex items-center space-x-6 text-white/70">
-                  <div className="flex items-center space-x-1">
+              {/* Enhanced trust indicators */}
+              <div className="mt-16 flex flex-col items-center">
+                <p className="text-emerald-200 text-sm mb-6 font-medium">Trusted by health professionals worldwide</p>
+                <div className="flex flex-wrap items-center justify-center gap-8 text-white/80">
+                  <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 hover:bg-white/20 transition-colors">
                     <span className="text-yellow-400">⭐⭐⭐⭐⭐</span>
-                    <span className="text-sm">4.9/5</span>
+                    <span className="text-sm font-semibold">4.9/5 Rating</span>
                   </div>
-                  <div className="text-sm">📱 Available on all devices</div>
-                  <div className="text-sm">🔒 100% Secure & Private</div>
+                  <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 hover:bg-white/20 transition-colors">
+                    <span className="text-xl">📱</span>
+                    <span className="text-sm font-semibold">Cross-Platform</span>
+                  </div>
+                  <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 hover:bg-white/20 transition-colors">
+                    <span className="text-xl">🔒</span>
+                    <span className="text-sm font-semibold">100% Secure</span>
+                  </div>
+                  <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-4 py-2 hover:bg-white/20 transition-colors">
+                    <span className="text-xl">🏆</span>
+                    <span className="text-sm font-semibold">Award Winning</span>
+                  </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* AI Services Status Banner */}
+      <div className="bg-gradient-to-r from-green-500 to-emerald-600 py-4">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="flex items-center justify-center space-x-6 text-white">
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-green-300 rounded-full animate-pulse"></div>
+              <span className="text-sm font-semibold">AI Services Online</span>
+            </div>
+            <div className="text-sm opacity-80">|</div>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm">🧠 BMI/TDEE Calculator</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm">🍽️ Meal Analyzer</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <span className="text-sm">📋 Meal Planner</span>
+            </div>
+            <div className="hidden md:flex items-center space-x-2">
+              <span className="text-sm opacity-75">Ready to serve you 24/7</span>
             </div>
           </div>
         </div>
@@ -209,6 +327,111 @@ const HomePage = () => {
                   <h4 className="font-semibold text-gray-900 mb-2">Track Progress</h4>
                   <p className="text-sm text-gray-600">Monitor your journey with detailed analytics and insights</p>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Testimonials Section */}
+      <div className="py-20 sm:py-24 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 relative overflow-hidden">
+        {/* Background decorations */}
+        <div className="absolute inset-0">
+          <div className="absolute top-20 left-10 w-32 h-32 bg-purple-200/30 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-20 right-10 w-40 h-40 bg-pink-200/30 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        </div>
+        
+        <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full mb-6">
+              <span className="text-2xl mr-2">💬</span>
+              <span className="text-sm font-semibold text-purple-700">What our users say</span>
+            </div>
+            <h2 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl mb-6">
+              Real Stories, Real Results
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              Join thousands of people who've transformed their health with VitaCoach AI's personalized approach.
+            </p>
+          </div>
+
+          {/* Enhanced Testimonials Carousel */}
+          <div className="relative max-w-4xl mx-auto">
+            <div className="overflow-hidden rounded-3xl">
+              <div 
+                className="flex transition-transform duration-500 ease-in-out"
+                style={{ transform: `translateX(-${currentTestimonial * 100}%)` }}
+              >
+                {testimonials.map((testimonial, index) => (
+                  <div key={index} className="w-full flex-shrink-0 px-4">
+                    <div className="bg-white rounded-2xl p-8 lg:p-12 shadow-xl border border-gray-100 text-center">
+                      <div className="mb-6">
+                        <div className="flex justify-center mb-4">
+                          {[...Array(testimonial.rating)].map((_, i) => (
+                            <span key={i} className="text-2xl text-yellow-400">⭐</span>
+                          ))}
+                        </div>
+                        <blockquote className="text-xl lg:text-2xl text-gray-700 font-medium leading-relaxed mb-8">
+                          "{testimonial.text}"
+                        </blockquote>
+                      </div>
+                      <div className="flex items-center justify-center">
+                        <div className="text-6xl mr-4">{testimonial.avatar}</div>
+                        <div className="text-left">
+                          <div className="font-bold text-lg text-gray-900">{testimonial.name}</div>
+                          <div className="text-purple-600 font-medium">{testimonial.role}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Testimonial Navigation */}
+            <div className="flex justify-center mt-8 space-x-2">
+              {testimonials.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentTestimonial(index)}
+                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                    index === currentTestimonial 
+                      ? 'bg-purple-600 w-8' 
+                      : 'bg-purple-200 hover:bg-purple-300'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Trust Metrics */}
+          <div className="mt-16 grid grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="text-center">
+              <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="text-3xl mb-2">💯</div>
+                <div className="text-2xl font-bold text-gray-900">98%</div>
+                <div className="text-sm text-gray-600">User Satisfaction</div>
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="text-3xl mb-2">🎯</div>
+                <div className="text-2xl font-bold text-gray-900">87%</div>
+                <div className="text-sm text-gray-600">Goal Achievement</div>
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="text-3xl mb-2">📈</div>
+                <div className="text-2xl font-bold text-gray-900">156%</div>
+                <div className="text-sm text-gray-600">Health Improvement</div>
+              </div>
+            </div>
+            <div className="text-center">
+              <div className="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="text-3xl mb-2">⚡</div>
+                <div className="text-2xl font-bold text-gray-900">24/7</div>
+                <div className="text-sm text-gray-600">AI Support</div>
               </div>
             </div>
           </div>
@@ -321,8 +544,8 @@ const HomePage = () => {
                 </div>
                 
                 <div className="grid grid-cols-7 gap-1 text-center text-sm mb-3">
-                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
-                    <div key={day} className="font-semibold text-gray-500 py-2">{day}</div>
+                  {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+                    <div key={index} className="font-semibold text-gray-500 py-2">{day}</div>
                   ))}
                 </div>
                 
@@ -496,6 +719,149 @@ const HomePage = () => {
           </div>
         </div>
       </div>
+
+      {/* Final CTA Section */}
+      <div className="py-20 sm:py-24 bg-gradient-to-br from-emerald-600 via-cyan-600 to-blue-700 relative overflow-hidden">
+        {/* Background effects */}
+        <div className="absolute inset-0">
+          <div className="absolute top-20 left-20 w-64 h-64 bg-white/5 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-20 right-20 w-80 h-80 bg-white/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
+          <div className="absolute inset-0 bg-gradient-to-tr from-purple-600/20 via-transparent to-pink-600/20"></div>
+        </div>
+        
+        <div className="relative mx-auto max-w-7xl px-6 lg:px-8 text-center">
+          <div className="mx-auto max-w-4xl">
+            <div className="inline-flex items-center px-6 py-3 bg-white/10 backdrop-blur-md rounded-full mb-8 border border-white/20">
+              <span className="text-2xl mr-3">🚀</span>
+              <span className="text-white font-semibold">Ready to transform your health?</span>
+            </div>
+            
+            <h2 className="text-4xl sm:text-6xl font-bold text-white mb-6">
+              <span className="block">Start Your AI-Powered</span>
+              <span className="block bg-gradient-to-r from-yellow-200 to-orange-200 bg-clip-text text-transparent">
+                Health Transformation Today
+              </span>
+            </h2>
+            
+            <p className="text-xl text-emerald-100 mb-10 max-w-2xl mx-auto leading-relaxed">
+              Join thousands of people who've already discovered the power of personalized AI health coaching. 
+              Your journey to optimal wellness starts with a single click.
+            </p>
+
+            {/* Enhanced CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-12">
+              <button
+                onClick={handleGetStarted}
+                className="group relative overflow-hidden bg-white text-emerald-600 px-10 py-5 rounded-2xl font-bold text-lg shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-105 hover:-translate-y-1 min-w-[280px]"
+              >
+                <span className="relative z-10 flex items-center justify-center">
+                  <span className="text-2xl mr-3">💫</span>
+                  Get Started Free
+                  <span className="ml-3 group-hover:translate-x-2 transition-transform">→</span>
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-cyan-500 opacity-0 group-hover:opacity-10 transition-opacity"></div>
+              </button>
+              
+              <div className="text-center text-white/80">
+                <div className="text-sm mb-2">✅ No credit card required</div>
+                <div className="text-sm">🔒 Privacy protected</div>
+              </div>
+            </div>
+
+            {/* Social Proof */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-white/90">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-white mb-2">50k+</div>
+                <div className="text-emerald-200 text-sm">Lives Transformed</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-white mb-2">98%</div>
+                <div className="text-emerald-200 text-sm">Success Rate</div>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-white mb-2">4.9★</div>
+                <div className="text-emerald-200 text-sm">App Store Rating</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Modern Footer */}
+      <footer className="bg-gray-900 text-white relative overflow-hidden">
+        {/* Background pattern */}
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900"></div>
+        
+        <div className="relative">
+          {/* Main footer content */}
+          <div className="mx-auto max-w-7xl px-6 lg:px-8 py-16">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {/* Brand section */}
+              <div className="lg:col-span-2">
+                <div className="flex items-center mb-6">
+                  <div className="text-3xl mr-3">🌟</div>
+                  <h3 className="text-2xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+                    VitaCoach AI
+                  </h3>
+                </div>
+                <p className="text-gray-300 mb-6 max-w-md leading-relaxed">
+                  The world's most advanced AI-powered health ecosystem. Transforming lives through 
+                  personalized nutrition, fitness, and wellness guidance.
+                </p>
+                <div className="flex space-x-4">
+                  {['🐦', '📘', '📷', '🎵'].map((emoji, index) => (
+                    <div key={index} className="w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-emerald-600 transition-colors cursor-pointer">
+                      <span className="text-lg">{emoji}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quick Links */}
+              <div>
+                <h4 className="text-lg font-semibold mb-6 text-emerald-400">Features</h4>
+                <ul className="space-y-3 text-gray-300">
+                  <li><a href="#" className="hover:text-emerald-400 transition-colors">AI Nutrition Analysis</a></li>
+                  <li><a href="#" className="hover:text-emerald-400 transition-colors">Smart Meal Planning</a></li>
+                  <li><a href="#" className="hover:text-emerald-400 transition-colors">Fitness Coaching</a></li>
+                  <li><a href="#" className="hover:text-emerald-400 transition-colors">Health Calendar</a></li>
+                  <li><a href="#" className="hover:text-emerald-400 transition-colors">Progress Tracking</a></li>
+                </ul>
+              </div>
+
+              {/* Support */}
+              <div>
+                <h4 className="text-lg font-semibold mb-6 text-emerald-400">Support</h4>
+                <ul className="space-y-3 text-gray-300">
+                  <li><a href="#" className="hover:text-emerald-400 transition-colors">Help Center</a></li>
+                  <li><a href="#" className="hover:text-emerald-400 transition-colors">Contact Us</a></li>
+                  <li><a href="#" className="hover:text-emerald-400 transition-colors">Privacy Policy</a></li>
+                  <li><a href="#" className="hover:text-emerald-400 transition-colors">Terms of Service</a></li>
+                  <li><a href="#" className="hover:text-emerald-400 transition-colors">AI Ethics</a></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom bar */}
+          <div className="border-t border-gray-800">
+            <div className="mx-auto max-w-7xl px-6 lg:px-8 py-6">
+              <div className="flex flex-col md:flex-row justify-between items-center">
+                <div className="text-gray-400 text-sm mb-4 md:mb-0">
+                  © 2025 VitaCoach AI. Powered by advanced machine learning. All rights reserved.
+                </div>
+                <div className="flex items-center space-x-6 text-gray-400 text-sm">
+                  <span className="flex items-center">
+                    <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+                    All systems operational
+                  </span>
+                  <span>🤖 Enhanced RAG System v2.0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
 
       <Chatbot />
     </>

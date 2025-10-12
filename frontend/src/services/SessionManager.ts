@@ -44,8 +44,8 @@ interface SessionConfig {
 
 export class DietAgentSessionManager {
   private config: SessionConfig
-  private sessionCheckInterval: NodeJS.Timeout | null = null
-  private inactivityTimer: NodeJS.Timeout | null = null
+  private sessionCheckInterval: number | null = null
+  private inactivityTimer: number | null = null
   private sessionWarningCallback?: () => void
   private sessionExpiredCallback?: () => void
 

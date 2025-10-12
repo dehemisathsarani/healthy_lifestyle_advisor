@@ -7,7 +7,6 @@ import motor.motor_asyncio
 from pymongo.errors import PyMongoError, ConnectionFailure, ServerSelectionTimeoutError
 from dotenv import load_dotenv
 
-
 # Load .env from a few likely locations so the backend picks up config
 repo_root = Path(__file__).resolve().parents[3]
 env_candidates = [

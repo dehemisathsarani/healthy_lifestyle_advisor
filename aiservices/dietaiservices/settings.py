@@ -4,19 +4,19 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     # API Keys
-    OPENAI_API_KEY: Optional[str] = None
+    OPENAI_API_KEY: Optional[str] = "demo-key-for-testing"
     GOOGLE_API_KEY: Optional[str] = None
     GOOGLE_APPLICATION_CREDENTIALS: Optional[str] = None
     
     # Database
-    MONGODB_URL: str = "mongodb://mongo:27017"
-    DATABASE_NAME: str = "healthy_lifestyle"
+    MONGODB_URL: str = "mongodb+srv://Admin:X1bzjS2IGHrNHFgS@healthagent.ucnrbse.mongodb.net/HealthAgent"
+    DATABASE_NAME: str = "HealthAgent"
     
     # Redis
-    REDIS_URL: str = "redis://redis:6379"
+    REDIS_URL: str = "redis://localhost:6379"
     
     # RabbitMQ
-    RABBITMQ_URL: str = "amqp://guest:guest@rabbitmq:5672/"
+    RABBITMQ_URL: str = "amqp://guest:guest@localhost:5672/"
     DIET_QUEUE: str = "diet_processing"
     NUTRITION_QUEUE: str = "nutrition_analysis"
     IMAGE_QUEUE: str = "image_processing"
@@ -34,10 +34,18 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     LOG_LEVEL: str = "INFO"
     
-    class Config:
-        env_file = "../.env"
-        case_sensitive = True
-        extra = "ignore"  # Ignore extra environment variables
+    # Feature Toggles (for local development)
+    DISABLE_GOOGLE_VISION: bool = True  # ✅ Disabled - Use YOLOv8 + Tesseract instead
+    DISABLE_RABBITMQ: bool = False
+    USE_MOCK_GOOGLE_VISION: bool = False
+    USE_SIMPLE_MQ: bool = False
+    
+    # Pydantic v2 configuration
+    model_config = {
+        "env_file": "../.env",
+        "case_sensitive": True,
+        "extra": "ignore"  # Ignore extra environment variables
+    }
 
 # Global settings instance
 settings = Settings()

@@ -1,4 +1,4 @@
-import jwt_decode from 'jwt-decode'
+import { jwtDecode } from 'jwt-decode'
 import { clearTokens, getAccessToken, getRefreshToken, setTokens } from '../auth/tokenStore'
 import { API_BASE, isDemoMode } from './env'
 
@@ -20,7 +20,7 @@ type RegisterResponse = { accessToken: string; refreshToken?: string; user?: Use
 
 function isExpired(token: string): boolean {
   try {
-    const { exp } = jwt_decode<{ exp?: number }>(token)
+    const { exp } = jwtDecode<{ exp?: number }>(token)
     if (!exp) return false
     return exp * 1000 < Date.now() + 10_000 // consider near-expiry
   } catch {
@@ -120,7 +120,7 @@ export async function getMe(): Promise<UserProfile | null> {
     const token = getAccessToken()
     if (!token) return null
     try {
-      const { name, sub } = jwt_decode<{ name?: string; sub?: string }>(token)
+      const { name, sub } = jwtDecode<{ name?: string; sub?: string }>(token)
       return { name: name || 'User', email: sub || 'user@example.com' }
     } catch {
       return { name: 'User', email: 'user@example.com' }

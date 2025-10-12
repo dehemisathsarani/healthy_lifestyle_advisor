@@ -1,18 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { 
-  FaBrain, 
-  FaLightbulb, 
-  FaChartLine, 
-  FaExchangeAlt, 
-  FaTrophy,
-  FaCalendarWeek,
-  FaQuoteLeft,
-  FaInfoCircle,
-  FaCheckCircle,
-  FaExclamationTriangle,
-  FaTimesCircle,
-  FaFlag
-} from 'react-icons/fa'
+  HiAcademicCap, 
+  HiLightBulb, 
+  HiPresentationChartLine, 
+  HiArrowsUpDown, 
+  HiTrophy,
+  HiCalendar,
+  HiChatBubbleLeftEllipsis,
+  HiInformationCircle,
+  HiCheckCircle,
+  HiExclamationTriangle,
+  HiXCircle,
+  HiFlag
+} from 'react-icons/hi2'
 
 interface NutritionInsight {
   category: string
@@ -147,11 +147,11 @@ export const NLPNutritionInsights: React.FC<NLPNutritionInsightsProps> = ({
 
   const getPriorityIcon = (priority: string) => {
     switch (priority) {
-      case 'critical': return <FaTimesCircle className="text-red-600" />
-      case 'high': return <FaExclamationTriangle className="text-orange-500" />
-      case 'medium': return <FaInfoCircle className="text-yellow-500" />
-      case 'low': return <FaCheckCircle className="text-green-500" />
-      default: return <FaInfoCircle className="text-gray-400" />
+      case 'critical': return <HiXCircle className="text-red-600" />
+      case 'high': return <HiExclamationTriangle className="text-orange-500" />
+      case 'medium': return <HiInformationCircle className="text-yellow-500" />
+      case 'low': return <HiCheckCircle className="text-green-500" />
+      default: return <HiInformationCircle className="text-gray-400" />
     }
   }
 
@@ -169,7 +169,7 @@ export const NLPNutritionInsights: React.FC<NLPNutritionInsightsProps> = ({
     return (
       <div className="bg-white rounded-2xl border shadow-sm p-6">
         <div className="flex items-center gap-3 mb-4">
-          <FaBrain className="text-2xl text-purple-500 animate-pulse" />
+          <HiAcademicCap className="text-2xl text-purple-500 animate-pulse" />
           <h2 className="text-2xl font-bold">AI Nutrition Insights</h2>
         </div>
         <div className="animate-pulse space-y-4">
@@ -186,16 +186,16 @@ export const NLPNutritionInsights: React.FC<NLPNutritionInsightsProps> = ({
       {/* Header with tabs */}
       <div className="border-b p-6">
         <div className="flex items-center gap-3 mb-4">
-          <FaBrain className="text-2xl text-purple-500" />
+          <HiAcademicCap className="text-2xl text-purple-500" />
           <h2 className="text-2xl font-bold">AI Nutrition Insights</h2>
         </div>
         
         <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
           {[
-            { id: 'insights', label: 'Smart Insights', icon: FaLightbulb },
-            { id: 'daily', label: 'Daily Card', icon: FaChartLine },
-            { id: 'weekly', label: 'Weekly Report', icon: FaCalendarWeek },
-            { id: 'summary', label: 'AI Summary', icon: FaQuoteLeft }
+            { id: 'insights', label: 'Smart Insights', icon: HiLightBulb },
+            { id: 'daily', label: 'Daily Card', icon: HiPresentationChartLine },
+            { id: 'weekly', label: 'Weekly Report', icon: HiCalendar },
+            { id: 'summary', label: 'AI Summary', icon: HiChatBubbleLeftEllipsis }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -224,7 +224,7 @@ export const NLPNutritionInsights: React.FC<NLPNutritionInsightsProps> = ({
             
             {insights.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                <FaCheckCircle className="text-4xl text-green-500 mx-auto mb-2" />
+                <HiCheckCircle className="text-4xl text-green-500 mx-auto mb-2" />
                 <p>No nutrition concerns detected today!</p>
                 <p className="text-sm">Your nutrition is well-balanced.</p>
               </div>
@@ -244,7 +244,7 @@ export const NLPNutritionInsights: React.FC<NLPNutritionInsightsProps> = ({
                         <p className="text-gray-800 mb-2">{insight.message}</p>
                         {insight.action && (
                           <div className="flex items-start gap-2 text-sm">
-                            <FaLightbulb className="text-yellow-500 mt-0.5 flex-shrink-0" />
+                            <HiLightBulb className="text-yellow-500 mt-0.5 flex-shrink-0" />
                             <span className="text-gray-600">{insight.action}</span>
                           </div>
                         )}
@@ -298,7 +298,7 @@ export const NLPNutritionInsights: React.FC<NLPNutritionInsightsProps> = ({
             {/* Smart Swap */}
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
-                <FaExchangeAlt className="text-yellow-600" />
+                <HiArrowsUpDown className="text-yellow-600" />
                 <span className="font-medium text-yellow-800">Smart Swap Suggestion</span>
               </div>
               <p className="text-yellow-800">{dailyCard.smart_swap}</p>
@@ -324,7 +324,7 @@ export const NLPNutritionInsights: React.FC<NLPNutritionInsightsProps> = ({
             {weeklyReport.achievement_badges.length > 0 && (
               <div className="bg-gradient-to-r from-gold-50 to-yellow-50 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <FaTrophy className="text-yellow-600" />
+                  <HiTrophy className="text-yellow-600" />
                   <h4 className="font-semibold text-yellow-800">This Week's Achievements</h4>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -374,7 +374,7 @@ export const NLPNutritionInsights: React.FC<NLPNutritionInsightsProps> = ({
             {/* Next Week Focus */}
             <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
-                <FaFlag className="text-emerald-600" />
+                <HiFlag className="text-emerald-600" />
                 <span className="font-medium text-emerald-800">Focus for Next Week</span>
               </div>
               <p className="text-emerald-800">{weeklyReport.next_week_focus}</p>
@@ -393,7 +393,7 @@ export const NLPNutritionInsights: React.FC<NLPNutritionInsightsProps> = ({
             {abstractiveSummary ? (
               <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6">
                 <div className="flex items-start gap-3">
-                  <FaQuoteLeft className="text-purple-500 text-xl mt-1 flex-shrink-0" />
+                  <HiChatBubbleLeftEllipsis className="text-purple-500 text-xl mt-1 flex-shrink-0" />
                   <div className="text-gray-800 whitespace-pre-line leading-relaxed">
                     {abstractiveSummary}
                   </div>
@@ -406,7 +406,7 @@ export const NLPNutritionInsights: React.FC<NLPNutritionInsightsProps> = ({
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500">
-                <FaQuoteLeft className="text-4xl text-gray-300 mx-auto mb-2" />
+                <HiChatBubbleLeftEllipsis className="text-4xl text-gray-300 mx-auto mb-2" />
                 <p>No summary available for this date.</p>
               </div>
             )}

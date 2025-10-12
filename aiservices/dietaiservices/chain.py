@@ -1,13 +1,10 @@
-from langchain.llms import OpenAI
-from langchain.chat_models import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate, PromptTemplate
-from langchain.chains import LLMChain, SequentialChain
-from langchain.memory import ConversationBufferMemory
-from langchain.tools import Tool
-from langchain.agents import initialize_agent, AgentType
-from langchain.schema import HumanMessage, SystemMessage
+from langchain_openai import OpenAI, ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate, PromptTemplate
+from langchain.chains import LLMChain
+# Updated imports for Pydantic v2 compatibility
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from typing import Dict, List, Optional, Any
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 import json
 import logging
 
@@ -49,14 +46,12 @@ class DietAgentChain:
         self.vision_analyzer = FoodVisionAnalyzer()
         self.macro_tracker = MacroTracker()
         
-        # Initialize memory for conversation context
-        self.memory = ConversationBufferMemory(
-            memory_key="chat_history",
-            return_messages=True
-        )
+        # Initialize conversation history for context
+        self.conversation_history = []
         
         self._setup_chains()
-        self._setup_agent()
+        # Agent functionality disabled for Pydantic v2 compatibility
+        # self._setup_agent()
     
     def _setup_chains(self):
         """Setup different LangChain chains for various tasks."""
@@ -139,60 +134,22 @@ class DietAgentChain:
         )
     
     def _setup_agent(self):
-        """Setup LangChain agent with custom tools."""
+        """Setup LangChain agent with custom tools - DISABLED for Pydantic v2 compatibility."""
+        # Temporarily disabled due to Pydantic v1/v2 compatibility issues
+        # The functionality is replaced with direct tool calls in the analysis methods
+        pass
         
-        def calculate_bmi_tool(input_str: str) -> str:
-            """Calculate BMI from weight and height."""
-            try:
-                data = json.loads(input_str)
-                bmi = BMICalculator.calculate_bmi(data['weight'], data['height'])
-                category = BMICalculator.get_bmi_category(bmi)
-                return f"BMI: {bmi:.1f} ({category})"
-            except Exception as e:
-                return f"Error calculating BMI: {e}"
+        # def calculate_bmi_tool(input_str: str) -> str:
+        #     """Calculate BMI from weight and height."""
+        #     try:
+        #         data = json.loads(input_str)
+        #         bmi = BMICalculator.calculate_bmi(data['weight'], data['height'])
+        #         category = BMICalculator.get_bmi_category(bmi)
+        #         return f"BMI: {bmi:.1f} ({category})"
+        #     except Exception as e:
+        #         return f"Error calculating BMI: {e}"
         
-        def calculate_tdee_tool(input_str: str) -> str:
-            """Calculate TDEE from user data."""
-            try:
-                data = json.loads(input_str)
-                bmr = TDEECalculator.calculate_bmr(
-                    data['weight'], data['height'], data['age'], data['gender']
-                )
-                tdee = TDEECalculator.calculate_tdee(bmr, data['activity_level'])
-                return f"BMR: {bmr:.0f} calories, TDEE: {tdee:.0f} calories"
-            except Exception as e:
-                return f"Error calculating TDEE: {e}"
-        
-        def analyze_nutrition_tool(food_text: str) -> str:
-            """Analyze nutrition from food description."""
-            # This would be async in real implementation
-            return f"Nutrition analysis for: {food_text}"
-        
-        tools = [
-            Tool(
-                name="BMI Calculator",
-                func=calculate_bmi_tool,
-                description="Calculate BMI given weight (kg) and height (cm). Input should be JSON with 'weight' and 'height' keys."
-            ),
-            Tool(
-                name="TDEE Calculator", 
-                func=calculate_tdee_tool,
-                description="Calculate TDEE given user data. Input should be JSON with weight, height, age, gender, activity_level."
-            ),
-            Tool(
-                name="Nutrition Analyzer",
-                func=analyze_nutrition_tool,
-                description="Analyze nutrition content of food items."
-            )
-        ]
-        
-        self.agent = initialize_agent(
-            tools,
-            self.llm,
-            agent=AgentType.CHAT_CONVERSATIONAL_REACT_DESCRIPTION,
-            memory=self.memory,
-            verbose=True
-        )
+        # self.agent = None  # Agent functionality disabled
     
     async def analyze_food_image(self, image_data: bytes, user_profile: UserProfile) -> DietAdvice:
         """Analyze food from image and provide diet advice."""
