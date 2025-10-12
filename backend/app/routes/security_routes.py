@@ -183,17 +183,27 @@ async def get_secure_report(request: SecureReportRequestModel):
         db = get_database()
         
         # Step 1: Verify OTP
+        # Try both OTP verification methods: regular OTP and three-step email verification
         otp_service = OTPService(db)
+        
+        # First try regular OTP verification
         verification = await otp_service.verify_otp(
             identifier=request.identifier,
             otp_code=request.otp_code,
             identifier_type="email"  # Default to email
         )
         
+        # If regular OTP fails, try three-step email verification OTP
+        if not verification.get("success"):
+            verification = await otp_service.verify_email_verification_access(
+                identifier=request.identifier,
+                otp_code=request.otp_code
+            )
+        
         if not verification.get("success"):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=verification.get("message", "Invalid or expired OTP")
+                detail=verification.get("message", "Invalid or expired OTP. Please verify your email first.")
             )
         
         # Step 2: Find user by email/phone

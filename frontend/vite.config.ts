@@ -15,6 +15,18 @@ export default defineConfig({
   server: {
     port: 3000,
     host: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/auth': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+        secure: false,
+      }
+    },
     watch: {
       // Reduce file watching to prevent excessive reloads
       ignored: ['**/node_modules/**', '**/.git/**'],

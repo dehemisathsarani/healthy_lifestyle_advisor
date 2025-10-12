@@ -274,3 +274,106 @@ class PaginatedResponse(BaseModel):
     per_page: int
     total_pages: int
     timestamp: datetime = Field(default_factory=datetime.utcnow)
+
+# Additional models for nutrition logging and analysis
+class NutritionData(BaseModel):
+    """Nutrition data for a meal or day"""
+    calories: float = Field(default=0, ge=0)
+    protein: float = Field(default=0, ge=0)
+    carbs: float = Field(default=0, ge=0)
+    fat: float = Field(default=0, ge=0)
+    fiber: Optional[float] = Field(default=0, ge=0)
+
+class NutritionLog(BaseModel):
+    """Nutrition log entry"""
+    id: Optional[PyObjectId] = Field(default=None, alias="_id")
+    user_id: str = Field(..., description="User ID")
+    date: str = Field(..., description="Date in YYYY-MM-DD format")
+    meals: List[FoodItem] = Field(default=[], description="List of food items")
+    total_nutrition: NutritionData = Field(..., description="Total nutrition for the day")
+    meal_type: Optional[str] = Field(None, description="breakfast/lunch/dinner/snack")
+    notes: Optional[str] = None
+    analysis_method: Optional[str] = Field(None, description="Method used for analysis")
+    image_url: Optional[str] = None
+    text_input: Optional[str] = None
+    ai_insights: List[str] = Field(default=[], description="AI-generated insights")
+    confidence_score: Optional[float] = Field(None, ge=0, le=1)
+    created_at: Optional[datetime] = Field(default_factory=datetime.utcnow)
+    
+    class Config:
+        populate_by_name = True
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}
+
+class NutritionLogCreate(BaseModel):
+    """Model for creating nutrition log"""
+    meals: List[FoodItem]
+    meal_type: Optional[str] = None
+    notes: Optional[str] = None
+    analysis_method: Optional[str] = None
+    image_url: Optional[str] = None
+    text_input: Optional[str] = None
+    ai_insights: Optional[List[str]] = None
+
+class NutritionLogUpdate(BaseModel):
+    """Model for updating nutrition log"""
+    meals: Optional[List[FoodItem]] = None
+    meal_type: Optional[str] = None
+    notes: Optional[str] = None
+
+class PaginatedNutritionLogs(BaseModel):
+    """Paginated nutrition logs response"""
+    logs: List[NutritionLog]
+    total: int
+    page: int
+    per_page: int
+
+class UserNutritionPreferences(BaseModel):
+    """User nutrition preferences"""
+    dietary_restrictions: Optional[List[str]] = Field(default=[])
+    allergies: Optional[List[str]] = Field(default=[])
+    favorite_foods: Optional[List[str]] = Field(default=[])
+    disliked_foods: Optional[List[str]] = Field(default=[])
+
+class FoodAnalysisRequest(BaseModel):
+    """Request for food analysis"""
+    image_url: Optional[str] = None
+    text_description: Optional[str] = None
+    meal_type: Optional[str] = None
+
+class FoodAnalysisResponse(BaseModel):
+    """Response from food analysis"""
+    food_items: List[FoodItem]
+    total_nutrition: NutritionData
+    confidence_score: float
+    ai_insights: List[str]
+    analysis_method: str
+
+class WeeklyReportRequest(BaseModel):
+    """Request for weekly report"""
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+
+class WeeklyReport(BaseModel):
+    """Weekly nutrition report"""
+    start_date: str
+    end_date: str
+    total_logs: int
+    average_nutrition: NutritionData
+    daily_summaries: List[Dict[str, Any]]
+    insights: List[str]
+    recommendations: List[str]
+
+class NutritionCalculations:
+    """Utility class for nutrition calculations"""
+    
+    @staticmethod
+    def calculate_total_nutrition(meals: List[FoodItem]) -> NutritionData:
+        """Calculate total nutrition from meals"""
+        total = NutritionData()
+        for meal in meals:
+            total.calories += meal.calories
+            total.protein += meal.protein
+            total.carbs += meal.carbs
+            total.fat += meal.fat
+        return total
