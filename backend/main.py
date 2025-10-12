@@ -22,6 +22,7 @@ from app.routes.nutrition_routes import router as nutrition_router
 from app.routes.biometric_routes import router as biometric_router
 from app.routes.enhanced_nutrition_routes import router as enhanced_nutrition_router
 from app.routes.mental_health_routes import router as mental_health_router
+from app.routes.diet_messaging_routes import router as diet_messaging_router
 from app.etl.router import router as etl_router
 from app.etl.integrated_food_vision_router import router as integrated_food_vision_router
 
@@ -65,11 +66,14 @@ app.include_router(nutrition_router)
 # Include Enhanced Nutrition Analysis routes
 app.include_router(enhanced_nutrition_router)
 
-# Include Mental Health Agent routes
-app.include_router(mental_health_router)
+# Include Mental Health Agent routes (with /api prefix to match frontend)
+app.include_router(mental_health_router, prefix="/api")
 
 # Include Biometric Management routes
 app.include_router(biometric_router, prefix="/api")
+
+# Include Diet Agent RabbitMQ Messaging routes
+app.include_router(diet_messaging_router)
 
 # Include ETL Management routes
 app.include_router(etl_router, prefix="/api")

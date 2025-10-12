@@ -97,7 +97,7 @@ const EnhancedMentalHealthAgent: React.FC<EnhancedMentalHealthAgentProps> = ({
       
       try {
         console.log('Loading meditation history for user:', user.id);
-        const response = await fetch(`http://localhost:8000/api/mental-health/meditation/history/${user.id}`, {
+        const response = await fetch(`http://localhost:8000/api/mental-health/meditation/history/${encodeURIComponent(user.id)}`, {
           headers: {
             'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`
           }
@@ -142,7 +142,7 @@ const EnhancedMentalHealthAgent: React.FC<EnhancedMentalHealthAgentProps> = ({
   const [postMeditationFeeling, setPostMeditationFeeling] = useState<'calm' | 'same' | 'stressed' | null>(null)
   const [meditationSessions] = useState<MeditationContent[]>([
     {
-      id: '1',
+      id: 'mindfulness_breathing',
       type: 'breathing',
       title: 'Deep Breathing Exercise',
       description: 'Simple breathing techniques to reduce stress and anxiety',
@@ -159,44 +159,28 @@ const EnhancedMentalHealthAgent: React.FC<EnhancedMentalHealthAgentProps> = ({
       progress: 0
     },
     {
-      id: '2',
+      id: 'walking_meditation',
       type: 'mindfulness',
-      title: 'Mindfulness Meditation',
-      description: 'Present moment awareness practice',
+      title: 'Walking Meditation',
+      description: 'Present moment awareness practice through walking',
       duration: 10,
       instructions: [
-        'Sit comfortably with your back straight',
-        'Focus on your natural breathing',
-        'Notice thoughts without judgment',
-        'Gently return attention to your breath',
-        'Observe sensations in your body',
-        'Stay present for the full duration'
+        'Select a quiet path for walking',
+        'Stand with feet hip-width apart',
+        'Begin walking at a slower pace than usual',
+        'Pay attention to sensations in your feet',
+        'Notice each foot lifting and touching down',
+        'If mind wanders, return focus to walking'
       ],
       completed: false,
       progress: 0
     },
     {
-      id: '3',
-      type: 'guided',
-      title: 'Guided Relaxation',
-      description: 'Follow along with gentle guidance',
-      duration: 15,
-      instructions: [
-        'Listen to the guidance without forcing anything',
-        'Allow yourself to follow the voice',
-        'Let go of any expectations',
-        'Trust the process and be patient',
-        'Notice how you feel afterward'
-      ],
-      completed: false,
-      progress: 0
-    },
-    {
-      id: '4',
+      id: 'body_scan',
       type: 'body-scan',
       title: 'Body Scan Meditation',
       description: 'Progressive relaxation through body awareness',
-      duration: 20,
+      duration: 15,
       instructions: [
         'Lie down comfortably on your back',
         'Start by noticing your toes',
@@ -209,79 +193,9 @@ const EnhancedMentalHealthAgent: React.FC<EnhancedMentalHealthAgentProps> = ({
       progress: 0
     },
     {
-      id: '5',
-      type: 'visualization',
-      title: 'Peaceful Place Visualization',
-      description: 'Mental imagery for relaxation and peace',
-      duration: 12,
-      instructions: [
-        'Close your eyes and take deep breaths',
-        'Imagine a place where you feel completely safe',
-        'See the colors, shapes, and lighting',
-        'Hear the sounds of this peaceful place',
-        'Feel the temperature and textures',
-        'Stay in this place as long as you need'
-      ],
-      completed: false,
-      progress: 0
-    },
-    {
-      id: '6',
-      type: 'nature-sounds',
-      title: 'Nature Sounds Meditation',
-      description: 'Relax with soothing natural sounds',
-      duration: 8,
-      instructions: [
-        'Choose comfortable headphones if available',
-        'Let the natural sounds wash over you',
-        'Don\'t try to focus on anything specific',
-        'Allow your mind to wander naturally',
-        'Return to the sounds when you notice thinking',
-        'Enjoy this time of natural connection'
-      ],
-      completed: false,
-      progress: 0
-    },
-    {
-      id: '7',
-      type: 'morning-focus',
-      title: 'Morning Focus',
-      description: 'Start your day with clarity and intention',
-      duration: 7,
-      instructions: [
-        'Sit upright with your feet flat on the floor',
-        'Take three deep breaths to center yourself',
-        'Set an intention for your day ahead',
-        'Visualize yourself moving through the day with ease',
-        'Notice any areas that need extra attention',
-        'Affirm your capability to handle whatever comes',
-        'Carry this focused energy into your morning'
-      ],
-      completed: false,
-      progress: 0
-    },
-    {
-      id: '8',
-      type: 'sleep-winddown',
-      title: 'Sleep Wind-down',
-      description: 'Gentle transition to peaceful sleep',
-      duration: 10,
-      instructions: [
-        'Lie down in your bed and get comfortable',
-        'Let your body sink into the mattress',
-        'Release the events and thoughts of the day',
-        'Breathe slowly and naturally',
-        'Scan your body and release any remaining tension',
-        'Allow your mind to become quiet and still',
-        'Let sleep come naturally when you\'re ready'
-      ],
-      completed: false,
-      progress: 0
-    },
-    {
-      id: '9',
+      id: 'loving_kindness',
       type: 'loving-kindness',
-      title: 'Loving-Kindness',
+      title: 'Loving-Kindness Meditation',
       description: 'Cultivate compassion for yourself and others',
       duration: 12,
       instructions: [
@@ -292,6 +206,40 @@ const EnhancedMentalHealthAgent: React.FC<EnhancedMentalHealthAgentProps> = ({
         'Include someone neutral in your life',
         'Send loving-kindness to someone difficult',
         'Expand to include all beings everywhere'
+      ],
+      completed: false,
+      progress: 0
+    },
+    {
+      id: 'box_breathing',
+      type: 'breathing',
+      title: 'Box Breathing',
+      description: 'Structured breathing technique for stress relief',
+      duration: 8,
+      instructions: [
+        'Sit comfortably with back straight',
+        'Inhale through your nose for 4 counts',
+        'Hold your breath for 4 counts',
+        'Exhale through your mouth for 4 counts',
+        'Hold empty for 4 counts',
+        'Repeat this box pattern for 8 minutes'
+      ],
+      completed: false,
+      progress: 0
+    },
+    {
+      id: 'guided_visualization',
+      type: 'visualization',
+      title: 'Guided Visualization',
+      description: 'Mental imagery for relaxation and peace',
+      duration: 10,
+      instructions: [
+        'Close your eyes and take deep breaths',
+        'Imagine a place where you feel completely safe',
+        'See the colors, shapes, and lighting',
+        'Hear the sounds of this peaceful place',
+        'Feel the temperature and textures',
+        'Stay in this place as long as you need'
       ],
       completed: false,
       progress: 0
@@ -492,9 +440,7 @@ const EnhancedMentalHealthAgent: React.FC<EnhancedMentalHealthAgentProps> = ({
       const meditationSession = {
         user_id: user.id, // Use user ID as identifier (same as mood logs)
         technique_id: activeMeditation.id,
-        technique_name: activeMeditation.title, // Add technique name for display
         duration_seconds: activeMeditation.duration * 60, // Convert minutes to seconds
-        duration_minutes: activeMeditation.duration, // Also store minutes
         completed: true,
         notes: `Completed all ${activeMeditation.instructions.length} steps`,
         mood_before: null,
@@ -518,7 +464,7 @@ const EnhancedMentalHealthAgent: React.FC<EnhancedMentalHealthAgentProps> = ({
         console.log('✓ Meditation session successfully saved to MongoDB:', result)
         
         // Reload meditation history to show in History tab (same as mood logs reload)
-        const historyResponse = await fetch(`http://localhost:8000/api/mental-health/meditation/history/${user.id}`, {
+        const historyResponse = await fetch(`http://localhost:8000/api/mental-health/meditation/history/${encodeURIComponent(user.id)}`, {
           headers: {
             'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`
           }

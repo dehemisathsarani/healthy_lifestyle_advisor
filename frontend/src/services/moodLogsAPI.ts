@@ -5,7 +5,7 @@
 
 import { MoodLog } from '../types/enhancedMoodTracker';
 
-const API_BASE_URL = 'http://localhost:8000/mental-health';
+const API_BASE_URL = 'http://localhost:8000/api/mental-health';
 
 export class MoodLogsAPI {
   /**

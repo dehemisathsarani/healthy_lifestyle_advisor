@@ -10,8 +10,14 @@ const Navbar: React.FC = () => {
   };
 
   const handleBackToServices = () => {
-    // Navigate back to the main webapp services page
-    window.location.href = 'http://localhost:3000/services';
+    // Check if we're running inside an iframe
+    if (window.parent && window.parent !== window) {
+      // Send message to parent window to navigate back to services
+      window.parent.postMessage('NAVIGATE_TO_SERVICES', '*');
+    } else {
+      // Fallback: direct navigation if not in iframe
+      window.location.href = 'http://localhost:3003/services';
+    }
   };
 
   return (

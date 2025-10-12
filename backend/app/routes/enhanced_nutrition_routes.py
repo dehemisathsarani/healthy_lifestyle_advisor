@@ -10,11 +10,22 @@ import uuid
 # Setup logger first
 logger = logging.getLogger(__name__)
 
-# Import AI Vision Integration
+# Import expanded food database
 try:
     import sys
     import os
-    # Add the dietaiservices directory to the path
+    # Add the data directory to the path
+    sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'data'))
+    from expanded_food_database import ADDITIONAL_FOODS
+    EXPANDED_DB_AVAILABLE = True
+    logger.info(f"✅ Expanded food database loaded: {len(ADDITIONAL_FOODS)} additional foods")
+except Exception as e:
+    EXPANDED_DB_AVAILABLE = False
+    ADDITIONAL_FOODS = {}
+    logger.warning(f"⚠️ Could not load expanded food database: {e}")
+
+# Import AI Vision Integration
+try:
     sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..', 'aiservices', 'dietaiservices'))
     from ai_vision_integration import router as ai_vision_router
     AI_VISION_AVAILABLE = True
@@ -157,6 +168,13 @@ ENHANCED_FOOD_DATABASE = {
         'culturalOrigin': 'international', 'healthScore': 9.5, 'processingLevel': 'minimally_processed'
     }
 }
+
+# Merge expanded food database with base database
+if EXPANDED_DB_AVAILABLE:
+    ENHANCED_FOOD_DATABASE.update(ADDITIONAL_FOODS)
+    logger.info(f"📊 Total foods in database: {len(ENHANCED_FOOD_DATABASE)} (Base: 12 + Additional: {len(ADDITIONAL_FOODS)})")
+else:
+    logger.info(f"📊 Using base food database: {len(ENHANCED_FOOD_DATABASE)} foods")
 
 def analyze_text_enhanced(text: str, user_context: Dict = None) -> EnhancedNutritionAnalysis:
     """Enhanced text analysis with comprehensive food recognition"""

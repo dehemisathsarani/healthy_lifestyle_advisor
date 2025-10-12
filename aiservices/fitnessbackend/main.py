@@ -15,6 +15,9 @@ import logging
 from database import get_database, COLLECTIONS
 from fastapi import Depends
 
+# Import new Fitness Messaging routes
+from routers.fitness_messaging_routes import router as fitness_messaging_router
+
 logger = logging.getLogger(__name__)
 
 # Create FastAPI app
@@ -39,6 +42,7 @@ app.include_router(workouts.router)
 app.include_router(dashboard.router)
 app.include_router(health.router)
 app.include_router(workout_planner.router)  # New workout planner router
+app.include_router(fitness_messaging_router)  # New RabbitMQ messaging routes
 
 
 @app.on_event("startup")
