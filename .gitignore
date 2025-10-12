@@ -425,3 +425,6 @@ frontend/src/pages/SimpleHomePage.tsx
 .pycache
 
 
+backend/.env
+backend/.env
+backend/.env
