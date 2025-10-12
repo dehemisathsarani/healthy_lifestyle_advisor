@@ -435,6 +435,8 @@ frontend/src/pages/SimpleHomePage.tsx
 .pycache
 
 
+
+
 test_complete_flow.py
 test_diet_agent_storage.py
 verify_diet_storage.py
@@ -663,6 +665,7 @@ aiservices/dietaiservices/quick_api_test.py
 image.png
 backend/.env
 backend/.env
+
 backend/.env
 backend/.env
 backend/.env

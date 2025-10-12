@@ -5,6 +5,13 @@ from fastapi.middleware.trustedhost import TrustedHostMiddleware
 import asyncio
 import time
 from datetime import datetime
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from .env file
+load_dotenv()
+print(f"📧 SMTP Email from env: {os.getenv('SMTP_EMAIL', 'NOT_SET')}")
+print(f"🔐 SMTP Password loaded: {'Yes' if os.getenv('SMTP_PASSWORD') else 'No'}")
 from app.core.database import (
     connect_to_mongo, 
     close_mongo_connection, 
@@ -18,6 +25,11 @@ from app.auth.router import router as auth_router
 from app.auth.users import setup_user_collection
 
 from app.routes.simple_diet_routes import router as diet_router
+
+from app.routes.security_routes import router as security_router
+from app.routes.enhanced_security_routes import router as enhanced_security_router
+from app.routes.three_step_otp_routes import router as three_step_otp_router
+
 from app.routes.nutrition_routes import router as nutrition_router
 from app.routes.biometric_routes import router as biometric_router
 from app.routes.enhanced_nutrition_routes import router as enhanced_nutrition_router
@@ -25,6 +37,7 @@ from app.routes.mental_health_routes import router as mental_health_router
 from app.routes.diet_messaging_routes import router as diet_messaging_router
 from app.etl.router import router as etl_router
 from app.etl.integrated_food_vision_router import router as integrated_food_vision_router
+
 
 
 # Create FastAPI application with detailed configuration
@@ -60,6 +73,16 @@ app.include_router(auth_router)
 # Include Diet Agent routes
 app.include_router(diet_router)
 
+
+# Include Data & Security Agent routes
+app.include_router(security_router)
+
+# Include Enhanced Security routes for file encryption/decryption
+app.include_router(enhanced_security_router)
+
+# Include Three-Step OTP routes for enhanced security workflow
+app.include_router(three_step_otp_router)
+
 # Include Advanced Nutrition Hub routes
 app.include_router(nutrition_router)
 
@@ -80,6 +103,7 @@ app.include_router(etl_router, prefix="/api")
 
 # Include Integrated Food Vision ETL routes
 app.include_router(integrated_food_vision_router, prefix="/api")
+
 
 
 # Global application state

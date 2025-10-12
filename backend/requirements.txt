@@ -19,6 +19,10 @@ bcrypt==4.0.1
 python-jose==3.3.0
 email-validator==2.1.0
 
+
+# Security and Encryption
+cryptography==41.0.7
+
 # Azure Storage and EFS
 azure-storage-blob==12.19.0
 azure-storage-file-share==12.14.1
@@ -32,6 +36,7 @@ APScheduler==3.10.4
 # Image Processing (for Food Vision integration)
 Pillow==10.1.0
 opencv-python==4.8.1.78
+
 
 # For future AI integration
 # langchain==0.0.350

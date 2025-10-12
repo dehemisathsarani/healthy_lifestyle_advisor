@@ -43,6 +43,13 @@ export const SecurityAgent: React.FC<SecurityAgentProps> = ({ onBackToServices }
   const [activeTab, setActiveTab] = useState<'dashboard' | 'privacy' | 'data' | 'security' | 'profile'>('dashboard')
   const [dataEntries, setDataEntries] = useState<DataEntry[]>([])
   const [showPassword, setShowPassword] = useState(false)
+  
+  // OTP states for encrypted file download
+  const [showOtpModal, setShowOtpModal] = useState(false)
+  const [downloadingFile, setDownloadingFile] = useState<DataEntry | null>(null)
+  const [otpCode, setOtpCode] = useState('')
+  const [otpLoading, setOtpLoading] = useState(false)
+  const [otpError, setOtpError] = useState('')
 
   // Check for existing user data on mount
   useEffect(() => {
@@ -142,6 +149,118 @@ export const SecurityAgent: React.FC<SecurityAgentProps> = ({ onBackToServices }
     }
   }
 
+  // OTP functions for encrypted file download
+  const handleDownloadEncryptedFile = async (entry: DataEntry) => {
+    if (!entry.encrypted) {
+      // Direct download for non-encrypted files
+      downloadFile(entry)
+      return
+    }
+
+    // For encrypted files, request OTP first
+    setDownloadingFile(entry)
+    setOtpError('')
+    setOtpLoading(true)
+
+    try {
+      const response = await fetch('http://localhost:8000/api/security/request-decrypt-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          identifier: user?.email,
+          file_id: entry.id,
+          file_type: entry.type
+        })
+      })
+
+      const data = await response.json()
+      
+      if (data.success || data.action === 'new_otp_sent') {
+        setShowOtpModal(true)
+        alert(`OTP sent to ${user?.email} for decrypting ${entry.type} file`)
+      } else {
+        setOtpError(data.message || 'Failed to request OTP')
+      }
+    } catch (error) {
+      console.error('Error requesting decrypt OTP:', error)
+      setOtpError('Network error. Please try again.')
+    } finally {
+      setOtpLoading(false)
+    }
+  }
+
+  const handleVerifyOtpAndDownload = async () => {
+    if (!otpCode.trim() || !downloadingFile) return
+
+    setOtpLoading(true)
+    setOtpError('')
+
+    try {
+      const response = await fetch('http://localhost:8000/api/security/verify-decrypt-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          identifier: user?.email,
+          otp_code: otpCode,
+          file_id: downloadingFile.id
+        })
+      })
+
+      const data = await response.json()
+      
+      if (data.success && data.data?.access_granted) {
+        // OTP verified, proceed with download
+        setShowOtpModal(false)
+        setOtpCode('')
+        downloadFile(downloadingFile)
+        alert('Access granted! File download started.')
+      } else {
+        if (data.action === 'new_otp_sent') {
+          setOtpError('New OTP sent to your email. Please check and enter the new code.')
+        } else {
+          setOtpError(data.message || 'Invalid OTP. Please try again.')
+        }
+      }
+    } catch (error) {
+      console.error('Error verifying OTP:', error)
+      setOtpError('Network error. Please try again.')
+    } finally {
+      setOtpLoading(false)
+    }
+  }
+
+  const downloadFile = (entry: DataEntry) => {
+    // Mock file download - in real app this would download the actual file
+    const fileData = {
+      id: entry.id,
+      type: entry.type,
+      timestamp: entry.timestamp,
+      size: entry.size,
+      encrypted: entry.encrypted,
+      downloadDate: new Date().toISOString(),
+      content: `Mock ${entry.type} data content for file ${entry.id}`
+    }
+    
+    const dataStr = JSON.stringify(fileData, null, 2)
+    const dataBlob = new Blob([dataStr], { type: 'application/json' })
+    const url = URL.createObjectURL(dataBlob)
+    
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${entry.type}-data-${entry.id}.json`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
+  const closeOtpModal = () => {
+    setShowOtpModal(false)
+    setDownloadingFile(null)
+    setOtpCode('')
+    setOtpError('')
+  }
+
   if (!isAuthenticated) {
     return (
       <div className="space-y-6">
@@ -223,7 +342,12 @@ export const SecurityAgent: React.FC<SecurityAgentProps> = ({ onBackToServices }
         )}
         
         {activeTab === 'data' && (
-          <DataManagement dataEntries={dataEntries} onExportData={exportData} onDeleteData={deleteAllData} />
+          <DataManagement 
+            dataEntries={dataEntries} 
+            onExportData={exportData} 
+            onDeleteData={deleteAllData}
+            onDownloadFile={handleDownloadEncryptedFile}
+          />
         )}
         
         {activeTab === 'security' && user && (
@@ -234,6 +358,59 @@ export const SecurityAgent: React.FC<SecurityAgentProps> = ({ onBackToServices }
           <ProfileSettings user={user} onUpdate={setUser} />
         )}
       </div>
+
+      {/* OTP Modal for Encrypted File Download */}
+      {showOtpModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              🔐 Verify Access for Encrypted File
+            </h3>
+            
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-2">
+                File: <span className="font-medium capitalize">{downloadingFile?.type} Data</span>
+              </p>
+              <p className="text-sm text-gray-600 mb-4">
+                An OTP has been sent to <span className="font-medium">{user?.email}</span>
+              </p>
+              
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Enter OTP Code
+              </label>
+              <input
+                type="text"
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value)}
+                placeholder="Enter 6-digit OTP"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand"
+                maxLength={6}
+              />
+              
+              {otpError && (
+                <p className="text-sm text-red-600 mt-2">{otpError}</p>
+              )}
+            </div>
+            
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={closeOtpModal}
+                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                disabled={otpLoading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleVerifyOtpAndDownload}
+                className="px-4 py-2 bg-brand hover:bg-brand-dark text-white rounded-lg transition-colors disabled:opacity-50"
+                disabled={otpLoading || !otpCode.trim()}
+              >
+                {otpLoading ? 'Verifying...' : 'Verify & Download'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -669,7 +846,8 @@ const DataManagement: React.FC<{
   dataEntries: DataEntry[]
   onExportData: () => void
   onDeleteData: () => void
-}> = ({ dataEntries, onExportData, onDeleteData }) => {
+  onDownloadFile: (entry: DataEntry) => void
+}> = ({ dataEntries, onExportData, onDeleteData, onDownloadFile }) => {
   return (
     <div className="space-y-6">
       <h2 className="text-lg font-semibold text-gray-900">Data Management</h2>
@@ -733,8 +911,11 @@ const DataManagement: React.FC<{
                     <span className="text-xs">Encrypted</span>
                   </div>
                 )}
-                <button className="text-blue-600 hover:text-blue-800 text-sm">
-                  Download
+                <button 
+                  onClick={() => onDownloadFile(entry)}
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                >
+                  {entry.encrypted ? '🔐 Download' : 'Download'}
                 </button>
               </div>
             </div>
