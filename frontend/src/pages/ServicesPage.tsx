@@ -89,6 +89,30 @@ export const ServicesPage = () => {
     },
   ]
 
+  // Handle navigation to diet agent from fitness
+  const handleNavigateToDietAgent = (workoutData: any) => {
+    console.log('🥗 Navigating to Diet Agent with workout data:', workoutData)
+    
+    // Store workout data for diet agent
+    sessionStorage.setItem('workoutData', JSON.stringify(workoutData))
+    
+    // Navigate to nutrition hub (which includes diet agent)
+    setActiveAgent('nutrition')
+    
+    // Show notification
+    const notification = document.createElement('div')
+    notification.className = 'fixed top-4 right-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-4 rounded-xl shadow-2xl z-50 min-w-[350px]'
+    notification.innerHTML = `
+      <div class="font-bold text-lg mb-2">🥗 Opening Diet Profile</div>
+      <div class="text-sm">
+        <div>🔥 Calories Burned: ${workoutData.caloriesBurned} kcal</div>
+        <div class="mt-2 text-sm opacity-90">Updating your nutrition profile...</div>
+      </div>
+    `
+    document.body.appendChild(notification)
+    setTimeout(() => notification.remove(), 4000)
+  }
+
   // Render the appropriate agent component
   if (activeAgent === 'nutrition') {
     return <AdvancedNutritionHub onBackToServices={() => setActiveAgent(null)} />
@@ -99,7 +123,12 @@ export const ServicesPage = () => {
   }
   
   if (activeAgent === 'fitness') {
-    return <FitnessAgent onBackToServices={() => setActiveAgent(null)} />
+    return (
+      <FitnessAgent 
+        onBackToServices={() => setActiveAgent(null)}
+        onNavigateToDietAgent={handleNavigateToDietAgent}
+      />
+    )
   }
   
   if (activeAgent === 'mental') {

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { HiPaperAirplane, HiXMark, HiCpuChip, HiCog, HiMoon, HiSun, HiSpeakerWave, HiSpeakerXMark, HiMicrophone, HiOutlineMicrophone, HiLightBulb, HiCpuChip as HiDumbbell, HiEyeDropper, HiStar, HiCake } from 'react-icons/hi2';
+import { marked } from 'marked';
 
 interface NutritionChatbotProps {
   user: {
@@ -514,9 +515,12 @@ const NutritionChatbot: React.FC<NutritionChatbotProps> = ({
                   : 'bg-gray-100 text-gray-900'
               }`}
             >
-              <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                {message.text}
-              </div>
+              <div 
+                className="markdown-content text-sm leading-relaxed"
+                dangerouslySetInnerHTML={{ 
+                  __html: marked.parse(message.text, { breaks: true, gfm: true }) as string
+                }}
+              />
               <div className="text-xs opacity-70 mt-1">
                 {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </div>

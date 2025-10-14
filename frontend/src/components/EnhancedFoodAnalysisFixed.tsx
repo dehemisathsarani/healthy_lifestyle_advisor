@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react'
-import { Camera, Upload, X, Sparkles, Brain, ChefHat, Activity } from 'lucide-react'
+import { Camera, Upload, X, Sparkles, Brain, ChefHat, Activity, Dumbbell, ArrowRight } from 'lucide-react'
 
 // Enhanced Food Analysis Component with Beautiful UI and User Profile Support
 const EnhancedFoodAnalysis: React.FC<{
@@ -12,6 +12,8 @@ const EnhancedFoodAnalysis: React.FC<{
   const [analysisMode, setAnalysisMode] = useState<'text' | 'image'>('image')
   const [textDescription, setTextDescription] = useState('')
   const [dragActive, setDragActive] = useState(false)
+  const [lastAnalysisResult, setLastAnalysisResult] = useState<any>(null)
+  const [showWorkoutSuggestion, setShowWorkoutSuggestion] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Generate mock user profile if user data is missing
@@ -99,6 +101,95 @@ const EnhancedFoodAnalysis: React.FC<{
     }
   }
 
+  // Send meal data to Fitness Agent for workout recommendation
+  const sendToFitnessAgent = async (analysisResult: any) => {
+    try {
+      console.log('🔄 sendToFitnessAgent called with:', analysisResult)
+      
+      // Get complete user profile (same as Diet Agent)
+      const userProfile = getUserProfile()
+      console.log('👤 User Profile:', userProfile)
+      
+      const mealData = {
+        name: analysisResult.food_items.map((f: any) => f.name).join(', '),
+        userId: user?.id || analysisResult.user_id,
+        mealTime: analysisResult.meal_type || 'lunch',
+        calorieCount: analysisResult.total_calories,
+        protein: analysisResult.total_protein,
+        carbs: analysisResult.total_carbs,
+        fat: analysisResult.total_fat,
+        timestamp: new Date().toISOString(),
+        // Include complete user profile for personalized workouts
+        userProfile: {
+          user_id: userProfile.user_id,
+          age: userProfile.age,
+          gender: userProfile.gender,
+          height_cm: userProfile.height_cm,
+          weight_kg: userProfile.weight_kg,
+          activity_level: userProfile.activity_level,
+          goal: userProfile.goal,
+          dietary_restrictions: userProfile.dietary_restrictions,
+          allergies: userProfile.allergies
+        }
+      }
+
+      console.log('📤 Sending meal data with user profile to messaging service:', mealData)
+
+      // Send to messaging service
+      const response = await fetch('http://localhost:8005/api/messaging/diet/meal-logged', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mealData)
+      })
+
+      console.log('📥 Response status:', response.status)
+
+      if (response.ok) {
+        const result = await response.json()
+        console.log('✅ ========================================')
+        console.log('✅ MESSAGE SENT TO FITNESS AGENT')
+        console.log('✅ ========================================')
+        console.log('📤 Message ID:', result.data?.message_id)
+        console.log('👤 User ID:', result.data?.userId)
+        console.log('🍽️  Meal Calories:', result.data?.calorieCount, 'kcal')
+        console.log('🏋️ Workout to Burn:', result.data?.calorieCount, 'kcal')
+        console.log('👤 User Profile Sent:')
+        console.log('   • Age:', userProfile.age)
+        console.log('   • Weight:', userProfile.weight_kg, 'kg')
+        console.log('   • Goal:', userProfile.goal)
+        console.log('   • Activity Level:', userProfile.activity_level)
+        console.log('✅ Backend Response:', result)
+        console.log('✅ ========================================')
+        console.log('🎯 Setting showWorkoutSuggestion to TRUE')
+        setShowWorkoutSuggestion(true)
+        
+        // Show detailed success message
+        const successMsg = document.createElement('div')
+        successMsg.className = 'fixed top-4 right-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-4 rounded-xl shadow-2xl z-50 min-w-[350px]'
+        successMsg.innerHTML = `
+          <div class="font-bold text-lg mb-2">✅ Message Sent to Fitness Agent!</div>
+          <div class="text-sm space-y-1">
+            <div>🍽️ <strong>Meal:</strong> ${mealData.calorieCount} calories logged</div>
+            <div>🏋️ <strong>Workout Target:</strong> Burn ${mealData.calorieCount} calories</div>
+            <div>👤 <strong>Your Profile:</strong> Age ${userProfile.age}, Weight ${userProfile.weight_kg}kg</div>
+            <div>🎯 <strong>Goal:</strong> ${userProfile.goal.replace('_', ' ')}</div>
+            <div class="mt-2 pt-2 border-t border-white/30">
+              💡 <em>Scroll down to see workout button!</em>
+            </div>
+          </div>
+        `
+        document.body.appendChild(successMsg)
+        setTimeout(() => successMsg.remove(), 6000)
+      } else {
+        console.error('❌ Failed to send message. Status:', response.status)
+        const errorText = await response.text()
+        console.error('Error details:', errorText)
+      }
+    } catch (error) {
+      console.error('❌ Failed to send to Fitness Agent:', error)
+    }
+  }
+
   const analyzeFood = async () => {
     if (analysisMode === 'image' && !selectedImage) {
       alert('Please select an image')
@@ -164,7 +255,18 @@ const EnhancedFoodAnalysis: React.FC<{
           text_description: textDescription || 'Image analysis'
         }
 
+        // Store result for workout button
+        console.log('💾 Storing analysis result for workout button:', transformedResult)
+        setLastAnalysisResult(transformedResult)
+        
+        // Send to parent component (saves to nutrition log)
+        console.log('📤 Sending to parent component (nutrition log)...')
         onAnalysisComplete(transformedResult)
+        
+        // Automatically send to Fitness Agent
+        console.log('🏋️ About to call sendToFitnessAgent...')
+        await sendToFitnessAgent(transformedResult)
+        console.log('✅ sendToFitnessAgent completed')
         
       } else {
         // Text-based analysis fallback
@@ -194,7 +296,14 @@ const EnhancedFoodAnalysis: React.FC<{
           text_description: textDescription
         }
 
+        // Store result for workout button
+        setLastAnalysisResult(mockResult)
+        
+        // Send to parent component (saves to nutrition log)
         onAnalysisComplete(mockResult)
+        
+        // Automatically send to Fitness Agent
+        await sendToFitnessAgent(mockResult)
       }
 
     } catch (error: any) {
@@ -426,11 +535,115 @@ const EnhancedFoodAnalysis: React.FC<{
           )}
         </button>
 
+        {/* Workout Suggestion Button */}
+        {(() => {
+          console.log('🔍 Render check - showWorkoutSuggestion:', showWorkoutSuggestion, 'lastAnalysisResult:', lastAnalysisResult)
+          return null
+        })()}
+        {showWorkoutSuggestion && lastAnalysisResult && (
+          <div className="mt-6 p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl border-2 border-orange-200">
+            <div className="flex items-start gap-3">
+              <Dumbbell className="w-6 h-6 text-orange-600 flex-shrink-0 mt-1" />
+              <div className="flex-1">
+                <h4 className="font-bold text-orange-900 mb-2">
+                  🎉 Workout Recommendation Ready!
+                </h4>
+                <p className="text-sm text-orange-700 mb-3">
+                  Based on your {lastAnalysisResult.total_calories} calorie meal, 
+                  we've calculated ideal workout sessions for you.
+                </p>
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-lg mb-3 border border-blue-200">
+                  <div className="text-xs font-bold text-blue-900 mb-2">🎯 Workout Target</div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    Burn {lastAnalysisResult.total_calories} Calories
+                  </div>
+                  <div className="text-xs text-blue-700 mt-1">
+                    Duration: ~{Math.round(lastAnalysisResult.total_calories / 13)} minutes
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs mb-3">
+                  <div className="bg-white/70 p-2 rounded">
+                    <span className="font-medium">Meal Calories:</span> {lastAnalysisResult.total_calories}
+                  </div>
+                  <div className="bg-white/70 p-2 rounded">
+                    <span className="font-medium">Protein:</span> {lastAnalysisResult.total_protein}g
+                  </div>
+                  {user && (
+                    <>
+                      <div className="bg-white/70 p-2 rounded">
+                        <span className="font-medium">Your Weight:</span> {user.weight || 70}kg
+                      </div>
+                      <div className="bg-white/70 p-2 rounded">
+                        <span className="font-medium">Your Goal:</span> {user.goal || 'maintain'}
+                      </div>
+                    </>
+                  )}
+                </div>
+                <button
+                  onClick={() => {
+                    // Get complete user profile
+                    const userProfile = getUserProfile()
+                    
+                    console.log('🏋️ ========================================')
+                    console.log('🏋️ OPENING FITNESS PLANNER')
+                    console.log('🏋️ ========================================')
+                    console.log('📊 Target Calories to Burn:', lastAnalysisResult.total_calories, 'kcal')
+                    console.log('⏱️  Estimated Duration:', Math.round(lastAnalysisResult.total_calories / 13), 'minutes')
+                    console.log('👤 User Profile:', userProfile)
+                    console.log('📋 Complete Data Being Sent:')
+                    console.log({
+                      calories: lastAnalysisResult.total_calories,
+                      mealData: lastAnalysisResult,
+                      userProfile: userProfile,
+                      userId: user?.id || userProfile.user_id
+                    })
+                    console.log('🏋️ ========================================')
+                    
+                    // Navigate to fitness agent or show workout modal
+                    const event = new CustomEvent('openFitnessPlanner', {
+                      detail: { 
+                        calories: lastAnalysisResult.total_calories,
+                        mealData: lastAnalysisResult,
+                        userProfile: userProfile, // Pass complete user profile
+                        userId: user?.id || userProfile.user_id
+                      }
+                    })
+                    window.dispatchEvent(event)
+                    
+                    // Show detailed info message
+                    const infoMsg = document.createElement('div')
+                    infoMsg.className = 'fixed top-4 right-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-4 rounded-xl shadow-2xl z-50 min-w-[300px]'
+                    infoMsg.innerHTML = `
+                      <div class="font-bold text-lg mb-2">🏋️ Opening Fitness Planner</div>
+                      <div class="text-sm space-y-1">
+                        <div>🎯 <strong>Target:</strong> Burn ${lastAnalysisResult.total_calories} calories</div>
+                        <div>⏱️ <strong>Duration:</strong> ~${Math.round(lastAnalysisResult.total_calories / 13)} minutes</div>
+                        <div>👤 <strong>Profile:</strong> Age ${userProfile.age}, ${userProfile.weight_kg}kg</div>
+                        <div>🎪 <strong>Goal:</strong> ${userProfile.goal.replace('_', ' ')}</div>
+                      </div>
+                    `
+                    document.body.appendChild(infoMsg)
+                    setTimeout(() => infoMsg.remove(), 5000)
+                  }}
+                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 px-4 rounded-lg hover:from-orange-600 hover:to-red-600 transition-all font-medium flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+                >
+                  <Dumbbell className="w-4 h-4" />
+                  Checkout Workout Sessions
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* User Profile Info */}
         <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
           <p className="text-sm text-green-700">
             <span className="font-medium">Profile:</span> {user?.name || 'Demo User'} • 
             Using hardcore AI analysis for maximum accuracy
+            {lastAnalysisResult && (
+              <span className="ml-2">• ✅ Synced with Fitness Agent</span>
+            )}
           </p>
         </div>
       </div>

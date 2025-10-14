@@ -35,8 +35,12 @@ from app.routes.biometric_routes import router as biometric_router
 from app.routes.enhanced_nutrition_routes import router as enhanced_nutrition_router
 from app.routes.mental_health_routes import router as mental_health_router
 from app.routes.diet_messaging_routes import router as diet_messaging_router
+from app.routes.diet_fitness_messaging import router as diet_fitness_messaging_router
 from app.etl.router import router as etl_router
 from app.etl.integrated_food_vision_router import router as integrated_food_vision_router
+
+# Import consumer service for Diet-Fitness messaging
+from app.services.consumer_service import startup_consumers, shutdown_consumers
 
 
 
@@ -98,11 +102,18 @@ app.include_router(biometric_router, prefix="/api")
 # Include Diet Agent RabbitMQ Messaging routes
 app.include_router(diet_messaging_router)
 
+# Include Diet-Fitness Messaging routes (new bidirectional messaging)
+app.include_router(diet_fitness_messaging_router)
+
 # Include ETL Management routes
 app.include_router(etl_router, prefix="/api")
 
 # Include Integrated Food Vision ETL routes
 app.include_router(integrated_food_vision_router, prefix="/api")
+
+# Include Messaging Integration routes (Meal → Fitness → Diet workflow)
+from routers.messaging_integration import router as messaging_integration_router
+app.include_router(messaging_integration_router)
 
 
 
@@ -132,6 +143,15 @@ async def startup_event():
         app_state["db_connected"] = False
         print(f"⚠️ Error while connecting to database: {e}")
 
+    # Start RabbitMQ consumers for Diet-Fitness messaging
+    try:
+        print("🔄 Starting Diet-Fitness message consumers...")
+        startup_consumers()
+        print("✅ Diet-Fitness message consumers started")
+    except Exception as e:
+        print(f"⚠️ Failed to start message consumers: {e}")
+        print("   (Consumers will not process messages)")
+
     print("✅ Application startup completed successfully")
     print("🌐 API Documentation available at: http://localhost:8000/docs")
 
@@ -139,6 +159,15 @@ async def startup_event():
 async def shutdown_event():
     """Clean up resources on application shutdown"""
     print("🛑 Shutting down Health Agent API...")
+    
+    # Stop RabbitMQ consumers
+    try:
+        print("🔄 Stopping Diet-Fitness message consumers...")
+        shutdown_consumers()
+        print("✅ Message consumers stopped")
+    except Exception as e:
+        print(f"⚠️ Error stopping consumers: {e}")
+    
     await close_mongo_connection()
     print("✅ Application shutdown completed successfully")
 
@@ -365,4 +394,4 @@ async def log_requests(request, call_next):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8005)

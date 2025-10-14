@@ -34,6 +34,40 @@ export const DietAgentSimple: React.FC<DietAgentProps> = ({ onBackToServices, au
   const [showQuickLogin, setShowQuickLogin] = useState(false)
   const [lastUserEmail, setLastUserEmail] = useState('')
   const [isChatbotOpen, setIsChatbotOpen] = useState(false)
+  const [fitnessMessage, setFitnessMessage] = useState<string | null>(null)
+
+  // Listen for messages from Fitness Agent
+  useEffect(() => {
+    const handleFitnessMessage = async (event: CustomEvent) => {
+      const { workoutData, caloriesBurnt } = event.detail
+      
+      // Calculate nutrition adjustment based on workout
+      if (user && workoutData) {
+        const adjustedCalories = Math.round(caloriesBurnt * 0.8) // 80% compensation
+        const message = `🏋️ Workout completed! You burnt ${caloriesBurnt} calories. Consider adding ${adjustedCalories} extra calories to your next meal for recovery.`
+        
+        setFitnessMessage(message)
+        
+        // Show notification
+        const notification = document.createElement('div')
+        notification.className = 'fixed top-4 right-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-4 rounded-lg shadow-xl z-50 max-w-md'
+        notification.innerHTML = `
+          <div class="flex items-start gap-3">
+            <div class="text-2xl">🏋️</div>
+            <div>
+              <div class="font-bold mb-1">Fitness Update!</div>
+              <div class="text-sm">${message}</div>
+            </div>
+          </div>
+        `
+        document.body.appendChild(notification)
+        setTimeout(() => notification.remove(), 6000)
+      }
+    }
+
+    window.addEventListener('fitnessToDiet' as any, handleFitnessMessage)
+    return () => window.removeEventListener('fitnessToDiet' as any, handleFitnessMessage)
+  }, [user])
 
   // Initialize session manager and user
   const initializeUser = useCallback(async () => {

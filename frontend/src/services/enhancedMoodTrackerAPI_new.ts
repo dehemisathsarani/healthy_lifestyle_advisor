@@ -4,8 +4,8 @@ import type {
   UnsplashImage,
   YouTubeVideo,
   GameRecommendation
-} from '../types/enhancedMoodTracker.ts';
-import { ContentManager } from './contentManager.ts';
+} from '../types/enhancedMoodTracker';
+import { ContentManager } from './contentManager';
 
 // API Service for Enhanced Mood Tracker
 export class EnhancedMoodTrackerAPI {

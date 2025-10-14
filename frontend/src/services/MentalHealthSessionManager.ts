@@ -39,8 +39,8 @@ interface MentalHealthSessionConfig {
 
 export class MentalHealthSessionManager {
   private config: MentalHealthSessionConfig
-  private sessionCheckInterval: number | null = null
-  private inactivityTimer: number | null = null
+  private sessionCheckInterval: ReturnType<typeof setInterval> | null = null
+  private inactivityTimer: ReturnType<typeof setTimeout> | null = null
   private sessionWarningCallback?: () => void
   private sessionExpiredCallback?: () => void
 

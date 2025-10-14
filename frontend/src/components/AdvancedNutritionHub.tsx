@@ -65,6 +65,118 @@ export const AdvancedNutritionHub: React.FC<AdvancedNutritionHubProps> = ({ onBa
     }
   }, [isAuthenticated])
 
+  // Listen for workout completion events and update calories
+  useEffect(() => {
+    const handleWorkoutCompletion = async (event: any) => {
+      const workoutData = event.detail
+      
+      console.log('🏋️ ========================================')
+      console.log('🏋️ WORKOUT COMPLETION RECEIVED IN NUTRITION HUB')
+      console.log('🏋️ ========================================')
+      console.log('📊 Workout Data:', workoutData)
+      console.log('🔥 Calories Burned:', workoutData.caloriesBurned)
+      console.log('🏋️ ========================================')
+      
+      try {
+        // Update calorie balance in backend (using new /api/integration prefix)
+        const response = await fetch('http://localhost:8005/api/integration/nutrition/update-calories', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: profile?.id || workoutData.userId,
+            caloriesBurned: workoutData.caloriesBurned,
+            mealId: workoutData.relatedMealId || null,
+            timestamp: workoutData.timestamp || new Date().toISOString()
+          })
+        })
+        
+        if (response.ok) {
+          const result = await response.json()
+          console.log('✅ Calories updated successfully:', result)
+          
+          // Refresh nutrition logs to show updated data
+          await loadNutritionLogs()
+          
+          // Show success notification with detailed info
+          const notification = document.createElement('div')
+          notification.className = 'fixed top-4 right-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-4 rounded-xl shadow-2xl z-[9999] min-w-[400px] animate-slide-in'
+          notification.innerHTML = `
+            <div class="font-bold text-xl mb-3 flex items-center gap-2">
+              <span>🎉</span>
+              <span>Calories Updated Successfully!</span>
+            </div>
+            <div class="text-sm space-y-2">
+              <div class="bg-white/20 p-2 rounded">
+                <strong>🔥 Calories Burned:</strong> ${workoutData.caloriesBurned} kcal
+              </div>
+              <div class="bg-white/20 p-2 rounded">
+                <strong>📊 Net Calories:</strong> ${result.netCalories || 0} kcal
+              </div>
+              <div class="bg-white/20 p-2 rounded">
+                <strong>💪 Workout:</strong> ${workoutData.workoutType || 'Mixed Workout'}
+              </div>
+              <div class="mt-2 pt-2 border-t border-white/30 text-xs opacity-90">
+                ✨ Your nutrition profile has been automatically updated!
+              </div>
+            </div>
+          `
+          document.body.appendChild(notification)
+          setTimeout(() => {
+            notification.style.animation = 'slide-out 0.3s ease-out forwards'
+            setTimeout(() => notification.remove(), 300)
+          }, 6000)
+          
+        } else {
+          console.error('❌ Failed to update calories')
+          throw new Error('Failed to update calories')
+        }
+      } catch (error) {
+        console.error('❌ Error updating calories:', error)
+        
+        // Show error notification
+        const errorNotification = document.createElement('div')
+        errorNotification.className = 'fixed top-4 right-4 bg-gradient-to-r from-red-500 to-orange-600 text-white px-6 py-4 rounded-xl shadow-2xl z-[9999]'
+        errorNotification.innerHTML = `
+          <div class="font-bold text-lg mb-2">⚠️ Update Error</div>
+          <div class="text-sm">
+            Could not update calorie balance. Please try refreshing the page.
+          </div>
+        `
+        document.body.appendChild(errorNotification)
+        setTimeout(() => errorNotification.remove(), 4000)
+      }
+    }
+    
+    // Check for workout data in session storage (from navigation)
+    const checkSessionWorkoutData = async () => {
+      const workoutDataStr = sessionStorage.getItem('workoutData')
+      if (workoutDataStr) {
+        try {
+          const workoutData = JSON.parse(workoutDataStr)
+          console.log('📦 Found workout data in session storage:', workoutData)
+          
+          // Clear it so we don't process again
+          sessionStorage.removeItem('workoutData')
+          
+          // Process the workout data
+          await handleWorkoutCompletion({ detail: workoutData })
+        } catch (error) {
+          console.error('Error processing session workout data:', error)
+        }
+      }
+    }
+    
+    // Check on mount
+    checkSessionWorkoutData()
+    
+    // Listen for workout completion events
+    window.addEventListener('workoutCompleted', handleWorkoutCompletion)
+    
+    return () => {
+      window.removeEventListener('workoutCompleted', handleWorkoutCompletion)
+    }
+  }, [profile])
+
   // Check if user has a nutritional profile
   const checkNutritionalProfile = async () => {
     try {
