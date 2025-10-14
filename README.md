@@ -1,4 +1,26 @@
-# 🧑‍⚕️ Healthy Lifestyle Advisor (Agentic AI Project)
+
+# Config your username and email before commit
+go to the repository folder and enter below commands
+
+git config user.name "username"
+
+git config user.email "example@email.com"
+
+git config --global user.name "username"
+
+git config --global user.email "example@email.com"
+
+# After clone the repository, Install dependencies by running:
+npm install
+
+# Run the app using
+npm run dev
+
+
+# Healthy Lifestyle Adviso
+
+healthy Lifestyle Advisor (Agentic AI Project)
+ niwarthana-backup
 
 This project is a **multi-agent AI-based health advisor** that integrates **Diet, Fitness, Mental Health, and Security agents** into one ecosystem.  
 It combines **biometric tracking, food analysis, fitness progress monitoring, and mental wellness support** into a secure system, powered by **LangChain, LangGraph, RabbitMQ, FastAPI, React, and MongoDB**.  

@@ -1,0 +1,671 @@
+
+# Global ignores
+
+# Environment variables and credentials
+.env
+.env.*
+*.env
+google-credentials.json
+*credentials*.json
+
+# Test files
+test_*.py
+*_test.py
+test_rabbitmq*.py
+validate_*.py
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
+#   However, in case of collaboration, if having platform-specific dependencies or dependencies
+#   having no cross-platform support, pipenv may install dependencies that don't work, or not
+#   install all needed dependencies.
+#Pipfile.lock
+
+# PEP 582; used by e.g. github.com/David-OConnor/pyflow
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Grunt intermediate storage (https://gruntjs.com/creating-plugins#storing-task-files)
+.grunt
+
+# Bower dependency directory (https://bower.io/)
+bower_components
+
+# node-waf configuration
+.lock-wscript
+
+# Compiled binary addons (https://nodejs.org/api/addons.html)
+build/Release
+
+# Dependency directories
+jspm_packages/
+
+# TypeScript v1 declaration files
+typings/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+.env.production
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.vs/
+*.sublime-*
+
+# OS generated files
+
+
+# parcel-bundler cache (https://parceljs.org/)
+.cache
+.parcel-cache
+
+# Next.js build output
+.next
+out
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Gatsby files
+.cache/
+# Comment in the public line in if your project uses Gatsby and not Next.js
+# https://nextjs.org/blog/next-9-1#public-directory-support
+# public
+
+# vuepress build output
+.vuepress/dist
+
+# Serverless directories
+.serverless/
+
+# FuseBox cache
+.fusebox/
+
+# DynamoDB Local files
+.dynamodb/
+
+# TernJS port file
+.tern-port
+
+# Stores VSCode versions used for testing VSCode extensions
+.vscode-test
+
+# yarn v2
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# macOS
+
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+desktop.ini
+
+# Logs and debugging
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Project specific
+logs/
+*.log
+ai_service.log
+backend_service.log
+
+# Docker
+.dockerignore
+
+
+# Temporary files
+*.tmp
+*.temp
+
+tmp/
+temp/
+
+# Frontend ignores
+# ===============
+
+# Dependencies
+node_modules/
+jspm_packages/
+.pnp/
+.pnp.js
+web_modules/
+
+# Package locks (as requested)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build outputs
+dist/
+build/
+out/
+.out/
+public/dist/
+.next/
+.nuxt/
+.vuepress/dist/
+.serverless/
+.fusebox/
+.dynamodb/
+.cache/
+.parcel-cache/
+.output/
+.astro/
+storybook-static/
+
+
+coverage/
+.nyc_output/
+.jest/
+.cypress/
+cypress/videos/
+cypress/screenshots/
+
+# Misc frontend
+.eslintcache
+.stylelintcache
+.yarn/
+.yalc/
+yalc.lock
+.turbo/
+.vercel
+.netlify
+
+
+
+
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Database
+
+
+# Local configuration
+config.local.js
+config.local.json
+
+# Build artifacts
+build/
+dist/
+
+
+
+*.db
+*.sqlite
+*.sqlite3
+
+
+# Certificates and security
+*.pem
+*.key
+*.cert
+*.crt
+
+# API keys and credentials (keep examples)
+google-credentials.json
+!google-credentials.example.json
+
+# Test files that should not be committed
+frontend/test_api.js
+frontend/src/pages/SimpleHomePage.tsx
+
+# Legacy Python cache
+.pycache
+
+
+
+
+test_complete_flow.py
+test_diet_agent_storage.py
+verify_diet_storage.py
+test_fallback_simple.py
+test_fallback_system.py
+test_rag_conversation_storage.py
+DIET_AGENT_FINAL_STATUS.md
+DIET_AGENT_FINAL_STATUS.md
+NLP_DIET_AGENT_COMPLETE.md
+ENHANCED_FOOD_ANALYSIS_ACCURACY.md
+DIET_AGENT_MONGODB_STATUS.md
+DIET_AGENT_FINAL_STATUS.md
+NLP_DIET_AGENT_COMPLETE.md
+*.md
+*.md
+test_modern_nutrition_system.py
+test_nutrition_system.py
+test_system_health.py
+aiservices/dietaiservices/comprehensive_final_test.py
+aiservices/dietaiservices/comprehensive_enhanced_test.py
+
+# Additional files to ignore
+# ==========================
+
+# macOS specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+.AppleDouble
+.LSOverride
+
+# Package lock files (already in some areas, adding for completeness)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# AI/ML model files
+*.pt
+*.pth
+*.pkl
+*.h5
+*.pb
+*.onnx
+yolov8n.pt
+*.weights
+
+# pytest cache
+.pytest_cache/
+pytest_cache/
+
+# Environment files (additional patterns)
+.env.*
+!.env.example
+config.local.*
+secrets.json
+credentials.json
+
+# Log files (additional patterns)
+*.log
+ai_service.log
+backend_service.log
+service.log
+debug.log
+error.log
+access.log
+
+# Qodo specific (AI assistant)
+.qodo/
+
+# Docker volumes and data
+docker-volumes/
+data/
+uploads/
+temp/
+tmp/
+
+# IDE and editor specific
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+*.swp
+*.swo
+*~
+.project
+.settings/
+.metadata/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
+
+# Coverage reports
+coverage/
+.coverage
+.coverage.*
+htmlcov/
+.nyc_output/
+
+# Test outputs
+test-results/
+test-output/
+screenshots/
+videos/
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*~
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Chat exports (user-generated files)
+nutrition-chat-*.json
+chat-export-*.json
+
+# Report files (user-generated)
+weekly-report-*.json
+nutrition-report-*.json
+
+# Additional patterns for your workspace
+
+# Service logs
+*.log
+backend_service.log
+ai_service.log
+
+# Test files that might be generated
+test_*.html
+*_demo.html
+mock-*.py
+
+# Temporary and cache files
+*.tmp
+*.temp
+.cache/
+.pytest_cache/
+
+# IDE and editor files
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+.vscode/extensions.json
+*.swp
+*.swo
+*~
+
+# Google Cloud credentials (security sensitive)
+google-credentials.json
+*-credentials.json
+service-account-*.json
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Compiled binaries
+*.exe
+*.dll
+*.dylib
+
+# System files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Python virtual environment
+venv/
+env/
+ENV/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Coverage reports
+coverage.xml
+*.cover
+.hypothesis/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Docker volumes and data
+docker-data/
+volumes/
+
+# AI model files (can be large)
+*.model
+*.pkl
+*.joblib
+models/
+checkpoints/
+frontend/src/DiagnosticPage.tsx
+aiservices/dietaiservices/final_integration_test.py
+aiservices/dietaiservices/enhanced_food_demo.py
+aiservices/dietaiservices/test_integration.py
+aiservices/dietaiservices/test_realistic_processor.py
+aiservices/dietaiservices/simple_validation.py
+aiservices/dietaiservices/quick_api_test.py
+image.png
+backend/.env
+backend/.env
+
+backend/.env
+backend/.env
+backend/.env

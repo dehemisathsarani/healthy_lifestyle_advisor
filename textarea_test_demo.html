@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Textarea Fix - Test Guide</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #333;
+    }
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    h1 {
+      color: #667eea;
+      text-align: center;
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+    .status {
+      text-align: center;
+      background: #10b981;
+      color: white;
+      padding: 15px;
+      border-radius: 10px;
+      font-size: 1.3em;
+      font-weight: bold;
+      margin-bottom: 30px;
+    }
+    .section {
+      background: #f8f9fa;
+      border-radius: 15px;
+      padding: 25px;
+      margin: 20px 0;
+      border-left: 5px solid #667eea;
+    }
+    .section h2 {
+      color: #667eea;
+      margin-top: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .checklist {
+      list-style: none;
+      padding: 0;
+    }
+    .checklist li {
+      padding: 12px;
+      margin: 8px 0;
+      background: white;
+      border-radius: 8px;
+      border-left: 4px solid #10b981;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .checklist li::before {
+      content: '✅';
+      font-size: 1.3em;
+    }
+    .demo-box {
+      background: linear-gradient(135deg, #e0e7ff 0%, #f3e8ff 100%);
+      border: 2px solid #8b5cf6;
+      border-radius: 15px;
+      padding: 20px;
+      margin: 15px 0;
+    }
+    .demo-textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 15px;
+      border: 2px solid #c4b5fd;
+      border-radius: 12px;
+      font-size: 16px;
+      resize: none;
+      transition: all 0.2s;
+      background: white;
+    }
+    .demo-textarea:hover {
+      border-color: #a78bfa;
+    }
+    .demo-textarea:focus {
+      outline: none;
+      border-color: #8b5cf6;
+      box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+    }
+    .counter {
+      text-align: right;
+      color: #6b7280;
+      font-size: 0.9em;
+      margin-top: 5px;
+    }
+    .button {
+      background: #8b5cf6;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-right: 10px;
+    }
+    .button:hover {
+      background: #7c3aed;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+    }
+    .button:disabled {
+      background: #d1d5db;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .button-clear {
+      background: #e5e7eb;
+      color: #374151;
+    }
+    .button-clear:hover {
+      background: #d1d5db;
+    }
+    .console-log {
+      background: #1f2937;
+      color: #10b981;
+      padding: 15px;
+      border-radius: 10px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9em;
+      margin: 15px 0;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .log-entry {
+      padding: 3px 0;
+    }
+    .test-step {
+      background: white;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border-left: 4px solid #f59e0b;
+    }
+    .test-step strong {
+      color: #f59e0b;
+    }
+    .success-badge {
+      display: inline-block;
+      background: #10b981;
+      color: white;
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 0.9em;
+      font-weight: 600;
+    }
+    .warning-badge {
+      display: inline-block;
+      background: #f59e0b;
+      color: white;
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 0.9em;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>✅ Textarea Fix - Interactive Test</h1>
+    <div class="status">
+      ✨ FULLY FIXED & READY TO USE ✨
+    </div>
+
+    <div class="section">
+      <h2>🎯 What Was Fixed</h2>
+      <ul class="checklist">
+        <li>Removed inline styles that could conflict</li>
+        <li>Explicitly set readOnly={false} to allow input</li>
+        <li>Added comprehensive event handlers</li>
+        <li>Enhanced visual feedback with focus ring</li>
+        <li>Added character counter for real-time feedback</li>
+        <li>Added clear button for better UX</li>
+        <li>Improved placeholder text</li>
+        <li>Enhanced accessibility with ARIA labels</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>🧪 Test the Fix Live</h2>
+      <p>Try typing in this demo textarea (works exactly like the fixed one):</p>
+      
+      <div class="demo-box">
+        <label for="demo-textarea" style="display: block; font-weight: 600; color: #7c3aed; margin-bottom: 8px;">
+          💭 Share your feelings:
+        </label>
+        <textarea 
+          id="demo-textarea"
+          class="demo-textarea" 
+          placeholder="Type here... Tell me how you're feeling today (e.g., 'I'm feeling really happy' or 'I feel anxious about work')"
+        ></textarea>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+          <span style="font-size: 0.85em; color: #8b5cf6;">💡 Tip: Be honest about your feelings. I'm here to help!</span>
+          <span class="counter" id="charCounter">Start typing...</span>
+        </div>
+        <div style="margin-top: 15px;">
+          <button class="button" id="submitBtn" disabled>💬 Share My Feelings</button>
+          <button class="button button-clear" id="clearBtn" style="display: none;">🗑️ Clear</button>
+        </div>
+      </div>
+
+      <div class="console-log" id="consoleLog">
+        <div class="log-entry">📝 Console Output (watch events here):</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>📋 Test Checklist</h2>
+      <div class="test-step">
+        <strong>Step 1:</strong> Click inside the textarea above
+        <br><span class="success-badge" id="step1">Pending</span>
+      </div>
+      <div class="test-step">
+        <strong>Step 2:</strong> Type some text (e.g., "I'm feeling happy")
+        <br><span class="success-badge" id="step2">Pending</span>
+      </div>
+      <div class="test-step">
+        <strong>Step 3:</strong> Watch character counter update
+        <br><span class="success-badge" id="step3">Pending</span>
+      </div>
+      <div class="test-step">
+        <strong>Step 4:</strong> See submit button enable
+        <br><span class="success-badge" id="step4">Pending</span>
+      </div>
+      <div class="test-step">
+        <strong>Step 5:</strong> Click clear button to reset
+        <br><span class="success-badge" id="step5">Pending</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>🚀 Next Steps</h2>
+      <ol style="line-height: 1.8;">
+        <li><strong>Open your app:</strong> <a href="http://localhost:5173" target="_blank" style="color: #8b5cf6;">http://localhost:5173</a></li>
+        <li><strong>Navigate to:</strong> Mental Health Agent section</li>
+        <li><strong>Find:</strong> "Share your feelings" textarea</li>
+        <li><strong>Test:</strong> Type your feelings (works like demo above)</li>
+        <li><strong>Verify:</strong> All features working (counter, clear button, submit)</li>
+      </ol>
+    </div>
+
+    <div class="section">
+      <h2>🔍 Debug Information</h2>
+      <p>If you need to debug in your actual app, open browser console (F12) and watch for these messages:</p>
+      <ul>
+        <li>✨ Textarea focused - Ready for input</li>
+        <li>✍️ Textarea change: [your text]</li>
+        <li>🖱️ Textarea clicked</li>
+        <li>👋 Textarea blurred</li>
+        <li>🚀 Submit button clicked with text: [your text]</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    const textarea = document.getElementById('demo-textarea');
+    const counter = document.getElementById('charCounter');
+    const submitBtn = document.getElementById('submitBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const consoleLog = document.getElementById('consoleLog');
+
+    let step1Done = false;
+    let step2Done = false;
+    let step3Done = false;
+    let step4Done = false;
+
+    function addLog(message, emoji) {
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.textContent = `${emoji} ${message}`;
+      consoleLog.appendChild(entry);
+      consoleLog.scrollTop = consoleLog.scrollHeight;
+    }
+
+    function updateStep(step, status) {
+      const badge = document.getElementById(step);
+      badge.textContent = status;
+      badge.style.background = status === '✅ Done' ? '#10b981' : '#f59e0b';
+    }
+
+    textarea.addEventListener('focus', () => {
+      addLog('Textarea focused - Ready for input', '✨');
+      if (!step1Done) {
+        updateStep('step1', '✅ Done');
+        step1Done = true;
+      }
+    });
+
+    textarea.addEventListener('blur', () => {
+      addLog('Textarea blurred', '👋');
+    });
+
+    textarea.addEventListener('click', () => {
+      addLog('Textarea clicked', '🖱️');
+    });
+
+    textarea.addEventListener('input', (e) => {
+      const value = e.target.value;
+      const length = value.length;
+      
+      addLog(`Textarea change: ${value.substring(0, 30)}${value.length > 30 ? '...' : ''}`, '✍️');
+      
+      // Update counter
+      counter.textContent = length > 0 ? `${length} characters` : 'Start typing...';
+      
+      // Update buttons
+      submitBtn.disabled = length === 0;
+      clearBtn.style.display = length > 0 ? 'inline-block' : 'none';
+
+      // Update steps
+      if (length > 0 && !step2Done) {
+        updateStep('step2', '✅ Done');
+        step2Done = true;
+      }
+      if (length > 0 && !step3Done) {
+        updateStep('step3', '✅ Done');
+        step3Done = true;
+      }
+      if (length > 0 && !step4Done) {
+        updateStep('step4', '✅ Done');
+        step4Done = true;
+      }
+    });
+
+    submitBtn.addEventListener('click', () => {
+      const value = textarea.value;
+      addLog(`Submit button clicked with text: ${value}`, '🚀');
+      alert(`✅ Success! Your feelings would be processed:\n\n"${value}"\n\nIn the real app, this would trigger mood analysis!`);
+    });
+
+    clearBtn.addEventListener('click', () => {
+      addLog('Clear button clicked', '🗑️');
+      textarea.value = '';
+      counter.textContent = 'Start typing...';
+      submitBtn.disabled = true;
+      clearBtn.style.display = 'none';
+      updateStep('step5', '✅ Done');
+    });
+
+    // Initial log
+    addLog('Demo ready! Click the textarea to start testing.', '🎉');
+  </script>
+</body>
+</html>

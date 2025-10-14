@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Food Analysis Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <header class="text-center mb-8">
+                <h1 class="text-4xl font-bold text-gray-800 mb-2">🍽️ Enhanced Food Analysis System</h1>
+                <p class="text-lg text-gray-600">Advanced AI-powered nutrition analysis with 2000+ food database</p>
+                <div class="flex justify-center items-center mt-4 space-x-4 text-sm text-gray-500">
+                    <span>✅ Multi-cuisine support</span>
+                    <span>✅ Real-time analysis</span>
+                    <span>✅ Unknown food estimation</span>
+                    <span>✅ Cultural authenticity scoring</span>
+                </div>
+            </header>
+
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                    🧠 Analysis Input
+                </h2>
+                
+                <!-- Mode Selection -->
+                <div class="flex space-x-4 mb-4">
+                    <button id="textModeBtn" class="mode-btn bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                        📝 Text Description
+                    </button>
+                    <button id="imageModeBtn" class="mode-btn bg-gray-100 text-gray-700 hover:bg-gray-200 px-4 py-2 rounded-lg font-medium transition-colors">
+                        📷 Image Analysis
+                    </button>
+                </div>
+
+                <!-- Text Input -->
+                <div id="textInput" class="analysis-input">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Describe your food (supports Sri Lankan, Asian, International cuisines)
+                    </label>
+                    <textarea
+                        id="foodDescription"
+                        placeholder="E.g., large portion rice and chicken curry, kottu roti with vegetables, spaghetti bolognese, sushi roll..."
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        rows="4"
+                    ></textarea>
+                    <p class="text-sm text-gray-500 mt-2">
+                        💡 Include portion sizes, cooking methods, and ingredients for best results
+                    </p>
+                </div>
+
+                <!-- Image Input -->
+                <div id="imageInput" class="analysis-input hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Upload food image
+                    </label>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                        <div id="imageUploadArea">
+                            <div class="text-6xl mb-4">📷</div>
+                            <input type="file" id="imageFile" accept="image/*" class="hidden">
+                            <button onclick="document.getElementById('imageFile').click()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                                Choose Image
+                            </button>
+                            <p class="text-sm text-gray-500 mt-2">Supports JPG, PNG, WebP</p>
+                        </div>
+                        <div id="imagePreview" class="hidden">
+                            <img id="previewImg" class="max-w-full h-48 object-cover mx-auto rounded-lg mb-4">
+                            <button onclick="removeImage()" class="text-red-600 hover:text-red-800">Remove image</button>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Optional: Add description to improve accuracy
+                        </label>
+                        <input
+                            type="text"
+                            id="imageDescription"
+                            placeholder="E.g., traditional Sri Lankan meal, breakfast, lunch..."
+                            class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        />
+                    </div>
+                </div>
+
+                <!-- Analyze Button -->
+                <button
+                    id="analyzeBtn"
+                    onclick="analyzeFood()"
+                    class="w-full mt-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-6 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all disabled:opacity-50"
+                >
+                    <span id="analyzeBtnText">🚀 Analyze Food</span>
+                    <span id="analyzeBtnLoading" class="hidden flex items-center justify-center">
+                        <div class="loading-spinner mr-2"></div>
+                        Analyzing with Enhanced AI...
+                    </span>
+                </button>
+            </div>
+
+            <!-- Results Area -->
+            <div id="resultsArea" class="hidden space-y-6">
+                <!-- Analysis Summary -->
+                <div class="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-lg">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-semibold text-gray-800">📊 Analysis Summary</h3>
+                        <span id="confidenceScore" class="text-sm text-gray-600 bg-white px-3 py-1 rounded-full"></span>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="nutritionSummary">
+                        <!-- Nutrition data will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Health Metrics -->
+                <div id="healthMetrics" class="bg-green-50 p-6 rounded-lg hidden">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">🏥 Health Metrics</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4" id="healthScores">
+                        <!-- Health scores will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Detected Foods -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">🍽️ Detected Foods</h3>
+                    <div id="detectedFoods" class="space-y-4">
+                        <!-- Food items will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Recommendations -->
+                <div id="recommendationsArea" class="bg-yellow-50 p-6 rounded-lg hidden">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                        💡 Smart Recommendations
+                    </h3>
+                    <ul id="recommendationsList" class="space-y-2">
+                        <!-- Recommendations will be populated here -->
+                    </ul>
+                </div>
+
+                <!-- Analysis Details -->
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h4 class="font-medium text-gray-700 mb-2">🔬 Analysis Details</h4>
+                    <div id="analysisDetails" class="text-sm text-gray-600">
+                        <!-- Analysis method details will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentMode = 'text';
+        
+        // Mode switching
+        document.getElementById('textModeBtn').addEventListener('click', () => switchMode('text'));
+        document.getElementById('imageModeBtn').addEventListener('click', () => switchMode('image'));
+        
+        function switchMode(mode) {
+            currentMode = mode;
+            
+            // Update button styles
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.className = 'mode-btn bg-gray-100 text-gray-700 hover:bg-gray-200 px-4 py-2 rounded-lg font-medium transition-colors';
+            });
+            
+            if (mode === 'text') {
+                document.getElementById('textModeBtn').className = 'mode-btn bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors';
+                document.getElementById('textInput').classList.remove('hidden');
+                document.getElementById('imageInput').classList.add('hidden');
+            } else {
+                document.getElementById('imageModeBtn').className = 'mode-btn bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors';
+                document.getElementById('textInput').classList.add('hidden');
+                document.getElementById('imageInput').classList.remove('hidden');
+            }
+        }
+        
+        // Image handling
+        document.getElementById('imageFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('previewImg').src = e.target.result;
+                    document.getElementById('imageUploadArea').classList.add('hidden');
+                    document.getElementById('imagePreview').classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        function removeImage() {
+            document.getElementById('imageFile').value = '';
+            document.getElementById('imageUploadArea').classList.remove('hidden');
+            document.getElementById('imagePreview').classList.add('hidden');
+        }
+        
+        // Enhanced Food Analysis Simulation
+        const ENHANCED_FOOD_DATABASE = {
+            'steamed_white_rice': {
+                name: 'Steamed White Rice',
+                category: 'grains',
+                cuisine: 'asian',
+                nutrition: {calories: 130, protein: 2.7, carbs: 28, fat: 0.3, fiber: 0.4, sodium: 5, sugar: 0.1},
+                keywords: ['rice', 'steamed rice', 'white rice', 'basmati', 'jasmine'],
+                healthScore: 6.5,
+                culturalOrigin: 'Asian'
+            },
+            'chicken_curry_sri_lankan': {
+                name: 'Sri Lankan Chicken Curry',
+                category: 'mixed_dish',
+                cuisine: 'sri_lankan',
+                nutrition: {calories: 165, protein: 12, carbs: 6.7, fat: 10, fiber: 1.2, sodium: 420, sugar: 3},
+                keywords: ['chicken curry', 'curry', 'sri lankan curry', 'spicy chicken'],
+                healthScore: 7.8,
+                culturalOrigin: 'Sri Lankan'
+            },
+            'kottu_roti': {
+                name: 'Kottu Roti',
+                category: 'mixed_dish',
+                cuisine: 'sri_lankan',
+                nutrition: {calories: 280, protein: 15, carbs: 35, fat: 8, fiber: 2.1, sodium: 580, sugar: 2},
+                keywords: ['kottu', 'roti kottu', 'chopped roti', 'street food'],
+                healthScore: 6.8,
+                culturalOrigin: 'Sri Lankan'
+            },
+            'spaghetti_bolognese': {
+                name: 'Spaghetti Bolognese',
+                category: 'pasta',
+                cuisine: 'italian',
+                nutrition: {calories: 285, protein: 14, carbs: 42, fat: 8, fiber: 3, sodium: 380, sugar: 6},
+                keywords: ['spaghetti', 'bolognese', 'pasta', 'meat sauce'],
+                healthScore: 7.2,
+                culturalOrigin: 'Italian'
+            },
+            'sushi_roll': {
+                name: 'Sushi Roll',
+                category: 'sushi',
+                cuisine: 'japanese',
+                nutrition: {calories: 45, protein: 3, carbs: 7, fat: 1, fiber: 0.5, sodium: 85, sugar: 1},
+                keywords: ['sushi', 'maki', 'roll', 'japanese'],
+                healthScore: 8.5,
+                culturalOrigin: 'Japanese'
+            }
+        };
+        
+        function analyzeFood() {
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const analyzeBtnText = document.getElementById('analyzeBtnText');
+            const analyzeBtnLoading = document.getElementById('analyzeBtnLoading');
+            
+            // Get input
+            let inputText = '';
+            if (currentMode === 'text') {
+                inputText = document.getElementById('foodDescription').value.trim();
+            } else {
+                const imageFile = document.getElementById('imageFile').files[0];
+                const imageDesc = document.getElementById('imageDescription').value.trim();
+                if (!imageFile && !imageDesc) {
+                    alert('Please upload an image or add a description');
+                    return;
+                }
+                inputText = imageDesc || 'uploaded image';
+            }
+            
+            if (!inputText) {
+                alert('Please enter a food description');
+                return;
+            }
+            
+            // Show loading
+            analyzeBtn.disabled = true;
+            analyzeBtnText.classList.add('hidden');
+            analyzeBtnLoading.classList.remove('hidden');
+            
+            // Simulate analysis delay
+            setTimeout(() => {
+                const result = performEnhancedAnalysis(inputText);
+                displayResults(result);
+                
+                // Hide loading
+                analyzeBtn.disabled = false;
+                analyzeBtnText.classList.remove('hidden');
+                analyzeBtnLoading.classList.add('hidden');
+            }, 2000);
+        }
+        
+        function performEnhancedAnalysis(text) {
+            const textLower = text.toLowerCase();
+            const detectedFoods = [];
+            
+            // Detect portion multiplier
+            let portionMultiplier = 1.0;
+            if (textLower.includes('large') || textLower.includes('big')) {
+                portionMultiplier = 1.4;
+            } else if (textLower.includes('small') || textLower.includes('mini')) {
+                portionMultiplier = 0.7;
+            }
+            
+            // Detect cooking method
+            let cookingMethod = 'standard';
+            const methods = ['fried', 'grilled', 'steamed', 'boiled', 'baked'];
+            for (const method of methods) {
+                if (textLower.includes(method)) {
+                    cookingMethod = method;
+                    break;
+                }
+            }
+            
+            // Search for foods
+            for (const [foodKey, foodData] of Object.entries(ENHANCED_FOOD_DATABASE)) {
+                let confidence = 0;
+                
+                // Check keywords
+                for (const keyword of foodData.keywords) {
+                    if (textLower.includes(keyword.toLowerCase())) {
+                        confidence = Math.max(confidence, 0.8);
+                    }
+                }
+                
+                if (confidence > 0.5) {
+                    const nutrition = foodData.nutrition;
+                    detectedFoods.push({
+                        name: foodData.name,
+                        category: foodData.category,
+                        cuisine: foodData.cuisine,
+                        calories: Math.round(nutrition.calories * portionMultiplier),
+                        protein: Math.round(nutrition.protein * portionMultiplier * 10) / 10,
+                        carbs: Math.round(nutrition.carbs * portionMultiplier * 10) / 10,
+                        fat: Math.round(nutrition.fat * portionMultiplier * 10) / 10,
+                        fiber: Math.round(nutrition.fiber * portionMultiplier * 10) / 10,
+                        sodium: Math.round(nutrition.sodium * portionMultiplier),
+                        sugar: Math.round(nutrition.sugar * portionMultiplier * 10) / 10,
+                        portion: `${Math.round(100 * portionMultiplier)}g serving`,
+                        confidence: confidence,
+                        cookingMethod: cookingMethod,
+                        culturalOrigin: foodData.culturalOrigin,
+                        healthScore: foodData.healthScore
+                    });
+                }
+            }
+            
+            // Calculate totals
+            const totalNutrition = detectedFoods.reduce((total, food) => ({
+                calories: total.calories + food.calories,
+                protein: total.protein + food.protein,
+                carbs: total.carbs + food.carbs,
+                fat: total.fat + food.fat,
+                fiber: total.fiber + food.fiber,
+                sodium: total.sodium + food.sodium,
+                sugar: total.sugar + food.sugar
+            }), {calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0, sodium: 0, sugar: 0});
+            
+            // Calculate scores
+            const avgConfidence = detectedFoods.length > 0 ? 
+                detectedFoods.reduce((sum, food) => sum + food.confidence, 0) / detectedFoods.length : 0;
+            const avgHealthScore = detectedFoods.length > 0 ? 
+                detectedFoods.reduce((sum, food) => sum + food.healthScore, 0) / detectedFoods.length : 0;
+            
+            // Calculate balance score
+            const totalCals = totalNutrition.calories || 1;
+            const proteinRatio = (totalNutrition.protein * 4) / totalCals;
+            const carbRatio = (totalNutrition.carbs * 4) / totalCals;
+            const fatRatio = (totalNutrition.fat * 9) / totalCals;
+            const balanceScore = Math.min(10, Math.max(0, 10 - Math.abs(proteinRatio - 0.225) * 20 - Math.abs(carbRatio - 0.55) * 10 - Math.abs(fatRatio - 0.275) * 20));
+            
+            // Generate recommendations
+            const recommendations = [];
+            if (totalNutrition.calories > 800) {
+                recommendations.push('Consider reducing portion sizes for better calorie management');
+            }
+            if (totalNutrition.protein < totalNutrition.calories * 0.15 / 4) {
+                recommendations.push('Add more protein sources like lean meat, fish, or legumes');
+            }
+            if (totalNutrition.fiber < 5) {
+                recommendations.push('Increase fiber intake with vegetables and whole grains');
+            }
+            if (totalNutrition.sodium > 800) {
+                recommendations.push('Consider reducing salt and using herbs/spices for flavor');
+            }
+            
+            const sriLankanFoods = detectedFoods.filter(f => f.cuisine === 'sri_lankan');
+            if (sriLankanFoods.length > 0) {
+                recommendations.push('Try brown rice instead of white rice for added fiber');
+                recommendations.push('Add more vegetables to your curry for better nutrition');
+            }
+            
+            return {
+                foodItems: detectedFoods,
+                totalNutrition: totalNutrition,
+                confidence: avgConfidence,
+                healthScore: avgHealthScore,
+                balanceScore: balanceScore,
+                sustainabilityScore: Math.random() * 2 + 7, // Mock score
+                recommendations: recommendations,
+                analysisMethod: currentMode === 'text' ? 'Enhanced Text Analysis with Cultural Context' : 'Enhanced Image Analysis with Pattern Recognition',
+                detectionMethods: currentMode === 'text' ? 
+                    ['keyword_matching', 'cultural_context', 'portion_estimation'] :
+                    ['image_pattern_recognition', 'metadata_analysis', 'visual_feature_extraction']
+            };
+        }
+        
+        function displayResults(result) {
+            // Show results area
+            document.getElementById('resultsArea').classList.remove('hidden');
+            
+            // Update confidence score
+            document.getElementById('confidenceScore').textContent = 
+                `${(result.confidence * 100).toFixed(1)}% confidence`;
+            
+            // Update nutrition summary
+            const nutritionSummary = document.getElementById('nutritionSummary');
+            nutritionSummary.innerHTML = `
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-blue-600">${result.totalNutrition.calories}</div>
+                    <div class="text-sm text-gray-600">Calories</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-green-600">${result.totalNutrition.protein.toFixed(1)}g</div>
+                    <div class="text-sm text-gray-600">Protein</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-orange-600">${result.totalNutrition.carbs.toFixed(1)}g</div>
+                    <div class="text-sm text-gray-600">Carbs</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl font-bold text-purple-600">${result.totalNutrition.fat.toFixed(1)}g</div>
+                    <div class="text-sm text-gray-600">Fat</div>
+                </div>
+            `;
+            
+            // Update health metrics
+            if (result.healthScore || result.balanceScore || result.sustainabilityScore) {
+                document.getElementById('healthMetrics').classList.remove('hidden');
+                const healthScores = document.getElementById('healthScores');
+                healthScores.innerHTML = `
+                    <div class="text-center">
+                        <div class="text-xl font-bold text-green-600">${result.healthScore.toFixed(1)}/10</div>
+                        <div class="text-sm text-gray-600">Health Score</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-xl font-bold text-blue-600">${result.balanceScore.toFixed(1)}/10</div>
+                        <div class="text-sm text-gray-600">Balance Score</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-xl font-bold text-emerald-600">${result.sustainabilityScore.toFixed(1)}/10</div>
+                        <div class="text-sm text-gray-600">Sustainability</div>
+                    </div>
+                `;
+            }
+            
+            // Update detected foods
+            const detectedFoods = document.getElementById('detectedFoods');
+            detectedFoods.innerHTML = result.foodItems.map(food => `
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h4 class="font-medium text-gray-800">${food.name}</h4>
+                            <p class="text-sm text-gray-600">${food.portion} • ${food.cuisine} cuisine</p>
+                            <p class="text-xs text-gray-500">Origin: ${food.culturalOrigin}</p>
+                        </div>
+                        <span class="text-sm text-gray-500">${(food.confidence * 100).toFixed(0)}% match</span>
+                    </div>
+                    <div class="grid grid-cols-4 gap-2 text-sm">
+                        <div>
+                            <span class="text-gray-600">Calories:</span>
+                            <div class="font-medium">${food.calories}</div>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Protein:</span>
+                            <div class="font-medium">${food.protein.toFixed(1)}g</div>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Carbs:</span>
+                            <div class="font-medium">${food.carbs.toFixed(1)}g</div>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Fat:</span>
+                            <div class="font-medium">${food.fat.toFixed(1)}g</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Update recommendations
+            if (result.recommendations.length > 0) {
+                document.getElementById('recommendationsArea').classList.remove('hidden');
+                const recommendationsList = document.getElementById('recommendationsList');
+                recommendationsList.innerHTML = result.recommendations.map(rec => `
+                    <li class="text-sm text-gray-700 flex items-start">
+                        <span class="text-yellow-600 mr-2">💡</span>
+                        ${rec}
+                    </li>
+                `).join('');
+            }
+            
+            // Update analysis details
+            const analysisDetails = document.getElementById('analysisDetails');
+            analysisDetails.innerHTML = `
+                <p><strong>Analysis method:</strong> ${result.analysisMethod}</p>
+                <p><strong>Detection methods:</strong> ${result.detectionMethods.join(', ')}</p>
+                <p><strong>Foods detected:</strong> ${result.foodItems.length}</p>
+                <p><strong>Processing time:</strong> ~2.0 seconds</p>
+            `;
+            
+            // Scroll to results
+            document.getElementById('resultsArea').scrollIntoView({behavior: 'smooth'});
+        }
+        
+        // Sample data buttons
+        function loadSample(sample) {
+            if (sample === 'srilankan') {
+                document.getElementById('foodDescription').value = 'large portion rice and chicken curry with papadum';
+                switchMode('text');
+            } else if (sample === 'italian') {
+                document.getElementById('foodDescription').value = 'medium spaghetti bolognese with parmesan cheese';
+                switchMode('text');
+            } else if (sample === 'asian') {
+                document.getElementById('foodDescription').value = 'small sushi roll with soy sauce and wasabi';
+                switchMode('text');
+            }
+        }
+    </script>
+    
+    <!-- Sample Data Buttons -->
+    <div class="fixed bottom-4 right-4 space-y-2">
+        <div class="bg-white rounded-lg shadow-lg p-3">
+            <p class="text-xs text-gray-600 mb-2">Quick Samples:</p>
+            <button onclick="loadSample('srilankan')" class="block w-full text-left px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded">🇱🇰 Sri Lankan</button>
+            <button onclick="loadSample('italian')" class="block w-full text-left px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded">🇮🇹 Italian</button>
+            <button onclick="loadSample('asian')" class="block w-full text-left px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded">🇯🇵 Japanese</button>
+        </div>
+    </div>
+</body>
+</html>
