@@ -83,7 +83,7 @@ export const AdvancedNutritionHub: React.FC<AdvancedNutritionHubProps> = ({ onBa
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            userId: profile?.id || workoutData.userId,
+            userId: profile?.email || workoutData.userId,
             caloriesBurned: workoutData.caloriesBurned,
             mealId: workoutData.relatedMealId || null,
             timestamp: workoutData.timestamp || new Date().toISOString()

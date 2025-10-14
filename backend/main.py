@@ -115,7 +115,9 @@ app.include_router(integrated_food_vision_router, prefix="/api")
 from routers.messaging_integration import router as messaging_integration_router
 app.include_router(messaging_integration_router)
 
-
+# Include Multi-Agent System routes (Diet, Fitness, Mental Health collaboration)
+from routers.multi_agent_system import router as multi_agent_router
+app.include_router(multi_agent_router)
 
 # Global application state
 app_state = {

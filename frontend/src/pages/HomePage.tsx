@@ -48,7 +48,7 @@ const HomePage = () => {
   }, [testimonials.length])
   
   const handleGetStarted = () => {
-    navigate('/services')
+    navigate('/health-journey')
   }
 
   const handleLearnMore = () => {

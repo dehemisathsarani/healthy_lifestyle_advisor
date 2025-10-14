@@ -10,6 +10,10 @@ import { RegisterPage } from './pages/RegisterPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { OAuthCallbackPage } from './pages/OAuthCallbackPage'
 import { ProfilePage } from './pages/ProfilePage'
+import { HealthJourneyPage } from './pages/HealthJourneyPage'
+import { PricingPage } from './pages/PricingPage'
+import { CheckoutPage } from './pages/CheckoutPage'
+import { PaymentSuccessPage } from './pages/PaymentSuccessPage'
 import CalendarPage from './pages/CalendarPage'
 import AIVisionTestComponent from './components/AIVisionTestComponent'
 
@@ -19,9 +23,13 @@ function App() {
       <BrowserRouter>
         <div className="min-h-screen bg-gray-50 text-gray-900">
           <Routes>
-            <Route path="/" element={<HomePage />} />
+            <Route path="/" element={<PricingPage />} />
             <Route path="/home" element={<HomePage />} />
             <Route path="/services" element={<ServicesPage />} />
+            <Route path="/health-journey" element={<HealthJourneyPage />} />
+            <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/payment-success" element={<PaymentSuccessPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/login" element={<LoginPage />} />
