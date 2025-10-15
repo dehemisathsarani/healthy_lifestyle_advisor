@@ -145,17 +145,20 @@ async def startup_event():
         app_state["db_connected"] = False
         print(f"⚠️ Error while connecting to database: {e}")
 
-    # Start RabbitMQ consumers for Diet-Fitness messaging
+    # Start RabbitMQ consumers for Diet-Fitness messaging (non-blocking)
     try:
         print("🔄 Starting Diet-Fitness message consumers...")
         startup_consumers()
         print("✅ Diet-Fitness message consumers started")
     except Exception as e:
         print(f"⚠️ Failed to start message consumers: {e}")
-        print("   (Consumers will not process messages)")
+        print("   (Consumers will not process messages - RabbitMQ may not be available)")
+        print("   Application will continue to run without messaging features")
 
     print("✅ Application startup completed successfully")
     print("🌐 API Documentation available at: http://localhost:8000/docs")
+    print("📊 Health Check: http://localhost:8000/health")
+    print("🔍 API Status: http://localhost:8000/status")
 
 @app.on_event("shutdown")
 async def shutdown_event():

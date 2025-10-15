@@ -28,6 +28,7 @@ class RabbitMQService:
         self.rabbitmq_url = os.getenv('CLOUDAMQP_URL', 'amqp://guest:guest@localhost:5672/')
         self.connection = None
         self.channel = None
+        self.is_connected = False
         
         # Exchange and Queue Names
         self.DIET_TO_FITNESS_EXCHANGE = 'diet_to_fitness_exchange'
@@ -39,7 +40,11 @@ class RabbitMQService:
         self.DIET_EVENT_KEY = 'diet.event'
         self.FITNESS_EVENT_KEY = 'fitness.event'
         
-        self.connect()
+        try:
+            self.connect()
+        except Exception as e:
+            logger.warning(f"⚠️  RabbitMQ not available during initialization: {e}")
+            logger.info("   Service will operate in degraded mode without messaging")
     
     def connect(self):
         """Establish connection to RabbitMQ"""
@@ -79,13 +84,16 @@ class RabbitMQService:
                 routing_key=self.FITNESS_EVENT_KEY
             )
             
+            self.is_connected = True
             logger.info("✅ RabbitMQ connection established successfully")
             logger.info(f"📊 Exchanges: {self.DIET_TO_FITNESS_EXCHANGE}, {self.FITNESS_TO_DIET_EXCHANGE}")
             logger.info(f"📬 Queues: {self.DIET_TO_FITNESS_QUEUE}, {self.FITNESS_TO_DIET_QUEUE}")
             
         except Exception as e:
+            self.is_connected = False
             logger.error(f"❌ Failed to connect to RabbitMQ: {e}")
-            raise
+            logger.warning("   RabbitMQ messaging features will be unavailable")
+            # Don't raise - allow service to continue without RabbitMQ
     
     def create_diet_message(
         self,

@@ -48,9 +48,13 @@ app.include_router(fitness_messaging_router)  # New RabbitMQ messaging routes
 @app.on_event("startup")
 async def startup_event():
     """Initialize RabbitMQ client and register handlers on startup."""
+    logger.info("🚀 Starting Fitness Agent API...")
+    
     try:
+        logger.info("🔄 Attempting to connect to RabbitMQ...")
         # connect to rabbitmq (diet exchange)
         await rabbitmq_client.connect()
+        logger.info("✅ RabbitMQ connected successfully")
 
         # Register handlers to process diet messages
         # Handler when nutrition updates arrive (meal logged, hydration)
@@ -118,15 +122,27 @@ async def startup_event():
 
         # start consuming in background
         asyncio.create_task(rabbitmq_client.consume())
+        logger.info("✅ RabbitMQ message consumers started")
 
     except Exception as e:
-        logger.warning(f"RabbitMQ not available at startup: {e}")
+        logger.warning(f"⚠️  RabbitMQ not available at startup: {e}")
+        logger.info("ℹ️  Fitness Agent will run without message queue integration")
+        logger.info("ℹ️  To enable RabbitMQ:")
+        logger.info("   1. Install RabbitMQ: https://www.rabbitmq.com/download.html")
+        logger.info("   2. Or use Docker: docker run -d -p 5672:5672 rabbitmq:3-management")
+        logger.info("   3. Verify RABBITMQ_URL in .env points to localhost:5672")
+
+
+    logger.info("✅ Fitness Agent API startup complete")
+    logger.info("🌐 API Documentation: http://localhost:8003/docs")
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
+    logger.info("🛑 Shutting down Fitness Agent API...")
     try:
         await rabbitmq_client.disconnect()
+        logger.info("✅ RabbitMQ disconnected")
     except Exception:
         pass
 

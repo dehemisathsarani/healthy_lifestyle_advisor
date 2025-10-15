@@ -50,18 +50,26 @@ class ConsumerService:
         try:
             logger.info("🏃 Starting Fitness Agent consumer...")
             rabbitmq = RabbitMQService()
+            if not rabbitmq.is_connected:
+                logger.warning("⚠️  RabbitMQ not connected, Fitness consumer will not start")
+                return
             rabbitmq.consume_diet_messages(simple_diet_callback)
         except Exception as e:
             logger.error(f"❌ Fitness consumer error: {e}")
+            logger.info("   Consumer thread will exit gracefully")
     
     def start_diet_consumer(self):
         """Start Diet Agent consumer (listens to Fitness events)"""
         try:
             logger.info("🥗 Starting Diet Agent consumer...")
             rabbitmq = RabbitMQService()
+            if not rabbitmq.is_connected:
+                logger.warning("⚠️  RabbitMQ not connected, Diet consumer will not start")
+                return
             rabbitmq.consume_fitness_messages(simple_fitness_callback)
         except Exception as e:
             logger.error(f"❌ Diet consumer error: {e}")
+            logger.info("   Consumer thread will exit gracefully")
     
     def start_all_consumers(self):
         """Start both consumers in background threads"""
