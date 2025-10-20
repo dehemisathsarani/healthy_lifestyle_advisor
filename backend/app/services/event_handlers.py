@@ -261,7 +261,6 @@ class DietEventHandler:
             
             # 6. Generate detailed nutrition recommendation
             from app.services.workout_recommendation_service import workout_recommendation_service
-            from datetime import datetime
             
             current_hour = datetime.now().hour
             if current_hour < 12:
