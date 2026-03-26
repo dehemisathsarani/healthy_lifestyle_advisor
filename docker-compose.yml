@@ -1,0 +1,111 @@
+services:
+  # Message Broker
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: rabbitmq
+    ports: 
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Database
+  mongo:
+    image: mongo:7
+    container_name: mongo
+    ports: 
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+  # Main Backend API
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: diet-backend
+    env_file: ./backend/.env
+    depends_on:
+      - rabbitmq
+      - mongo
+      - redis
+    ports: 
+      - "8000:8000"
+    volumes:
+      - ./logs:/app/logs
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - MONGODB_URL=mongodb://admin:password@mongo:27017
+      - REDIS_URL=redis://redis:6379
+
+  # AI Service
+  ai_service:
+    build: 
+      context: ./aiservices/dietaiservices
+      dockerfile: Dockerfile
+    container_name: diet-ai
+    env_file: ./aiservices/.env
+    depends_on:
+      - rabbitmq
+      - mongo
+      - redis
+    ports: 
+      - "8001:8001"
+    volumes:
+      - ./logs:/app/logs
+      - ./aiservices/google-credentials.json:/app/google-credentials.json:ro
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - MONGODB_URL=mongodb://admin:password@mongo:27017
+      - REDIS_URL=redis://redis:6379
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/google-credentials.json
+
+  # Frontend
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: diet-frontend
+    depends_on:
+      - backend
+      - ai_service
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://localhost:8000
+      - VITE_AI_API_URL=http://localhost:8001
+
+volumes:
+  mongo_data:
+  rabbitmq_data:
+  redis_data:
+
+networks:
+  default:
+    name: health-agent-network

@@ -1,0 +1,20 @@
+[
+  {
+    "id": "hr_test_123",
+    "user_id": "test_user_456",
+    "bpm": 75,
+    "activity_state": "rest",
+    "timestamp": "2025-09-22 09:26:06.064572",
+    "source": "fitness_tracker",
+    "created_at": "2025-09-22T09:26:06.064607"
+  },
+  {
+    "id": "hr_test_123",
+    "user_id": "test_user_456",
+    "bpm": 75,
+    "activity_state": "rest",
+    "timestamp": "2025-09-22 09:45:52.039151",
+    "source": "fitness_tracker",
+    "created_at": "2025-09-22T09:45:52.039496"
+  }
+]
